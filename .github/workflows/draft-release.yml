@@ -1,0 +1,28 @@
+name: draft-release
+
+on:
+  push:
+    tags: '*'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Zip the script
+      uses: thedoctor0/zip-release@main
+      with:
+        type: 'zip'
+        filename: "w3stringsx.zip"
+        path: "./src/w3stringsx.py"
+    - name: Create draft release
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts: "w3stringsx.zip"
+        draft: true
+        generateReleaseNotes: true
