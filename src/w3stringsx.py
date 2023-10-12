@@ -30,10 +30,23 @@ ALL_LANGS_META: dict[str, str] = {
 
 MOD_ID_RANGE: range = range(2110000000, 2120000000)
 
+
+def log_info(s: str):
+    print(f'[Info] {s}')
+
+def log_warning(s: str):
+    COLOR_WARN = '\033[93m'
+    print(f'{COLOR_WARN}[Warning] {s}')
+
+def log_error(s: str):
+    COLOR_ERROR = '\033[91m'
+    print(f'{COLOR_ERROR}[Error] {s}')
+
+
 # TODO turn into class
 ENCODER = os.path.join(os.path.split(__file__)[0], 'w3strings.exe')
 if not os.path.exists(ENCODER):
-    print('[Error] Encoder not found! Make sure to place the script in the same directory as the encoder')
+    log_error('Encoder not found! Make sure to place the script in the same directory as the encoder')
     sys.exit(-1)
 
 
@@ -85,9 +98,9 @@ class CsvInputEntry:
 class CsvInputDocument:
     target_lang: str | None
     header_lang_meta: str | None
-    header_id_space: int | None  # id space from a custom attribute in the header
+    header_mod_id_space: int | None  # id space from a custom attribute in the header
     entries: list[CsvInputEntry]
-    content_id_space: int | None  # id space deduced from id column in entries; None if there are only vanilla Ids and/or abbreviated entries
+    content_mod_id_space: int | None  # id space deduced from id column in entries; None if there are only vanilla Ids and/or abbreviated entries
     has_vanilla_entries: bool
 
     def __init__(self, file_path: str):
@@ -116,12 +129,17 @@ class CsvInputDocument:
         for part in basename_parts:
             if part in ALL_LANGS:
                 self.target_lang = part
+                log_info(f'Detected target language: {self.target_lang}')
                 break
 
 
     def read_header(self, file_lines: list[str]):
-        self.header_lang_meta = None if self.target_lang is None else ALL_LANGS_META[self.target_lang]
-        self.header_id_space = None
+        self.header_lang_meta = None
+        if self.target_lang is not None:
+            self.header_lang_meta = ALL_LANGS_META[self.target_lang]
+            log_info(f'Detected language meta "{self.header_lang_meta}" based on target language')
+
+        self.header_mod_id_space = None
         for line in file_lines:
             if not line.startswith(';'):
                 break
@@ -131,15 +149,20 @@ class CsvInputDocument:
                 if lang_meta in ALL_LANGS_META.values():
                     self.header_lang_meta = lang_meta
                 else:
-                    raise Exception(f'Invalid header language meta: {lang_meta}')
+                    raise Exception(f'Invalid header language meta: {lang_meta}. Available values: {ALL_LANGS_META.values()}')
+     
+                log_info(f'Detected language meta "{self.header_lang_meta}" based on file header')
+
             elif comment.startswith(';idspace='):
                 try:
-                    self.header_id_space = int(comment[9:])
+                    self.header_mod_id_space = int(comment[9:])
                 except ValueError:
                     raise Exception('Failed to parse id space value into a number')
                 
-                if self.header_id_space not in range(0, 10000):
+                if self.header_mod_id_space not in range(0, 10000):
                     raise Exception('Id space value falls out of 0-9999 range')
+                
+                log_info(f'Detected id space {self.header_mod_id_space} in the header. It will be used to complete abbreviated entries')
 
 
     def read_content(self, file_lines: list[str]):
@@ -159,7 +182,7 @@ class CsvInputDocument:
         if len(duplicate_ids) > 1:
             raise Exception(f'There are multiple entries with the same id: {duplicate_ids}')
 
-        if self.header_id_space is None and any(entry.is_abbreviated() for entry in self.entries):
+        if self.header_mod_id_space is None and any(entry.is_abbreviated() for entry in self.entries):
             raise Exception('No id space was provided in the header to complete abbreviated entries')
         
         self.read_content_id_space()
@@ -169,21 +192,21 @@ class CsvInputDocument:
         id_spaces = set[IdSpace | None](map(lambda entry: entry.id_space(), self.entries))
         self.has_vanilla_entries = "vanilla" in id_spaces
 
-        mod_id_spaces = set[int]()
-        for id_space in id_spaces:
-            if isinstance(id_space, int):
-                mod_id_spaces.add(id_space)
+        if self.has_vanilla_entries:
+            log_warning('Detected vanilla strings')
 
+        mod_id_spaces = set([id_space for id_space in id_spaces if isinstance(id_space, int)])
         if len(mod_id_spaces) == 0:
-            self.content_id_space = None
+            self.content_mod_id_space = None
         elif len(mod_id_spaces) == 1:
-            self.content_id_space = mod_id_spaces.pop()
+            self.content_mod_id_space = mod_id_spaces.pop()
+            log_info(f'Detected mod id space: {self.content_mod_id_space}')
 
-            if self.header_id_space is not None:
-                if self.header_id_space != self.content_id_space:
-                    raise Exception(f'Id space in the header ({self.header_id_space}) and id space used in the entries ({self.content_id_space}) are not the same')
+            if self.header_mod_id_space is not None:
+                if self.header_mod_id_space != self.content_mod_id_space:
+                    raise Exception(f'Id space in the header ({self.header_mod_id_space}) and id space used in the entries ({self.content_mod_id_space}) are not the same')
                 else:
-                    print('[Warning] Using complete and abbreviated entries in one file may cause undefined behaviour. Please settle for one or the other')
+                    log_warning('Using complete and abbreviated entries in one file may cause ID overlap. Please settle for one or the other')
         else:
             raise Exception(f'There are entries for multiple mod id spaces: {mod_id_spaces}')
 
@@ -237,7 +260,7 @@ class CsvOutputDocument:
 
 
 
-def prepare_output_entry(input_entry: CsvInputEntry, fallback_id: int | None) -> tuple[CsvOutputEntry, bool]:
+def prepare_output_entry(input_entry: CsvInputEntry, fallback_id: int | None = None) -> tuple[CsvOutputEntry, bool]:
     id: int
     used_fallback: bool
     if input_entry.id is not None:
@@ -261,8 +284,14 @@ def prepare_output_entry(input_entry: CsvInputEntry, fallback_id: int | None) ->
 
 def prepare_output_csv(input: CsvInputDocument) -> CsvOutputDocument:
     # default to english language meta if it wasn't deduced during parsing
-    header_lang_meta = input.header_lang_meta or 'en'
-    id_space = input.header_id_space or input.content_id_space
+    header_lang_meta: str
+    if input.header_lang_meta is not None:
+        header_lang_meta = input.header_lang_meta
+    else:
+        header_lang_meta = 'en'
+        log_info('No language meta could be deduced. Defaulting to "en"')
+
+    id_space = input.header_mod_id_space or input.content_mod_id_space
 
     output_entries = list[CsvOutputEntry]()
     if id_space is not None:
@@ -274,7 +303,7 @@ def prepare_output_csv(input: CsvInputDocument) -> CsvOutputDocument:
                 id_counter += 1
     else:
         for entry in input.entries:
-            output_entry, _ = prepare_output_entry(entry, None)
+            output_entry, _ = prepare_output_entry(entry)
             output_entries.append(output_entry)
 
     return CsvOutputDocument(
@@ -301,9 +330,9 @@ def encode(csv_path: str, lang: str | None, keep_csv: bool):
 
     cmd = f'{ENCODER} -e {csv_path} '
     if output_doc.id_space is None:
-        force_opt = '--force-ignore-id-space-check-i-know-what-i-am-doing'
-        print(f'[Warning] Detected vanilla IDs in the file, using "{force_opt}" option to disable ID check in the encoder')
-        cmd += force_opt
+        force_flag = '--force-ignore-id-space-check-i-know-what-i-am-doing'
+        log_warning(f'Detected vanilla IDs in the file, using "{force_flag}" option to disable ID check in the encoder')
+        cmd += force_flag
     else:
         cmd += f'-i {output_doc.id_space}'
 
@@ -344,7 +373,7 @@ def main(argv: list[str]):
     elif not os.path.isfile(file_path):
         raise Exception(f'Path does not describe a file: "{file_path}"')
 
-    opts, _ = getopt.getopt(argv[2:], 'hl:k', ['help', 'lang=', 'keep'])
+    opts, _ = getopt.getopt(argv[2:], 'hl:k', ['help', 'lang=', 'keep']) # TODO use argparse
     for opt, arg in opts:
         if opt in ('-l', '--lang'):
             lang = arg.lstrip(' =')
@@ -355,11 +384,18 @@ def main(argv: list[str]):
     if ext == '.w3strings':
         decode(file_path)
     elif ext == '.csv':
-        encode(file_path, lang, keep_output_csv)
+        try:
+            encode(file_path, lang, keep_output_csv)
+        except Exception as e:
+            raise Exception(f'File encoding error:\n{e}')
     else:
         raise Exception(f'Unsupported file type: "{ext}"')
 
 
 
 if __name__ == '__main__':
-    main(sys.argv)
+    try:
+        main(sys.argv)
+    except Exception as e:
+        log_error(f'{e}')
+        sys.exit(-1)
