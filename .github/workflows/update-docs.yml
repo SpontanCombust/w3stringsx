@@ -21,7 +21,7 @@ jobs:
       - name: CLI specification
         run: |
           echo  '```' > "./doc/cli_specification.md"
-          python ./src/w3stringsx.py -h >> "./doc/cli_specification.md"
+          python "./src/w3stringsx.py" -h >> "./doc/cli_specification.md"
           echo  '```' >> "./doc/cli_specification.md"
       - name: Check for changes in the project
         id: get_changes
