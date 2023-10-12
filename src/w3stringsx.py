@@ -20,7 +20,7 @@ ALL_LANGS_META: dict[str, str] = {
     'de':   'de',
     'en':   'en',
     'es':   'es',
-    'esMX': 'cleartext',
+    'esmx': 'cleartext',
     'fr':   'fr',
     'hu':   'hu',
     'it':   'it',
@@ -376,7 +376,7 @@ def prepare_output_csv(input: CsvInputDocument) -> CsvOutputDocument:
 class CLIArguments:
     input_file: str
     output_dir: str | None
-    target_lang: str  # one of ALL_LANGS or 'all'
+    lang: str  # one of ALL_LANGS or 'all'
     keep_csv: bool
 
 def make_cli() -> CLIArguments:
@@ -386,21 +386,21 @@ def make_cli() -> CLIArguments:
     )
 
     parser.add_argument(
-        'INPUT_FILE',
+        'input_file',
         help='path to either .csv file (to encode) or .w3strings (to decode)',
-        dest='input_file', action='store'
+        action='store'
     )
 
     parser.add_argument(
-        '-o', '--output',
+        '-o', '--output_dir',
         help='output directory for resulting files [default is input file\'s directory]',
-        dest='output_dir', action='store')
+        action='store')
     
     parser.add_argument(
         '-l', '--language', 
-        help='set the target encoding language, "all" will generate w3strings files for all languages',
-        choices=ALL_LANGS + ['all'], default='all',
-        dest='target_lang', action='store')
+        help=f'set the target encoding language, "all" will generate all possible variants; available: {ALL_LANGS + ["all"]}',
+        default='all',
+        dest='lang', action='store')
 
     parser.add_argument(
         '-k', '--keep-csv',
@@ -412,7 +412,7 @@ def make_cli() -> CLIArguments:
     cli = CLIArguments()
     cli.input_file = str(args.input_file)
     cli.output_dir = str(args.output_dir) if args.output_dir is not None else None 
-    cli.target_lang = args.target_lang
+    cli.lang = args.lang
     cli.keep_csv = bool(args.keep_csv) or False
 
     return cli
