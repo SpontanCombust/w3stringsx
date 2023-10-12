@@ -1,0 +1,35 @@
+name: update-docs
+
+on:
+  push:
+    branches: '*'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  update-docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11' 
+      - name: CLI specification
+        run: |
+          echo  '```' > "./doc/cli_specification.md"
+          python ./src/w3stringsx.py -h >> "./doc/cli_specification.md"
+          echo  '```' >> "./doc/cli_specification.md"
+      - name: Check for changes in the project
+        id: get_changes
+        run: echo "changed=$(git status --porcelain | wc -l)" >> $GITHUB_OUTPUT
+      - name: Committing changes if there are any
+        if: steps.get_changes.outputs.changed != 0
+        uses: EndBug/add-and-commit@v7
+        with:
+          message: "Update docs"
+          default_author: github_actions
+    
