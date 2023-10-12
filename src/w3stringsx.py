@@ -1,5 +1,6 @@
 '''Helper script that automates the process of working with w3strings encoder'''
 
+from __future__ import annotations
 import getopt
 import io
 import os
@@ -51,47 +52,76 @@ if not os.path.exists(ENCODER):
 
 
 
-IdSpace = int | Literal["vanilla"]
-
-'''Content line from the input CSV document, it can have id and key_hex columns omitted'''
-class CsvInputEntry:
-    id: int | None
-    key_hex: str | None
+class CsvAbbreviatedEntry:
     key_str: str
     text: str
 
-    def __init__(self, s: str):
-        split = s.split('|')
-        size = len(split)
-        if size == 2:
-            self.id = None
-            self.key_hex = None
-            self.key_str = split[0]
-            self.text = split[1]
-        elif size == 4:
-            id: int
-            try:
-                id = int(split[0])
-            except ValueError:
-                raise Exception('Failed to parse id column to a number')
+    def __init__(self, key_str: str, text: str):
+        self.key_str = key_str
+        self.text = text
 
-            self.id = id
-            self.key_hex = split[1]
-            self.key_str = split[2]
-            self.text = split[3]
-        else:
-            raise Exception(f'Invalid column count. Expected 2 or 4, got {len(split)}')
+    def into_complete(self, id: int, key_hex: str) -> CsvCompleteEntry:
+        return CsvCompleteEntry(
+            id,
+            key_hex,
+            self.key_str,
+            self.text
+        )
 
-    def is_abbreviated(self) -> bool:
-        return self.id is None
 
-    def id_space(self) -> IdSpace | None:
-        if self.id is None:
-            return None
-        elif self.id not in MOD_ID_RANGE:
+
+IdSpace = int | Literal["vanilla"]
+
+class CsvCompleteEntry:
+    id: int
+    key_hex: str
+    key_str: str
+    text: str
+
+    def __init__(self, id: int, key_hex: str, key_str: str, text: str) -> None:
+        self.id = id
+        self.key_hex = key_hex
+        self.key_str = key_str
+        self.text = text
+
+    def __str__(self) -> str:
+        return '|'.join([
+            str(self.id).rjust(10, ' '),
+            self.key_hex,
+            self.key_str,
+            self.text
+        ])
+    
+        
+    def id_space(self) -> IdSpace:
+        if self.id not in MOD_ID_RANGE:
             return "vanilla"
         else:
             return (self.id % 2110000000) // 1000
+        
+
+def parse_entry(s: str) -> CsvAbbreviatedEntry | CsvCompleteEntry:
+    split = s.split('|')
+    if len(split) == 2:
+        return CsvAbbreviatedEntry(
+            split[0], 
+            split[1]
+        )
+    elif len(split) == 4:
+        id: int
+        try:
+            id = int(split[0])
+        except ValueError:
+            raise Exception('Failed to parse id column to a number')
+
+        return CsvCompleteEntry(
+            id,
+            split[1],
+            split[2],
+            split[3]
+        )
+    else:
+        raise Exception(f'Invalid column count. Expected 2 or 4, got {len(split)}')
 
 
 '''Input form of the document that can have features such as skipped header or abbreviated entries that will be converted into output document'''
@@ -99,7 +129,8 @@ class CsvInputDocument:
     target_lang: str | None
     header_lang_meta: str | None
     header_mod_id_space: int | None  # id space from a custom attribute in the header
-    entries: list[CsvInputEntry]
+    entries_abbrev: list[CsvAbbreviatedEntry]
+    entries_complete: list[CsvCompleteEntry]
     content_mod_id_space: int | None  # id space deduced from id column in entries; None if there are only vanilla Ids and/or abbreviated entries
     has_vanilla_entries: bool
 
@@ -129,7 +160,7 @@ class CsvInputDocument:
         for part in basename_parts:
             if part in ALL_LANGS:
                 self.target_lang = part
-                log_info(f'Detected target language: {self.target_lang}')
+                log_info(f'Detected target language in file name: {self.target_lang}')
                 break
 
 
@@ -164,32 +195,41 @@ class CsvInputDocument:
                 
                 log_info(f'Detected id space {self.header_mod_id_space} in the header. It will be used to complete abbreviated entries')
 
+        if self.target_lang is None and self.header_lang_meta not in (None, 'cleartext'):
+            # if it's not cleartext, it's the same as the proper file name
+            log_info(f'Detected target language based on language meta: {self.target_lang}')
+            self.target_lang = self.header_lang_meta
+
+
 
     def read_content(self, file_lines: list[str]):
         for i, line in enumerate(file_lines):
             if not line.startswith(';'):
                 try:
-                    input_entry = CsvInputEntry(line)
-                    self.entries.append(input_entry)
+                    entry = parse_entry(line)
+                    if isinstance(entry, CsvAbbreviatedEntry):
+                        self.entries_abbrev.append(entry)
+                    else:
+                        self.entries_complete.append(entry)
                 except Exception as e:
                     raise Exception(f'Failed to read line {i}:\n{e}')
 
-        if len(self.entries) == 0:
+        if len(self.entries_abbrev) + len(self.entries_complete) == 0:
             raise Exception('File has no data to encode')
         
-        all_ids = [entry.id for entry in self.entries if entry.id is not None]
+        all_ids = [entry.id for entry in self.entries_complete]
         duplicate_ids = [id for id in all_ids if all_ids.count(id) > 1]
         if len(duplicate_ids) > 1:
             raise Exception(f'There are multiple entries with the same id: {duplicate_ids}')
 
-        if self.header_mod_id_space is None and any(entry.is_abbreviated() for entry in self.entries):
+        if self.header_mod_id_space is None and len(self.entries_abbrev) > 0:
             raise Exception('No id space was provided in the header to complete abbreviated entries')
         
         self.read_content_id_space()
         
 
     def read_content_id_space(self):
-        id_spaces = set[IdSpace | None](map(lambda entry: entry.id_space(), self.entries))
+        id_spaces = set[IdSpace]([entry.id_space() for entry in self.entries_complete])
         self.has_vanilla_entries = "vanilla" in id_spaces
 
         if self.has_vanilla_entries:
@@ -211,35 +251,14 @@ class CsvInputDocument:
             raise Exception(f'There are entries for multiple mod id spaces: {mod_id_spaces}')
 
 
-'''CSV content line in a form prepared for encoding'''
-class CsvOutputEntry:
-    id: int
-    key_hex: str
-    key_str: str
-    text: str
-
-    def __init__(self, id: int, key_hex: str, key_str: str, text: str) -> None:
-        self.id = id
-        self.key_hex = key_hex
-        self.key_str = key_str
-        self.text = text
-
-    def __str__(self) -> str:
-        return '|'.join([
-            str(self.id).rjust(10, ' '),
-            self.key_hex.rjust(8, '0'),
-            self.key_str,
-            self.text
-        ])
-
 
 '''Processed form of the document that will be forwarded to w3strings for encoding'''
 class CsvOutputDocument:
     header_lang_meta: str
-    entries: list[CsvOutputEntry]
+    entries: list[CsvCompleteEntry]
     id_space: int | None # None means there are non-mod ids in the file and id check has to be force-disabled
 
-    def __init__(self, header_lang_meta: str, entries: list[CsvOutputEntry], id_space: int | None):
+    def __init__(self, header_lang_meta: str, entries: list[CsvCompleteEntry], id_space: int | None):
         self.header_lang_meta = header_lang_meta
         self.entries = entries
         self.id_space = id_space
@@ -259,29 +278,6 @@ class CsvOutputDocument:
             file.write(output_str)
 
 
-
-def prepare_output_entry(input_entry: CsvInputEntry, fallback_id: int | None = None) -> tuple[CsvOutputEntry, bool]:
-    id: int
-    used_fallback: bool
-    if input_entry.id is not None:
-        id = input_entry.id
-        used_fallback = False
-    elif fallback_id is not None:
-        id = fallback_id
-        used_fallback = True
-    else:
-        raise Exception('No line id provided')
-    
-    entry = CsvOutputEntry(
-        id,
-        input_entry.key_hex or '00000000',
-        input_entry.key_str,
-        input_entry.text
-    )
-
-    return (entry, used_fallback)
-
-
 def prepare_output_csv(input: CsvInputDocument) -> CsvOutputDocument:
     # default to english language meta if it wasn't deduced during parsing
     header_lang_meta: str
@@ -293,18 +289,17 @@ def prepare_output_csv(input: CsvInputDocument) -> CsvOutputDocument:
 
     id_space = input.header_mod_id_space or input.content_mod_id_space
 
-    output_entries = list[CsvOutputEntry]()
-    if id_space is not None:
+    output_entries = list[CsvCompleteEntry]()
+
+    if id_space is not None and len(input.entries_abbrev) > 0:
         id_counter = MOD_ID_RANGE.start + id_space
-        for entry in input.entries:
-            output_entry, entry_was_abbreviated = prepare_output_entry(entry, id_counter)
-            output_entries.append(output_entry)
-            if entry_was_abbreviated:
-                id_counter += 1
-    else:
-        for entry in input.entries:
-            output_entry, _ = prepare_output_entry(entry)
-            output_entries.append(output_entry)
+        for entry in input.entries_abbrev:
+            complete = entry.into_complete(id_counter, '')
+            output_entries.append(complete)
+            id_counter += 1
+            
+    for entry in input.entries_complete:
+        output_entries.append(entry)
 
     return CsvOutputDocument(
         header_lang_meta,
@@ -331,7 +326,7 @@ def encode(csv_path: str, lang: str | None, keep_csv: bool):
     cmd = f'{ENCODER} -e {csv_path} '
     if output_doc.id_space is None:
         force_flag = '--force-ignore-id-space-check-i-know-what-i-am-doing'
-        log_warning(f'Detected vanilla IDs in the file, using "{force_flag}" option to disable ID check in the encoder')
+        log_warning(f'Detected non-mod IDs in the file, using "{force_flag}" option to disable ID check in the encoder')
         cmd += force_flag
     else:
         cmd += f'-i {output_doc.id_space}'
