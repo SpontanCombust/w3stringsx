@@ -1,12 +1,15 @@
-'''Helper script that automates the process of working with w3strings encoder'''
-
 from __future__ import annotations
-import getopt
+import argparse
 import io
 import os
+import subprocess
 import sys
 from typing import Literal
 
+
+###############################################################################################################################
+# CONSTANTS
+###############################################################################################################################
 
 ALL_LANGS: list[str] = ['an', 'br', 'cn', 'cz', 'de', 'en', 'es', 'esmx', 'fr', 'hu', 'it', 'jp', 'kr', 'pl', 'ru', 'tr', 'zh']
 ALL_LANGS_META: dict[str, str] = {
@@ -32,6 +35,11 @@ ALL_LANGS_META: dict[str, str] = {
 MOD_ID_RANGE: range = range(2110000000, 2120000000)
 
 
+
+###############################################################################################################################
+# UTILITIES
+###############################################################################################################################
+
 def log_info(s: str):
     print(f'[Info] {s}')
 
@@ -44,13 +52,62 @@ def log_error(s: str):
     print(f'{COLOR_ERROR}[Error] {s}')
 
 
-# TODO turn into class
-ENCODER = os.path.join(os.path.split(__file__)[0], 'w3strings.exe')
-if not os.path.exists(ENCODER):
-    log_error('Encoder not found! Make sure to place the script in the same directory as the encoder')
-    sys.exit(-1)
+
+###############################################################################################################################
+# ENCODER
+###############################################################################################################################
+
+class W3StringsEncoder:
+    exe_path: str
+
+    def __init__(self):
+        # check script's folder
+        self.exe_path = os.path.join(os.path.split(__file__)[0], 'w3strings.exe')
+
+        if not os.path.exists(self.exe_path):
+            raise Exception('Encoder not found! Make sure to place the script in the same directory as the encoder')
+    
+    def execute(self, cmd: str):
+        cmd = f'{self.exe_path} {cmd}'
+        print('Executing command:')
+        print(cmd)
+
+        try:
+            print('=' * 100)
+            subprocess.run(cmd, shell=True, check=True, capture_output=True)
+            print('=' * 100)
+        except Exception:
+            raise Exception('Process exited with an error')
 
 
+    def decode(self, w3strings_path: str) -> str:
+        self.execute(f'-d {w3strings_path}')
+        return w3strings_path + '.csv' 
+
+    def encode(self, csv_path: str, id_space: int | None):
+        cmd = f'-e {csv_path} '
+        if id_space is None:
+            DISABLE_ID_CHECK_FLAG = '--force-ignore-id-space-check-i-know-what-i-am-doing'
+            log_warning(f'Disabling ID check in the encoder, because of non mod IDs existing in the file')
+            cmd += DISABLE_ID_CHECK_FLAG
+        else:
+            cmd += f'-i {id_space}'
+        self.execute(cmd)
+
+        w3strings_path = csv_path + '.w3strings'
+        ws_path = csv_path + '.ws'
+
+        if os.path.exists(ws_path):
+            log_info(f'Removing {ws_path}')
+            os.remove(ws_path)
+
+        return w3strings_path
+
+
+
+###############################################################################################################################
+# CSV FILE PARSING
+###############################################################################################################################
 
 class CsvAbbreviatedEntry:
     key_str: str
@@ -67,7 +124,6 @@ class CsvAbbreviatedEntry:
             self.key_str,
             self.text
         )
-
 
 
 IdSpace = int | Literal["vanilla"]
@@ -251,17 +307,18 @@ class CsvInputDocument:
             raise Exception(f'There are entries for multiple mod id spaces: {mod_id_spaces}')
 
 
-
 '''Processed form of the document that will be forwarded to w3strings for encoding'''
 class CsvOutputDocument:
+    target_lang: str
     header_lang_meta: str
     entries: list[CsvCompleteEntry]
     id_space: int | None # None means there are non-mod ids in the file and id check has to be force-disabled
 
-    def __init__(self, header_lang_meta: str, entries: list[CsvCompleteEntry], id_space: int | None):
+    def __init__(self, target_lang: str, header_lang_meta: str, id_space: int | None, entries: list[CsvCompleteEntry]):
+        self.target_lang = target_lang
         self.header_lang_meta = header_lang_meta
-        self.entries = entries
         self.id_space = id_space
+        self.entries = entries
 
     def __str__(self) -> str:
         file_lines: list[str] = []
@@ -287,6 +344,7 @@ def prepare_output_csv(input: CsvInputDocument) -> CsvOutputDocument:
         header_lang_meta = 'en'
         log_info('No language meta could be deduced. Defaulting to "en"')
 
+    target_lang = input.target_lang or 'en'
     id_space = input.header_mod_id_space or input.content_mod_id_space
 
     output_entries = list[CsvCompleteEntry]()
@@ -302,95 +360,112 @@ def prepare_output_csv(input: CsvInputDocument) -> CsvOutputDocument:
         output_entries.append(entry)
 
     return CsvOutputDocument(
+        target_lang,
         header_lang_meta,
+        id_space,
         output_entries,
-        id_space
     )
 
 
 
-def decode(w3strings_path: str):
-    cmd = f'{ENCODER} -d {w3strings_path}'
-    print(cmd)
-    os.system(cmd)
+
+###############################################################################################################################
+# CLI
+###############################################################################################################################
+
+class CLIArguments:
+    input_file: str
+    output_dir: str | None
+    target_lang: str  # one of ALL_LANGS or 'all'
+    keep_csv: bool
+
+def make_cli() -> CLIArguments:
+    parser = argparse.ArgumentParser(
+        description='Script meant to provide an alternative CLI frontend for w3strings encoder \
+                    to make it simpler and faster to work with localized Witcher 3 content'
+    )
+
+    parser.add_argument(
+        'INPUT_FILE',
+        help='path to either .csv file (to encode) or .w3strings (to decode)',
+        dest='input_file', action='store'
+    )
+
+    parser.add_argument(
+        '-o', '--output',
+        help='output directory for resulting files [default is input file\'s directory]',
+        dest='output_dir', action='store')
+    
+    parser.add_argument(
+        '-l', '--language', 
+        help='set the target encoding language, "all" will generate w3strings files for all languages',
+        choices=ALL_LANGS + ['all'], default='all',
+        dest='target_lang', action='store')
+
+    parser.add_argument(
+        '-k', '--keep-csv',
+        help='keep the final form of the CSV file generated during preperation for encoding',
+        dest='keep_csv', action='store_true')
+    
+    args = parser.parse_args()
+
+    cli = CLIArguments()
+    cli.input_file = str(args.input_file)
+    cli.output_dir = str(args.output_dir) if args.output_dir is not None else None 
+    cli.target_lang = args.target_lang
+    cli.keep_csv = bool(args.keep_csv) or False
+
+    return cli
 
 
-def encode(csv_path: str, lang: str | None, keep_csv: bool):
-    if lang is not None and lang not in ALL_LANGS and lang != 'all':
-        raise Exception(f'Language {lang} is invalid')
 
-    input_doc = CsvInputDocument(csv_path)
-    output_doc = prepare_output_csv(input_doc)
-    output_doc.save_to_file('tmp.w3stringsx.csv') # FIXME temporary
+###############################################################################################################################
+# MAIN
+###############################################################################################################################
 
-    cmd = f'{ENCODER} -e {csv_path} '
-    if output_doc.id_space is None:
-        force_flag = '--force-ignore-id-space-check-i-know-what-i-am-doing'
-        log_warning(f'Detected non-mod IDs in the file, using "{force_flag}" option to disable ID check in the encoder')
-        cmd += force_flag
-    else:
-        cmd += f'-i {output_doc.id_space}'
+def main():
+    args = make_cli()
+    encoder = W3StringsEncoder()
+    
+    if not os.path.exists(args.input_file):
+        raise Exception(f'File does not exist: "{args.input_file}"')
+    elif not os.path.isfile(args.input_file):
+        raise Exception(f'Path does not describe a file: "{args.input_file}"')
 
-    print(cmd)
-    os.system(cmd)
-    # TODO remove garbage
-
-
-def print_help():
-    print('Helper script that automates the process of working with w3strings encoder')
-    print()
-    print('USAGE:')
-    print('\tpython w3stringsx.py [OPTIONS] <INPUT_FILE>')
-    print()
-    print('ARGS:')
-    print('\t<INPUT_FILE>   - path to either .csv file (to encode) or .w3strings (to decode)')
-    print()
-    print('OPTIONS:')
-    print('\t-h, --help     - print help')
-    print('\t-l, --lang     - set the target encoding language, "all" will generate w3strings files for all languages; by default deduced from the CSV file')
-    print('\t-k, --keep     - keep end result CSV')
-
-
-def main(argv: list[str]):
-    if len(argv) < 2:
-        raise Exception('No input arguments provided')
-
-    if argv[1] in ('-h', '--help'):
-        print_help()
-        return
-
-    file_path = argv[1]
-    lang = None
-    keep_output_csv = False
-
-    if not os.path.exists(file_path):
-        raise Exception(f'Path does not exist: "{file_path}"')
-    elif not os.path.isfile(file_path):
-        raise Exception(f'Path does not describe a file: "{file_path}"')
-
-    opts, _ = getopt.getopt(argv[2:], 'hl:k', ['help', 'lang=', 'keep']) # TODO use argparse
-    for opt, arg in opts:
-        if opt in ('-l', '--lang'):
-            lang = arg.lstrip(' =')
-        if opt in ('-k', '--keep'):
-            keep_output_csv = True
-
-    _, ext = os.path.splitext(file_path)
-    if ext == '.w3strings':
-        decode(file_path)
-    elif ext == '.csv':
-        try:
-            encode(file_path, lang, keep_output_csv)
-        except Exception as e:
-            raise Exception(f'File encoding error:\n{e}')
-    else:
+    _, ext = os.path.splitext(args.input_file)
+    if ext not in ('.w3strings', '.csv'):
         raise Exception(f'Unsupported file type: "{ext}"')
 
+    match ext:
+        case '.w3strings':
+            w3strings_context(encoder, args)
+        case '.csv':
+            csv_context(encoder, args)
+
+
+def w3strings_context(encoder: W3StringsEncoder, args: CLIArguments):
+    encoder.decode(args.input_file)
+    # TODO handle output_dir
+
+# TODO complete
+def csv_context(encoder: W3StringsEncoder, args: CLIArguments):   
+    input_doc = CsvInputDocument(args.input_file)
+    output_doc = prepare_output_csv(input_doc)
+
+    # TODO handle output_dir
+    output_file = f'tmp.w3stringsx.csv'
+    output_doc.save_to_file(output_file)
+
+    try:
+        w3strings_file = encoder.encode(output_file, output_doc.id_space)
+    finally:
+        if not args.keep_csv:
+            os.remove(output_file)
 
 
 if __name__ == '__main__':
     try:
-        main(sys.argv)
+        main()
     except Exception as e:
         log_error(f'{e}')
         sys.exit(-1)
