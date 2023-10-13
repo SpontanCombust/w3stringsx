@@ -2,6 +2,7 @@ from __future__ import annotations
 import argparse
 import io
 import os
+import shutil
 import subprocess
 import sys
 from typing import Literal
@@ -10,6 +11,8 @@ from typing import Literal
 ###############################################################################################################################
 # CONSTANTS
 ###############################################################################################################################
+
+W3STRINGSX_VERSION = '1.0.0'
 
 ALL_LANGS: list[str] = ['an', 'br', 'cn', 'cz', 'de', 'en', 'es', 'esmx', 'fr', 'hu', 'it', 'jp', 'kr', 'pl', 'ru', 'tr', 'zh']
 ALL_LANGS_META: dict[str, str] = {
@@ -62,40 +65,55 @@ class W3StringsEncoder:
 
     def __init__(self):
         # check script's folder
-        self.exe_path = os.path.join(os.path.split(__file__)[0], 'w3strings.exe')
-
+        self.exe_path = os.path.join(os.path.dirname(__file__), 'w3strings.exe')
+        
         if not os.path.exists(self.exe_path):
-            raise Exception('Encoder not found! Make sure to place the script in the same directory as the encoder')
-    
+            # check PATH
+            for path in os.environ["PATH"].split(';'):
+                encoder_path = os.path.join(path, 'w3strings.exe')
+                if os.path.exists(encoder_path):
+                    self.exe_path = encoder_path
+                    break
+
+        if os.path.exists(self.exe_path):
+            log_info(f'Found w3strings encoder: {self.exe_path}')
+        else:
+            raise Exception('w3strings encoder couldn\'t be found')
+
+
     def execute(self, cmd: str):
         cmd = f'{self.exe_path} {cmd}'
         print('Executing command:')
         print(cmd)
 
         try:
-            print('=' * 100)
+            print('=' * 60)
             subprocess.run(cmd, shell=True, check=True, capture_output=True)
-            print('=' * 100)
         except Exception:
             raise Exception('Process exited with an error')
+        finally:
+            print('=' * 60)
 
 
     def decode(self, w3strings_path: str) -> str:
+        log_info(f'Decoding {w3strings_path}...')
         self.execute(f'-d {w3strings_path}')
         return w3strings_path + '.csv' 
 
-    def encode(self, csv_path: str, id_space: int | None):
+    def encode(self, csv_path: str, id_space: int | None) -> str:
         cmd = f'-e {csv_path} '
         if id_space is None:
             DISABLE_ID_CHECK_FLAG = '--force-ignore-id-space-check-i-know-what-i-am-doing'
-            log_warning(f'Disabling ID check in the encoder, because of non mod IDs existing in the file')
+            log_warning(f'Disabling ID check in the encoder because of the existence of entries outside of a single mod ID range')
             cmd += DISABLE_ID_CHECK_FLAG
         else:
             cmd += f'-i {id_space}'
+
+        log_info(f'Encoding {csv_path}...')
         self.execute(cmd)
 
         w3strings_path = csv_path + '.w3strings'
-        ws_path = csv_path + '.ws'
+        ws_path = w3strings_path + '.ws'
 
         if os.path.exists(ws_path):
             log_info(f'Removing {ws_path}')
@@ -375,14 +393,16 @@ def prepare_output_csv(input: CsvInputDocument) -> CsvOutputDocument:
 
 class CLIArguments:
     input_file: str
-    output_dir: str | None
+    output_dir: str
     lang: str  # one of ALL_LANGS or 'all'
     keep_csv: bool
 
 def make_cli() -> CLIArguments:
     parser = argparse.ArgumentParser(
-        description='Script meant to provide an alternative CLI frontend for w3strings encoder \
-                    to make it simpler and faster to work with localized Witcher 3 content'
+        description=f'w3stringsx v{W3STRINGSX_VERSION}\n'
+                    'Script meant to provide an alternative CLI frontend for w3strings encoder '
+                    'to make it simpler and faster to create localized Witcher 3 content',
+        formatter_class=argparse.RawTextHelpFormatter
     )
 
     parser.add_argument(
@@ -411,12 +431,37 @@ def make_cli() -> CLIArguments:
 
     cli = CLIArguments()
     cli.input_file = str(args.input_file)
-    cli.output_dir = str(args.output_dir) if args.output_dir is not None else None 
-    cli.lang = args.lang
+    cli.output_dir = str(args.output_dir) if args.output_dir is not None else '' 
+    cli.lang = str(args.lang)
     cli.keep_csv = bool(args.keep_csv) or False
 
     return cli
 
+
+def preprocess_cli_args(args: CLIArguments):
+    if not os.path.exists(args.input_file):
+        raise Exception(f'File does not exist: "{args.input_file}"')
+    elif not os.path.isfile(args.input_file):
+        raise Exception(f'Path does not describe a file: "{args.input_file}"')
+    
+    args.input_file = os.path.realpath(args.input_file)
+
+    if args.lang not in ALL_LANGS and args.lang != 'all':
+        raise Exception(f'Invalid value for the --language option: {args.lang}')
+    
+    if args.output_dir != '':
+        if not os.path.exists(args.output_dir):
+            log_warning('Specified output directory does not exist. Attempting to create one...')
+            try:
+                os.mkdir(args.output_dir)
+            except FileNotFoundError:
+                raise Exception('Unable to create output directory. The parent of this directory does not exist.')
+            log_warning(f'Directory {args.output_dir} created successfully')
+    else:
+        args.output_dir = os.path.dirname(args.input_file)
+        log_info(f'Ouput directory set to {args.output_dir}')
+
+    args.output_dir = os.path.realpath(args.output_dir)
 
 
 ###############################################################################################################################
@@ -426,41 +471,57 @@ def make_cli() -> CLIArguments:
 def main():
     args = make_cli()
     encoder = W3StringsEncoder()
-    
-    if not os.path.exists(args.input_file):
-        raise Exception(f'File does not exist: "{args.input_file}"')
-    elif not os.path.isfile(args.input_file):
-        raise Exception(f'Path does not describe a file: "{args.input_file}"')
 
+    preprocess_cli_args(args)
+    
     _, ext = os.path.splitext(args.input_file)
     if ext not in ('.w3strings', '.csv'):
         raise Exception(f'Unsupported file type: "{ext}"')
 
     match ext:
         case '.w3strings':
-            w3strings_context(encoder, args)
+            w3strings_context_work(encoder, args)
         case '.csv':
-            csv_context(encoder, args)
+            csv_context_work(encoder, args)
 
 
-def w3strings_context(encoder: W3StringsEncoder, args: CLIArguments):
-    encoder.decode(args.input_file)
-    # TODO handle output_dir
+def w3strings_context_work(encoder: W3StringsEncoder, args: CLIArguments):
+    csv_file = encoder.decode(args.input_file)
+    copied = os.path.join(args.output_dir, os.path.basename(csv_file))
 
-# TODO complete
-def csv_context(encoder: W3StringsEncoder, args: CLIArguments):   
+    shutil.copy(csv_file, copied)
+    os.remove(csv_file)
+
+    log_info(f'{args.input_file} has been successfully decoded into {copied}')
+
+
+def csv_context_work(encoder: W3StringsEncoder, args: CLIArguments):   
     input_doc = CsvInputDocument(args.input_file)
     output_doc = prepare_output_csv(input_doc)
 
-    # TODO handle output_dir
-    output_file = f'tmp.w3stringsx.csv'
+    output_file_basename = args.input_file[:-4] + '.w3stringsx.csv'
+    output_file = os.path.join(args.output_dir, output_file_basename)
+
+    log_info(f'Creating temporary file {output_file}')
     output_doc.save_to_file(output_file)
 
     try:
         w3strings_file = encoder.encode(output_file, output_doc.id_space)
+        if args.lang == 'all':
+            for lang in ALL_LANGS:
+                copied = os.path.join(args.output_dir, f'{lang}.w3strings')
+                shutil.copy(w3strings_file, copied)
+            os.remove(w3strings_file)
+        else:
+            copied = os.path.join(args.output_dir, f'{args.lang}.w3strings')
+            shutil.copy(w3strings_file, copied)
+            os.remove(w3strings_file)
+            
+        log_info(f'{args.input_file} has been successfully encoded into file(s) in {args.output_dir}')
     finally:
         if not args.keep_csv:
             os.remove(output_file)
+            log_info(f'Removing temporary file {output_file}')
 
 
 if __name__ == '__main__':
