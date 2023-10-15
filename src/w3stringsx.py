@@ -51,7 +51,7 @@ def log_info(s: str):
     print(f'[INFO] {s}')
 
 def log_warning(s: str):
-    print(f'{COLOR_WARN}[WARNING] {s}{COLOR_NONE}')
+    print(f'{COLOR_WARN}[WARN] {s}{COLOR_NONE}')
 
 def log_error(s: str):
     print(f'{COLOR_ERROR}[ERROR] {s}{COLOR_NONE}')
@@ -202,7 +202,11 @@ class CsvCompleteEntry:
             return (self.id % 2110000000) // 1000
         
 
-def parse_entry(s: str) -> CsvAbbreviatedEntry | CsvCompleteEntry:
+def parse_entry(s: str) -> CsvAbbreviatedEntry | CsvCompleteEntry | None:
+    s = s.strip()
+    if len(s) == 0:
+        return None
+
     split = s.strip().split('|')
     if len(split) == 2:
         return CsvAbbreviatedEntry(
@@ -313,7 +317,9 @@ class CsvInputDocument:
             if not line.startswith(';'):
                 try:
                     entry = parse_entry(line)
-                    if isinstance(entry, CsvAbbreviatedEntry):
+                    if entry is None:
+                        continue
+                    elif isinstance(entry, CsvAbbreviatedEntry):
                         self.entries_abbrev.append(entry)
                     else:
                         self.entries_complete.append(entry)
@@ -346,7 +352,7 @@ class CsvInputDocument:
             self.content_mod_id_space = None
         elif len(mod_id_spaces) == 1:
             self.content_mod_id_space = mod_id_spaces.pop()
-            log_info(f'Detected mod id space: {self.content_mod_id_space}')
+            log_warning(f'Detected mod id space: {self.content_mod_id_space}')
 
             if self.header_mod_id_space is not None:
                 if self.header_mod_id_space != self.content_mod_id_space:
@@ -395,12 +401,12 @@ def prepare_output_csv(input: CsvInputDocument) -> CsvOutputDocument:
         log_info('No language meta could be deduced. Defaulting to "en"')
 
     target_lang = input.target_lang or 'en'
-    id_space = input.header_mod_id_space or input.content_mod_id_space
+    id_space = None if input.has_vanilla_entries else (input.header_mod_id_space or input.content_mod_id_space)
 
     output_entries = list[CsvCompleteEntry]()
 
-    if id_space is not None and len(input.entries_abbrev) > 0:
-        id_counter = MOD_ID_RANGE.start + id_space
+    if input.header_mod_id_space is not None and len(input.entries_abbrev) > 0:
+        id_counter = MOD_ID_RANGE.start + input.header_mod_id_space * 1000
         for entry in input.entries_abbrev:
             complete = entry.into_complete(id_counter, '')
             output_entries.append(complete)
@@ -408,6 +414,8 @@ def prepare_output_csv(input: CsvInputDocument) -> CsvOutputDocument:
             
     for entry in input.entries_complete:
         output_entries.append(entry)
+
+    output_entries.sort(key=lambda entry: entry.id)
 
     return CsvOutputDocument(
         target_lang,
