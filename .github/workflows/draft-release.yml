@@ -19,8 +19,8 @@ jobs:
       with:
         type: 'zip'
         filename: "w3stringsx.zip"
-        directory: "./src/"
-        path: "w3stringsx.py"
+        path: "./src/w3stringsx.py"
+        custom: "-j" # don't preserve file structure, only take the file
     - name: Create draft release
       uses: ncipollo/release-action@v1
       with:
