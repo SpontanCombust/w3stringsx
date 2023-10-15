@@ -1,0 +1,24 @@
+; Comment lines still can be done using the semicolon ;
+; At the top of the file put a line that describes the ID space of file.
+; It will be used to complete abbreviated lines without ID column below.
+; Said ID by the convention should the the identifier of your mod on NexusMods, like so:
+; idspace=9001
+preset_value_motw_monster_ghoul|Ghoul
+preset_value_motw_monster_griffin|Griffin
+preset_value_motw_monster_wolf|Wolf
+preset_value_motw_monster_nekker|Nekker
+preset_value_motw_monster_leshen|Leshen
+preset_value_motw_monster_golem|Golem
+preset_value_motw_monster_wraith|Wraith
+; you can still put complete lines to, for example, translate vanilla strings
+    466292|c02c3cd2||Guard
+    350496|43078142||Warrior
+    302053|67827706||Temple Guard
+    392738|05dc6a8f||Ghost
+   1008713|00000000||Good day!
+   1008707|00000000||Regards.
+   1008705|00000000||A diabolist.
+   1008703|00000000||Just you wait.
+
+; after you're done run the script
+; python w3stringsx.py example1.en.csv -o .\output

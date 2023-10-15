@@ -5,7 +5,7 @@ Script meant as an alternative CLI frontend for w3strings encoder, providing add
 w3stringsx is able to work with the regular form of the CSV file. It is however capable of reading non-standard data, which is explained later in this document.
 
 ## How-To
-Put the script in the same folder as the w3strings encoder or anywhere if encoder's folder is contained in the PATH environment variable. Run commands on it using shell of your choice like cmd.exe.
+Put the encoder in the same folder as this script or somehere in the PATH environment variable. Run commands on the script using shell of your choice like cmd.exe.
 
 Requires [python](https://www.python.org/downloads/) in version >= 3.11 to be installed.
 Current CLI specification can be found [here](./doc/cli_specification.md).
