@@ -69,6 +69,7 @@ class ScratchFolder:
         input_folder, input_basename = os.path.split(input_file)
         self.folder_path = os.path.join(input_folder, '.tmp.w3stringsx')
         if not os.path.exists(self.folder_path):
+            log_info(f'Creating scratch folder {self.folder_path}')
             os.mkdir(self.folder_path)
 
         input_copy = os.path.join(self.folder_path, input_basename)
@@ -77,6 +78,7 @@ class ScratchFolder:
         self.input_copy_path = input_copy
 
     def __del__(self):
+        log_info(f'Removing scratch folder {self.folder_path}')
         shutil.rmtree(self.folder_path)
 
 
@@ -235,6 +237,7 @@ class CsvInputDocument:
     has_vanilla_entries: bool
 
     def __init__(self, file_path: str):
+        log_info(f'Reading {file_path}')
         with io.open(file_path, mode='r', encoding='UTF-8') as file:
             self.read_target_lang(file_path)
 
@@ -254,7 +257,7 @@ class CsvInputDocument:
     def read_target_lang(self, file_path: str):
         self.target_lang = None
 
-        basename = os.path.basename(file_path)[1]
+        basename = os.path.basename(file_path)
         basename_parts = basename.split('.')[:-1] # without the extension
 
         for part in basename_parts:
@@ -511,51 +514,46 @@ def main():
 
     match ext:
         case '.w3strings':
-            w3strings_context_work(encoder, scratch.input_copy_path, args)
+            w3strings_context_work(encoder, scratch, args)
         case '.csv':
-            csv_context_work(encoder, scratch.input_copy_path, args)
+            csv_context_work(encoder, scratch, args)
 
     del scratch
 
 
-def w3strings_context_work(encoder: W3StringsEncoder, input_scratch: str, args: CLIArguments):
-    csv_file = encoder.decode(input_scratch)
-    copied = os.path.join(args.output_dir, os.path.basename(csv_file))
+def w3strings_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, args: CLIArguments):
+    csv_file = encoder.decode(scratch.input_copy_path)
+    copied_basename = os.path.splitext(os.path.basename(scratch.input_copy_path))[0] + '.csv'
+    copied = os.path.join(args.output_dir, copied_basename)
 
     shutil.copy(csv_file, copied)
-    os.remove(csv_file)
 
-    log_info(f'{args.input_file} has been successfully decoded into {copied}')
+    log_info(f'{args.input_file} has been successfully decoded into csv file in {args.output_dir}')
 
 
-def csv_context_work(encoder: W3StringsEncoder, input_scratch: str, args: CLIArguments):   
-    input_doc = CsvInputDocument(input_scratch)
+def csv_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, args: CLIArguments):   
+    input_doc = CsvInputDocument(scratch.input_copy_path)
     output_doc = prepare_output_csv(input_doc)
 
-    output_file_basename = os.path.basename(input_scratch)[:-4] + '.w3stringsx.csv'
-    output_file = os.path.join(args.output_dir, output_file_basename)
+    output_file_basename = os.path.basename(scratch.input_copy_path)[:-4] + '.w3stringsx.csv'
+    output_file = os.path.join(scratch.folder_path, output_file_basename)
 
-    log_info(f'Creating temporary file {output_file}')
     output_doc.save_to_file(output_file)
 
     try:
         w3strings_file = encoder.encode(output_file, output_doc.id_space)
-        if args.lang == 'all':
-            for lang in ALL_LANGS:
-                copied = os.path.join(args.output_dir, f'{lang}.w3strings')
-                shutil.copy(w3strings_file, copied)
-            os.remove(w3strings_file)
-        else:
-            copied = os.path.join(args.output_dir, f'{args.lang}.w3strings')
+        langs = ALL_LANGS if args.lang == 'all' else [args.lang]
+        for lang in langs:
+            copied = os.path.join(args.output_dir, f'{lang}.w3strings')
+            log_info(f'Creating {copied}')
             shutil.copy(w3strings_file, copied)
-            os.remove(w3strings_file)
-            
-        log_info(f'{args.input_file} has been successfully encoded into file(s) in {args.output_dir}')
+  
     finally:
-        if not args.keep_csv:
-            os.remove(output_file)
-            log_info(f'Removing temporary file {output_file}')
+        if args.keep_csv:
+            log_info(f'Saving prepared {output_file_basename} to {args.output_dir}')
+            shutil.copy(output_file, args.output_dir)
 
+    log_info(f'{args.input_file} has been successfully encoded into w3strings file(s) in {args.output_dir}')
 
 if __name__ == '__main__':
     try:
