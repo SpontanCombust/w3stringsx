@@ -19,7 +19,8 @@ jobs:
       with:
         type: 'zip'
         filename: "w3stringsx.zip"
-        path: "./src/w3stringsx.py"
+        directory: "./src/"
+        path: "w3stringsx.py"
     - name: Create draft release
       uses: ncipollo/release-action@v1
       with:
