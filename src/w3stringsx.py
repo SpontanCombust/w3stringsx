@@ -43,17 +43,41 @@ MOD_ID_RANGE: range = range(2110000000, 2120000000)
 # UTILITIES
 ###############################################################################################################################
 
+COLOR_NONE = '\033[0m'
+COLOR_WARN = '\033[93m'
+COLOR_ERROR = '\033[91m'
+
 def log_info(s: str):
-    print(f'[Info] {s}')
+    print(f'[INFO] {s}')
 
 def log_warning(s: str):
-    COLOR_WARN = '\033[93m'
-    print(f'{COLOR_WARN}[Warning] {s}')
+    print(f'{COLOR_WARN}[WARNING] {s}{COLOR_NONE}')
 
 def log_error(s: str):
-    COLOR_ERROR = '\033[91m'
-    print(f'{COLOR_ERROR}[Error] {s}')
+    print(f'{COLOR_ERROR}[ERROR] {s}{COLOR_NONE}')
 
+
+# Because encoder ALWAYS puts output in the same directory as input before we are able to move it 
+# we first need to create a temporary folder in which we'll execute the commands
+# This way no files will be overwritten without user's consent
+class ScratchFolder:
+    input_copy_path: str
+    folder_path: str
+
+    # Returns path to input that was copied to scratch 
+    def __init__(self, input_file: str):
+        input_folder, input_basename = os.path.split(input_file)
+        self.folder_path = os.path.join(input_folder, '.tmp.w3stringsx')
+        if not os.path.exists(self.folder_path):
+            os.mkdir(self.folder_path)
+
+        input_copy = os.path.join(self.folder_path, input_basename)
+        shutil.copy(input_file, input_copy)
+        
+        self.input_copy_path = input_copy
+
+    def __del__(self):
+        shutil.rmtree(self.folder_path)
 
 
 ###############################################################################################################################
@@ -83,23 +107,25 @@ class W3StringsEncoder:
 
     def execute(self, cmd: str):
         cmd = f'{self.exe_path} {cmd}'
-        print('Executing command:')
-        print(cmd)
+
+        log_warning('Executing command:')
+        log_warning(cmd)
 
         try:
             print('=' * 60)
-            subprocess.run(cmd, shell=True, check=True, capture_output=True)
+            subprocess.run(cmd, shell=True, check=True)
         except Exception:
             raise Exception('Process exited with an error')
         finally:
             print('=' * 60)
 
-
+    # Returns the path to decoded file
     def decode(self, w3strings_path: str) -> str:
         log_info(f'Decoding {w3strings_path}...')
         self.execute(f'-d {w3strings_path}')
         return w3strings_path + '.csv' 
 
+    # Returns the path to encoded file
     def encode(self, csv_path: str, id_space: int | None) -> str:
         cmd = f'-e {csv_path} '
         if id_space is None:
@@ -175,7 +201,7 @@ class CsvCompleteEntry:
         
 
 def parse_entry(s: str) -> CsvAbbreviatedEntry | CsvCompleteEntry:
-    split = s.split('|')
+    split = s.strip().split('|')
     if len(split) == 2:
         return CsvAbbreviatedEntry(
             split[0], 
@@ -277,6 +303,9 @@ class CsvInputDocument:
 
 
     def read_content(self, file_lines: list[str]):
+        self.entries_abbrev = []
+        self.entries_complete = []
+
         for i, line in enumerate(file_lines):
             if not line.startswith(';'):
                 try:
@@ -477,16 +506,20 @@ def main():
     _, ext = os.path.splitext(args.input_file)
     if ext not in ('.w3strings', '.csv'):
         raise Exception(f'Unsupported file type: "{ext}"')
+    
+    scratch = ScratchFolder(args.input_file)
 
     match ext:
         case '.w3strings':
-            w3strings_context_work(encoder, args)
+            w3strings_context_work(encoder, scratch.input_copy_path, args)
         case '.csv':
-            csv_context_work(encoder, args)
+            csv_context_work(encoder, scratch.input_copy_path, args)
+
+    del scratch
 
 
-def w3strings_context_work(encoder: W3StringsEncoder, args: CLIArguments):
-    csv_file = encoder.decode(args.input_file)
+def w3strings_context_work(encoder: W3StringsEncoder, input_scratch: str, args: CLIArguments):
+    csv_file = encoder.decode(input_scratch)
     copied = os.path.join(args.output_dir, os.path.basename(csv_file))
 
     shutil.copy(csv_file, copied)
@@ -495,11 +528,11 @@ def w3strings_context_work(encoder: W3StringsEncoder, args: CLIArguments):
     log_info(f'{args.input_file} has been successfully decoded into {copied}')
 
 
-def csv_context_work(encoder: W3StringsEncoder, args: CLIArguments):   
-    input_doc = CsvInputDocument(args.input_file)
+def csv_context_work(encoder: W3StringsEncoder, input_scratch: str, args: CLIArguments):   
+    input_doc = CsvInputDocument(input_scratch)
     output_doc = prepare_output_csv(input_doc)
 
-    output_file_basename = args.input_file[:-4] + '.w3stringsx.csv'
+    output_file_basename = os.path.basename(input_scratch)[:-4] + '.w3stringsx.csv'
     output_file = os.path.join(args.output_dir, output_file_basename)
 
     log_info(f'Creating temporary file {output_file}')
