@@ -1,10 +1,12 @@
 # This file should be run from the root of this project
+# Put the encoder itself somewhere in the PATH so that w3stringsx can find it
 
 import hashlib
 import io
 import os
 import shutil
 import subprocess
+import sys
 import unittest
 
 def file_hash(file_path: str) -> str:
@@ -16,10 +18,41 @@ def file_hash(file_path: str) -> str:
 
 class TestW3Stringsx(unittest.TestCase):
     def test_decode_en(self):
-        self.run_case('case1')
+        self.run_case('decode_en')
 
     def test_decode_pl(self):
-        self.run_case('case2')
+        self.run_case('decode_pl')
+
+    def test_encode_en(self):
+        self.run_case('encode_en')
+
+    def test_encode_pl(self):
+        self.run_case('encode_pl')
+
+    def test_encode_only_pl(self):
+        self.run_case('encode_only_pl', "-l pl")
+
+    def test_encode_pl_no_header(self):
+        self.run_case('encode_pl_no_header', "-l pl")
+
+    def test_encode_pl_from_header(self):
+        self.run_case('encode_pl_from_header', "-l pl")
+
+    def test_encode_default_lang(self):
+        self.run_case('encode_default_lang')
+
+    def test_encode_abbreviated(self):
+        self.run_case('encode_abbreviated', '-l esmx')
+
+    def test_encode_keep_csv(self):
+        self.run_case('encode_keep_csv', '-l esmx -k')
+
+    def test_encode_vanilla(self):
+        self.run_case('encode_vanilla', '-l en')
+
+    def test_encode_mixed(self):
+        self.run_case('encode_mixed', '-l en -k')
+
 
 
 
@@ -34,7 +67,7 @@ class TestW3Stringsx(unittest.TestCase):
         try:
             subprocess.run(cmd, shell=True, check=True)
         except Exception as e:
-            print(e)
+            print(e, file=sys.stderr)
 
         try:
             self.assert_output(expected_dir, output_dir)

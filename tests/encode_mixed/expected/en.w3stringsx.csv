@@ -1,0 +1,28 @@
+;meta[language=en]
+;       id|key(hex)|key(str)|text
+    302053|67827706||Temple Guard
+    350496|43078142||Warrior
+    392738|05dc6a8f||Ghost
+    466292|c02c3cd2||Guard
+   1008703|00000000||Just you wait.
+   1008705|00000000||A diabolist.
+   1008707|00000000||Regards.
+   1008713|00000000||Good day!
+2119001000||preset_value_motw_monster_ghoul|Ghoul
+2119001001||preset_value_motw_monster_griffin|Griffin
+2119001002||preset_value_motw_monster_wolf|Wolf
+2119001003||preset_value_motw_monster_nekker|Nekker
+2119001004||preset_value_motw_monster_leshen|Leshen
+2119001005||preset_value_motw_monster_golem|Golem
+2119001006||preset_value_motw_monster_wraith|Wraith
+2119001100||panel_Mods|Mods
+2119001101||panel_monster_of_the_week|Monster of the week
+2119001102||panel_motw_difficulty|Difficulty
+2119001103||option_motw_no_mans_land|No Man's Land
+2119001104||option_motw_skellige|Skellige
+2119001105||option_motw_kaer_morhen|Kaer Morhen
+2119001106||option_motw_toussaint|Toussaint
+2119001107||preset_value_motw_difficulty_easy|Easy
+2119001108||preset_value_motw_difficulty_medium|Medium
+2119001109||preset_value_motw_difficulty_hard|Hard
+2119001110||panel_motw_monsters|Monsters
