@@ -2,7 +2,7 @@
 
 ---
 
-Script meant to be an alternative CLI frontend for w3strings encoder, providing additional functionalities to make working with localized Witcher 3 content easier and faster.
+Script that can be used as an alternative CLI frontend for w3strings encoder while also providing additional functionalities to make working with localized Witcher 3 content easier and faster.
 
 w3stringsx is able to work with the regular form of the CSV file. It is however also capable of reading non-standard data format, which is explained later in this document.
 
