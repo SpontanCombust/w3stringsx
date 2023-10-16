@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import sys
 from typing import Literal
+# from xml.etree import ElementTree
 
 
 ###############################################################################################################################
@@ -423,6 +424,60 @@ def prepare_output_csv(input: CsvInputDocument) -> CsvOutputDocument:
         id_space,
         output_entries,
     )
+
+
+
+
+###############################################################################################################################
+# XML FILE PARSING
+###############################################################################################################################
+
+XmlLocalisationTags = Literal["customDisplayName", "customNames"]
+
+class XmlNode:
+    display_name: str
+    custom_display_name: bool
+    custom_names: bool
+    child_nodes: list[XmlNode] = []
+
+    def loc_str_keys(self) -> set[str]:
+        return {self.display_name}
+    
+    def child_loc_str_keys(self) -> set[str]:
+        if len(self.child_nodes) == 0:
+            return set()
+        
+        sets = [node.loc_str_keys() for node in self.child_nodes]
+        keys = {val for subset in sets for val in subset} # flatten the list
+        return keys
+    
+    def all_loc_str_keys(self) -> set[str]:
+        this_keys = self.loc_str_keys()
+        child_keys = self.child_loc_str_keys()
+        return this_keys | child_keys
+
+
+class XmlGroupNode(XmlNode):
+    def loc_str_keys(self) -> set[str]:
+        components = self.display_name.split('.')
+        if self.custom_display_name:
+            return {f'panel_{dn}' for dn in components}
+        return set(components)
+
+
+class XmlVarNode(XmlNode):
+    def loc_str_keys(self) -> set[str]:
+        if self.custom_display_name:
+            return {f'option_{self.display_name}'}
+        return {self.display_name}
+
+
+class XmlOptionEntryNode(XmlNode):
+    def loc_str_keys(self) -> set[str]:
+        # custom_names will be inherited from the Var
+        if self.custom_names:
+            return {f"preset_value_{self.display_name}"}
+        return {self.display_name}
 
 
 
