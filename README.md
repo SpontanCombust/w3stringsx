@@ -1,4 +1,6 @@
-# w3stringsx
+<img src="doc/banner.png"/>
+
+---
 
 Script meant to be an alternative CLI frontend for w3strings encoder, providing additional functionalities to make working with localized Witcher 3 content easier and faster.
 
