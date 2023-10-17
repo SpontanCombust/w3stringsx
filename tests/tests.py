@@ -53,13 +53,11 @@ class TestW3Stringsx(unittest.TestCase):
     def test_encode_mixed(self):
         self.run_case('encode_mixed', '-l en -k')
 
-    # TODO
-    # def test_parse_xml(self):
-    #     self.run_case('parse_xml')
+    def test_parse_xml(self):
+        self.run_case('parse_xml')
 
-    # TODO
-    # def test_parse_xml_custom_names(self):
-    #     self.run_case('parse_xml_custom_names')
+    def test_parse_xml_custom_names(self):
+        self.run_case('parse_xml_custom_names')
 
 
 
