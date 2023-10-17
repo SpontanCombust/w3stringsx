@@ -5,8 +5,8 @@ import os
 import shutil
 import subprocess
 import sys
-from typing import Literal
-# from xml.etree import ElementTree
+from typing import Any, Literal, cast
+from xml.etree import ElementTree
 
 
 ###############################################################################################################################
@@ -163,6 +163,9 @@ class CsvAbbreviatedEntry:
     def __init__(self, key_str: str, text: str):
         self.key_str = key_str
         self.text = text
+
+    def __str__(self) -> str:
+        return f'{self.key_str}|{self.text}'
 
     def into_complete(self, id: int, key_hex: str) -> CsvCompleteEntry:
         return CsvCompleteEntry(
@@ -432,53 +435,109 @@ def prepare_output_csv(input: CsvInputDocument) -> CsvOutputDocument:
 # XML FILE PARSING
 ###############################################################################################################################
 
-XmlLocalisationTags = Literal["customDisplayName", "customNames"]
+# A new class, because native ElementTree.Element doesn't have support for easy node parent access
+class ConfigXmlElement:
+    parent: Any = None # can't use the same class type for it
 
-class XmlNode:
+    tag: str
     display_name: str
     custom_display_name: bool
     custom_names: bool
-    child_nodes: list[XmlNode] = []
 
-    def loc_str_keys(self) -> set[str]:
-        return {self.display_name}
-    
-    def child_loc_str_keys(self) -> set[str]:
-        if len(self.child_nodes) == 0:
-            return set()
+    children: list[ConfigXmlElement]
+
+    # instantiate using base class object
+    def __init__(self, element: ElementTree.Element, parent: Any = None):
+        self.parent = parent
+        self.tag = element.tag
+        self.display_name = ''
+        self.custom_display_name = False
+        self.custom_names = False
+        self.children = []
+
+        try:
+            self.display_name = element.attrib["displayName"]
+            tags = element.attrib["tags"].split(";")
+            if "customDisplayName" in tags:
+                self.custom_display_name = True
+            if "customNames" in tags:
+                self.custom_names = True
+        except KeyError:
+            pass
+
+        for child in element:
+            self.children.append(ConfigXmlElement(child, self))
+
+
+    def loc_str_keys(self) -> list[str]:
+        match self.tag:
+            case "Group":
+                keys: list[str] = []
+
+                panel_components = self.display_name.split('.')
+                if not self.custom_display_name:
+                    keys.extend([f'panel_{dn}' for dn in panel_components])
+                else:
+                    keys.extend(panel_components)
+                
+                if "PresetsArray" in [child.tag for child in self.children]:
+                    keys.append(f'preset_{self.display_name.replace(".", "_")}')
+
+                return keys
+            case "Preset":
+                return [f'preset_value_{self.display_name}']
+            case "Var":
+                if not self.custom_display_name:
+                    return [f'option_{self.display_name}']
+                else:
+                    return [self.display_name]
+            case "Option":
+                var_node = cast(ConfigXmlElement, self.parent.parent)
+                if not var_node.custom_names:
+                    return [f'preset_value_{self.display_name}']
+                else:
+                    return [self.display_name]
+            case _:
+                return []
+
+    def child_loc_str_keys(self) -> list[str]:
+        if len(self.children) == 0:
+            return []
         
-        sets = [node.loc_str_keys() for node in self.child_nodes]
-        keys = {val for subset in sets for val in subset} # flatten the list
+        keys: list[str] = []
+        for child in self.children:
+            keys.extend(child.loc_str_keys())
+            keys.extend(child.child_loc_str_keys())    
+
         return keys
     
-    def all_loc_str_keys(self) -> set[str]:
-        this_keys = self.loc_str_keys()
-        child_keys = self.child_loc_str_keys()
-        return this_keys | child_keys
+    def all_loc_str_keys(self) -> list[str]:
+        keys: list[str] = []
+        keys.extend(self.loc_str_keys())
+        keys.extend(self.child_loc_str_keys())
+        return keys
 
 
-class XmlGroupNode(XmlNode):
-    def loc_str_keys(self) -> set[str]:
-        components = self.display_name.split('.')
-        if self.custom_display_name:
-            return {f'panel_{dn}' for dn in components}
-        return set(components)
+def prepare_csv_entries_from_xml(xml_path: str) -> list[CsvAbbreviatedEntry]:
+    log_info("Processing the XML file...")
+    keys: list[str] = []
+    with io.open(xml_path, "r", encoding="UTF-8") as f:
+        xml_str = f.read()
+        root = ElementTree.fromstring(xml_str)
+        config_xml = ConfigXmlElement(root)
 
+        all_keys = config_xml.all_loc_str_keys()
+        key_set: set[str] = set()  # using a set for fast lookup
 
-class XmlVarNode(XmlNode):
-    def loc_str_keys(self) -> set[str]:
-        if self.custom_display_name:
-            return {f'option_{self.display_name}'}
-        return {self.display_name}
+        # remove all duplicates and preserve the order of appearance
+        for key in all_keys:
+            if key not in key_set:
+                key_set.add(key)
+                keys.append(key)
 
+    entries = [CsvAbbreviatedEntry(key, key) for key in keys]
 
-class XmlOptionEntryNode(XmlNode):
-    def loc_str_keys(self) -> set[str]:
-        # custom_names will be inherited from the Var
-        if self.custom_names:
-            return {f"preset_value_{self.display_name}"}
-        return {self.display_name}
-
+    return entries
 
 
 
@@ -544,6 +603,9 @@ def preprocess_cli_args(args: CLIArguments):
     if args.lang not in ALL_LANGS and args.lang != 'all':
         raise Exception(f'Invalid value for the --language option: {args.lang}')
     
+    # TODO allow output to be a file
+    # if it will be a file when generating a CSV based on XML
+    # we will be able to read and merge entries instead of overwriting the output completely 
     if args.output_dir != '':
         if not os.path.exists(args.output_dir):
             log_warning('Specified output directory does not exist. Attempting to create one...')
@@ -552,6 +614,8 @@ def preprocess_cli_args(args: CLIArguments):
             except FileNotFoundError:
                 raise Exception('Unable to create output directory. The parent of this directory does not exist.')
             log_warning(f'Directory {args.output_dir} created successfully')
+        elif not os.path.isdir(args.output_dir):
+            raise Exception('Output path is not a directory')
     else:
         args.output_dir = os.path.dirname(args.input_file)
         log_info(f'Ouput directory set to {args.output_dir}')
@@ -570,7 +634,7 @@ def main():
     preprocess_cli_args(args)
     
     _, ext = os.path.splitext(args.input_file)
-    if ext not in ('.w3strings', '.csv'):
+    if ext not in ('.w3strings', '.csv', '.xml'):
         raise Exception(f'Unsupported file type: "{ext}"')
     
     scratch = ScratchFolder(args.input_file)
@@ -580,6 +644,8 @@ def main():
             w3strings_context_work(encoder, scratch, args)
         case '.csv':
             csv_context_work(encoder, scratch, args)
+        case '.xml':
+            xml_context_work(args)
 
     del scratch
 
@@ -617,6 +683,24 @@ def csv_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, args: CL
             shutil.copy(output_file, args.output_dir)
 
     log_info(f'{args.input_file} has been successfully encoded into w3strings file(s) in {args.output_dir}')
+
+
+def xml_context_work(args: CLIArguments):
+    entries = prepare_csv_entries_from_xml(args.input_file)
+
+    csv_basename = os.path.splitext(os.path.basename(args.input_file))[0] + '.en.csv'
+    csv_path = os.path.join(args.output_dir, csv_basename)
+
+    file_lines: list[str] = []
+    file_lines.append(";idspace=????")
+    file_lines.extend([str(entry) for entry in entries])
+
+    with io.open(csv_path, mode="w", encoding="UTF-8") as f:
+        f.write('\n'.join(file_lines))
+
+    log_info(f'String keys from {args.input_file} have been successfully saved to {args.output_dir}')
+
+
 
 if __name__ == '__main__':
     try:
