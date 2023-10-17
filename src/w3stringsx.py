@@ -38,15 +38,14 @@ ALL_LANGS_META: dict[str, str] = {
 
 MOD_ID_RANGE: range = range(2110000000, 2120000000)
 
+COLOR_NONE = '\033[0m'
+COLOR_WARN = '\033[93m'
+COLOR_ERROR = '\033[91m'
 
 
 ###############################################################################################################################
 # UTILITIES
 ###############################################################################################################################
-
-COLOR_NONE = '\033[0m'
-COLOR_WARN = '\033[93m'
-COLOR_ERROR = '\033[91m'
 
 def log_info(s: str):
     print(f'[INFO] {s}')
@@ -81,6 +80,15 @@ class ScratchFolder:
     def __del__(self):
         log_info(f'Removing scratch folder {self.folder_path}')
         shutil.rmtree(self.folder_path)
+
+
+def lf_to_crlf(file_path: str):
+    with io.open(file_path, mode="r+") as f:
+        data = f.read()
+        data.replace('\n', '\r\n')
+        f.seek(0)
+        f.write(data)
+        f.truncate()
 
 
 ###############################################################################################################################
@@ -652,9 +660,10 @@ def main():
 
 def w3strings_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, args: CLIArguments):
     csv_file = encoder.decode(scratch.input_copy_path)
+    lf_to_crlf(csv_file) # for whatever reason encoder saves the file with LF line endings
+
     copied_basename = os.path.splitext(os.path.basename(scratch.input_copy_path))[0] + '.csv'
     copied = os.path.join(args.output_dir, copied_basename)
-
     shutil.copy(csv_file, copied)
 
     log_info(f'{args.input_file} has been successfully decoded into csv file in {args.output_dir}')
