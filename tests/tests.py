@@ -53,6 +53,11 @@ class TestW3Stringsx(unittest.TestCase):
     def test_encode_mixed(self):
         self.run_case('encode_mixed', '-l en -k')
 
+    def test_decode_path_with_spaces(self):
+        self.run_case('decode path with spaces')
+
+    def test_encode_path_with_spaces(self):
+        self.run_case('encode path with spaces', '-l en')
 
 
 
@@ -63,7 +68,7 @@ class TestW3Stringsx(unittest.TestCase):
         output_dir = f"{case_dir}/output"
         expected_dir = f"{case_dir}/expected"
         
-        cmd = f"python ./src/w3stringsx.py {input_file_path} -o {output_dir} {extra_args}"
+        cmd = f'python ./src/w3stringsx.py "{input_file_path}" -o "{output_dir}" {extra_args}'
         try:
             subprocess.run(cmd, shell=True, check=True)
         except Exception as e:
