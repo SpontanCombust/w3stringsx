@@ -4,7 +4,6 @@
 import hashlib
 import io
 import os
-import shutil
 import subprocess
 import sys
 import unittest
@@ -59,16 +58,27 @@ class TestW3Stringsx(unittest.TestCase):
     def test_parse_xml_custom_names(self):
         self.run_case('parse_xml_custom_names')
 
+    def test_decode_with_file_output(self):
+        self.run_case('decode_with_file_output', output_file='decoded.csv')
+
+    def test_parse_xml_with_file_output(self):
+        self.run_case('parse_xml_with_file_output', output_file='parsed.csv')
 
 
-    def run_case(self, case_name: str, extra_args: str = ''):
+    def run_case(self, case_name: str, extra_args: str = '', output_file: str | None = None):
+        print(f"Running test case {case_name}")
+
         case_dir = f"./tests/{case_name}"
         input_file = os.listdir(f"{case_dir}/input")[0]
         input_file_path = os.path.join(f"{case_dir}/input", input_file)
         output_dir = f"{case_dir}/output"
+        output_path = f"{output_dir}/{output_file}" if output_file is not None else output_dir
         expected_dir = f"{case_dir}/expected"
+
+        if not os.path.exists(output_dir):
+            os.mkdir(output_dir)
         
-        cmd = f"python ./src/w3stringsx.py {input_file_path} -o {output_dir} {extra_args}"
+        cmd = f"python ./src/w3stringsx.py {input_file_path} -o {output_path} {extra_args}"
         try:
             subprocess.run(cmd, shell=True, check=True)
         except Exception as e:
@@ -79,8 +89,11 @@ class TestW3Stringsx(unittest.TestCase):
         except Exception as e:
             raise e
         finally:
-            if os.path.exists(output_dir):
-                shutil.rmtree(output_dir)
+            for output in os.listdir(output_dir):
+                output_path = os.path.join(output_dir, output)
+                os.remove(output_path)
+
+        print()
 
 
     def assert_same_files(self, f1: str, f2: str):

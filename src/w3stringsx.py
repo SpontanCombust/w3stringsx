@@ -91,6 +91,12 @@ def lf_to_crlf(file_path: str):
         f.truncate()
 
 
+# Returns whether this path that does not exist could point to a future file or rather a directory
+def maybe_file(path:str) -> bool:
+    return os.path.splitext(path)[1] != ''
+
+
+
 ###############################################################################################################################
 # ENCODER
 ###############################################################################################################################
@@ -370,6 +376,7 @@ class CsvInputDocument:
                 if self.header_mod_id_space != self.content_mod_id_space:
                     raise Exception(f'Id space in the header ({self.header_mod_id_space}) and id space used in the entries ({self.content_mod_id_space}) are not the same')
                 else:
+                    # TODO smarter ID generation, take the complete entries and make generator exceptions
                     log_warning('Using complete and abbreviated entries in one file may cause ID overlap. Please settle for one or the other')
         else:
             raise Exception(f'There are entries for multiple mod id spaces: {mod_id_spaces}')
@@ -555,7 +562,7 @@ def prepare_csv_entries_from_xml(xml_path: str) -> list[CsvAbbreviatedEntry]:
 
 class CLIArguments:
     input_file: str
-    output_dir: str
+    output_path: str
     lang: str  # one of ALL_LANGS or 'all'
     keep_csv: bool
 
@@ -574,8 +581,8 @@ def make_cli() -> CLIArguments:
     )
 
     parser.add_argument(
-        '-o', '--output_dir',
-        help='output directory for resulting files [default is input file\'s directory]',
+        '-o', '--output_path',
+        help='path to the output, can be a file or directory depending on the context [default is input file\'s directory]',
         action='store')
     
     parser.add_argument(
@@ -593,7 +600,7 @@ def make_cli() -> CLIArguments:
 
     cli = CLIArguments()
     cli.input_file = str(args.input_file)
-    cli.output_dir = str(args.output_dir) if args.output_dir is not None else '' 
+    cli.output_path = str(args.output_path) if args.output_path is not None else '' 
     cli.lang = str(args.lang)
     cli.keep_csv = bool(args.keep_csv) or False
 
@@ -611,24 +618,20 @@ def preprocess_cli_args(args: CLIArguments):
     if args.lang not in ALL_LANGS and args.lang != 'all':
         raise Exception(f'Invalid value for the --language option: {args.lang}')
     
-    # TODO allow output to be a file
-    # if it will be a file when generating a CSV based on XML
-    # we will be able to read and merge entries instead of overwriting the output completely 
-    if args.output_dir != '':
-        if not os.path.exists(args.output_dir):
-            log_warning('Specified output directory does not exist. Attempting to create one...')
-            try:
-                os.mkdir(args.output_dir)
-            except FileNotFoundError:
-                raise Exception('Unable to create output directory. The parent of this directory does not exist.')
-            log_warning(f'Directory {args.output_dir} created successfully')
-        elif not os.path.isdir(args.output_dir):
-            raise Exception('Output path is not a directory')
+    if args.output_path != '':
+        if not os.path.exists(args.output_path):
+            if not maybe_file(args.output_path):
+                log_warning('Specified output directory does not exist. Attempting to create one...')
+                try:
+                    os.mkdir(args.output_path)
+                except FileNotFoundError:
+                    raise Exception('Unable to create output directory. The parent of this directory does not exist.')
+                log_warning(f'Directory {args.output_path} created successfully')
     else:
-        args.output_dir = os.path.dirname(args.input_file)
-        log_info(f'Ouput directory set to {args.output_dir}')
+        args.output_path = os.path.dirname(args.input_file)
+        log_info(f'Ouput path set to directory {args.output_path}')
 
-    args.output_dir = os.path.realpath(args.output_dir)
+    args.output_path = os.path.realpath(args.output_path)
 
 
 ###############################################################################################################################
@@ -660,16 +663,24 @@ def main():
 
 def w3strings_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, args: CLIArguments):
     csv_file = encoder.decode(scratch.input_copy_path)
-    lf_to_crlf(csv_file) # for whatever reason encoder saves the file with LF line endings
+    lf_to_crlf(csv_file) # for whatever reason encoder saves the file with unix line endings
 
-    copied_basename = os.path.splitext(os.path.basename(scratch.input_copy_path))[0] + '.csv'
-    copied = os.path.join(args.output_dir, copied_basename)
-    shutil.copy(csv_file, copied)
+    output_path: str
+    if os.path.isdir(args.output_path):
+        output_basename = os.path.splitext(os.path.basename(scratch.input_copy_path))[0] + '.csv'
+        output_path = os.path.join(args.output_path, output_basename)
+    else:
+        output_path = args.output_path
 
-    log_info(f'{args.input_file} has been successfully decoded into csv file in {args.output_dir}')
+    shutil.copy(csv_file, output_path)
+
+    log_info(f'{args.input_file} has been successfully decoded into csv file in {args.output_path}')
 
 
-def csv_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, args: CLIArguments):   
+def csv_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, args: CLIArguments):
+    if os.path.isfile(args.output_path) or maybe_file(args.output_path):
+        raise Exception('CSV context requires the output path to point to a directory')
+
     input_doc = CsvInputDocument(scratch.input_copy_path)
     output_doc = prepare_output_csv(input_doc)
 
@@ -682,23 +693,27 @@ def csv_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, args: CL
         w3strings_file = encoder.encode(output_file, output_doc.id_space)
         langs = ALL_LANGS if args.lang == 'all' else [args.lang]
         for lang in langs:
-            copied = os.path.join(args.output_dir, f'{lang}.w3strings')
+            copied = os.path.join(args.output_path, f'{lang}.w3strings')
             log_info(f'Creating {copied}')
             shutil.copy(w3strings_file, copied)
   
     finally:
         if args.keep_csv:
-            log_info(f'Saving prepared {output_file_basename} to {args.output_dir}')
-            shutil.copy(output_file, args.output_dir)
+            log_info(f'Saving prepared {output_file_basename} to {args.output_path}')
+            shutil.copy(output_file, args.output_path)
 
-    log_info(f'{args.input_file} has been successfully encoded into w3strings file(s) in {args.output_dir}')
+    log_info(f'{args.input_file} has been successfully encoded into w3strings file(s) in {args.output_path}')
 
 
 def xml_context_work(args: CLIArguments):
     entries = prepare_csv_entries_from_xml(args.input_file)
 
-    csv_basename = os.path.splitext(os.path.basename(args.input_file))[0] + '.en.csv'
-    csv_path = os.path.join(args.output_dir, csv_basename)
+    csv_path: str
+    if os.path.isdir(args.output_path):
+        csv_basename = os.path.splitext(os.path.basename(args.input_file))[0] + '.en.csv'
+        csv_path = os.path.join(args.output_path, csv_basename)
+    else:
+        csv_path = args.output_path
 
     file_lines: list[str] = []
     file_lines.append(";idspace=????")
@@ -707,7 +722,7 @@ def xml_context_work(args: CLIArguments):
     with io.open(csv_path, mode="w", encoding="UTF-8") as f:
         f.write('\n'.join(file_lines))
 
-    log_info(f'String keys from {args.input_file} have been successfully saved to {args.output_dir}')
+    log_info(f'String keys from {args.input_file} have been successfully saved to {args.output_path}')
 
 
 
