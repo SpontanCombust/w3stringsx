@@ -604,8 +604,17 @@ def prepare_csv_entries_from_xml(xml_path: str) -> list[CsvAbbreviatedEntry]:
 ###############################################################################################################################
 
 def prepare_csv_str_keys_from_ws(ws_path: str, prefix: str) -> set[str]:
-    # TODO parse witcherscript
-    pass
+    keys = set[str]()
+    # FIXME needs encoding detection
+    with io.open(ws_path, mode='r') as f:
+        for line in f:
+            quoted = line.split('"')[1::2]
+            quoted = list(filter(lambda s: s.startswith(prefix), quoted))
+            keys |= set(quoted)
+
+    print(f"Found {len(keys)} string keys in {ws_path}")
+    return keys
+            
 
 
 def prepare_csv_entries_from_ws(ws_path: str, prefix: str) -> list[CsvAbbreviatedEntry]:
