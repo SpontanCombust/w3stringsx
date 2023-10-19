@@ -444,6 +444,13 @@ def prepare_output_csv(input: CsvInputDocument) -> CsvOutputDocument:
     )
 
 
+def save_abbreviated_entries(entries: list[CsvAbbreviatedEntry], file_path: str):
+    file_lines: list[str] = []
+    file_lines.append(";idspace=????")
+    file_lines.extend([str(entry) for entry in entries])
+
+    with io.open(file_path, mode="w", encoding="UTF-8") as f:
+        f.write('\n'.join(file_lines))
 
 
 ###############################################################################################################################
@@ -715,15 +722,14 @@ def xml_context_work(args: CLIArguments):
     else:
         csv_path = args.output_path
 
-    file_lines: list[str] = []
-    file_lines.append(";idspace=????")
-    file_lines.extend([str(entry) for entry in entries])
-
-    with io.open(csv_path, mode="w", encoding="UTF-8") as f:
-        f.write('\n'.join(file_lines))
+    save_abbreviated_entries(entries, csv_path)
 
     log_info(f'String keys from {args.input_file} have been successfully saved to {args.output_path}')
 
+
+#TODO scan scripts directory
+def scripts_dir_context_work(args: CLIArguments):
+    pass
 
 
 if __name__ == '__main__':
