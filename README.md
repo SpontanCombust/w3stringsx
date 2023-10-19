@@ -29,7 +29,8 @@ Supported contexts:
 - .csv file - w3strings encoding
 - .w3strings file - w3strings decoding
 - .xml file - parsing menu XML for displayName attributes
-- "scripts" directory - parsing WitcherScript files for localised strings
+- .ws file - parsing WitcherScript files for localized strings
+- "scripts" directory - parsing WitcherScript directory for localised strings
 
 
 ### Header optionality
