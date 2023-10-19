@@ -15,8 +15,8 @@ Current CLI specification can be found [here](./doc/cli_specification.md).
 
 ## Features
 
-### File type context awareness
-If you give it a csv file it will encode. If you give it a w3strings file, it will decode it.
+### Input context awareness
+If you give it a csv file it will encode. If you give it a w3strings file, it will decode it etc.
 ```shell
 # Encodes the file
 python w3stringsx.py "path\to\en.csv"
@@ -24,6 +24,13 @@ python w3stringsx.py "path\to\en.csv"
 # Decodes the file
 python w3stringsx.py "path\to\en.w3strings"
 ```
+
+Supported contexts:
+- .csv file - w3strings encoding
+- .w3strings file - w3strings decoding
+- .xml file - parsing menu XML for displayName attributes
+- "scripts" directory - parsing WitcherScript files for localised strings
+
 
 ### Header optionality
 The encoder requires these two lines to be present in the CSV file at the very beginning:
@@ -77,3 +84,6 @@ python w3stringsx.py "path\to\en.csv"
 # Creates only en.w3strings
 python w3stringsx.py "path\to\en.csv" -l "en"
 ```
+
+### XML and WitcherScript parsing
+#TODO explanation

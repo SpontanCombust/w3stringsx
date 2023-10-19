@@ -1,5 +1,6 @@
 from __future__ import annotations
 import argparse
+from enum import Enum
 import io
 import os
 import shutil
@@ -95,6 +96,32 @@ def lf_to_crlf(file_path: str):
 def maybe_file(path:str) -> bool:
     return os.path.splitext(path)[1] != ''
 
+
+class InputPathType(Enum):
+    UNSUPPORTED     = 0
+    W3STRINGS_FILE  = 1
+    CSV_FILE        = 2
+    XML_FILE        = 3
+    SCRIPTS_DIR     = 4
+
+    @classmethod
+    def from_path(cls, path: str) -> InputPathType:
+        if os.path.isdir(path):
+            if os.path.basename(path) == "scripts":
+                return InputPathType.SCRIPTS_DIR
+        else:
+            _, ext = os.path.splitext(path)
+            match ext:
+                case '.w3strings':
+                    return InputPathType.W3STRINGS_FILE
+                case '.csv':
+                    return InputPathType.CSV_FILE
+                case '.xml':
+                    return InputPathType.XML_FILE
+                case _:
+                    return InputPathType.UNSUPPORTED
+                
+        return InputPathType.UNSUPPORTED
 
 
 ###############################################################################################################################
@@ -490,7 +517,7 @@ class ConfigXmlElement:
         for child in element:
             self.children.append(ConfigXmlElement(child, self))
 
-
+    #TODO support nonLocalized tag
     def loc_str_keys(self) -> list[str]:
         match self.tag:
             case "Group":
@@ -564,14 +591,43 @@ def prepare_csv_entries_from_xml(xml_path: str) -> list[CsvAbbreviatedEntry]:
 
 
 ###############################################################################################################################
+# XML FILE PARSING
+###############################################################################################################################
+
+def prepare_csv_str_keys_from_ws(ws_path: str, prefix: str) -> set[str]:
+    # TODO parse witcherscript
+    pass
+
+
+def prepare_csv_entries_from_ws_dir(ws_dir: str, prefix: str) -> list[CsvAbbreviatedEntry]:
+    ws_files: list[str] = []
+    for root, _, files in os.walk(ws_dir):
+        for file in files:
+            if file.endswith('.ws'):
+                ws_files.append(os.path.join(root, file))
+
+    keys = set[str]()
+    for ws in ws_files:
+        keys |= prepare_csv_str_keys_from_ws(ws, prefix)
+
+    keys = sorted(keys)
+    entries = [CsvAbbreviatedEntry(key, key) for key in keys]
+
+    return entries
+
+
+
+###############################################################################################################################
 # CLI
 ###############################################################################################################################
 
 class CLIArguments:
-    input_file: str
+    input_path: str
     output_path: str
     lang: str  # one of ALL_LANGS or 'all'
     keep_csv: bool
+    prefix: str
+
 
 def make_cli() -> CLIArguments:
     parser = argparse.ArgumentParser(
@@ -582,8 +638,8 @@ def make_cli() -> CLIArguments:
     )
 
     parser.add_argument(
-        'input_file',
-        help='path to either .csv file (to encode) or .w3strings (to decode)',
+        'input_path',
+        help='path to supported file or directory; available: [.w3strings file, .csv file, .xml file, "scripts" directory]',
         action='store'
     )
 
@@ -600,27 +656,31 @@ def make_cli() -> CLIArguments:
 
     parser.add_argument(
         '-k', '--keep-csv',
-        help='keep the final form of the CSV file generated during preperation for encoding',
+        help='keep the final form of the generated CSV file (applies only to CSV file context)',
         dest='keep_csv', action='store_true')
+    
+    parser.add_argument(
+        '-p', '--prefix',
+        help='mod string prefix used to identify localized strings in WitcherScript files (applies only to scripts folder context)',
+        dest='prefix', action='store')
     
     args = parser.parse_args()
 
     cli = CLIArguments()
-    cli.input_file = str(args.input_file)
-    cli.output_path = str(args.output_path) if args.output_path is not None else '' 
+    cli.input_path = str(args.input_path)
+    cli.output_path = str(args.output_path or '')
     cli.lang = str(args.lang)
-    cli.keep_csv = bool(args.keep_csv) or False
+    cli.keep_csv = bool(args.keep_csv or False)
+    cli.prefix = str(args.prefix or '')
 
     return cli
 
 
 def preprocess_cli_args(args: CLIArguments):
-    if not os.path.exists(args.input_file):
-        raise Exception(f'File does not exist: "{args.input_file}"')
-    elif not os.path.isfile(args.input_file):
-        raise Exception(f'Path does not describe a file: "{args.input_file}"')
+    if not os.path.exists(args.input_path):
+        raise Exception(f'Path does not exist: "{args.input_path}"')
     
-    args.input_file = os.path.realpath(args.input_file)
+    args.input_path = os.path.realpath(args.input_path)
 
     if args.lang not in ALL_LANGS and args.lang != 'all':
         raise Exception(f'Invalid value for the --language option: {args.lang}')
@@ -635,7 +695,7 @@ def preprocess_cli_args(args: CLIArguments):
                     raise Exception('Unable to create output directory. The parent of this directory does not exist.')
                 log_warning(f'Directory {args.output_path} created successfully')
     else:
-        args.output_path = os.path.dirname(args.input_file)
+        args.output_path = os.path.dirname(args.input_path)
         log_info(f'Ouput path set to directory {args.output_path}')
 
     args.output_path = os.path.realpath(args.output_path)
@@ -650,22 +710,21 @@ def main():
     encoder = W3StringsEncoder()
 
     preprocess_cli_args(args)
-    
-    _, ext = os.path.splitext(args.input_file)
-    if ext not in ('.w3strings', '.csv', '.xml'):
-        raise Exception(f'Unsupported file type: "{ext}"')
-    
-    scratch = ScratchFolder(args.input_file)
 
-    match ext:
-        case '.w3strings':
+    input_type = InputPathType.from_path(args.input_path)
+    match input_type:
+        case InputPathType.W3STRINGS_FILE:
+            scratch = ScratchFolder(args.input_path)
             w3strings_context_work(encoder, scratch, args)
-        case '.csv':
+        case InputPathType.CSV_FILE:
+            scratch = ScratchFolder(args.input_path)
             csv_context_work(encoder, scratch, args)
-        case '.xml':
+        case InputPathType.XML_FILE:
             xml_context_work(args)
-
-    del scratch
+        case InputPathType.SCRIPTS_DIR:
+            scripts_dir_context_work(args)
+        case _:
+            raise Exception(f'Unsupported file type or directory: {os.path.basename(args.input_path)}')
 
 
 def w3strings_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, args: CLIArguments):
@@ -681,7 +740,7 @@ def w3strings_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, ar
 
     shutil.copy(csv_file, output_path)
 
-    log_info(f'{args.input_file} has been successfully decoded into csv file in {args.output_path}')
+    log_info(f'{args.input_path} has been successfully decoded into csv file in {args.output_path}')
 
 
 def csv_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, args: CLIArguments):
@@ -709,27 +768,40 @@ def csv_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, args: CL
             log_info(f'Saving prepared {output_file_basename} to {args.output_path}')
             shutil.copy(output_file, args.output_path)
 
-    log_info(f'{args.input_file} has been successfully encoded into w3strings file(s) in {args.output_path}')
+    log_info(f'{args.input_path} has been successfully encoded into w3strings file(s) in {args.output_path}')
 
 
 def xml_context_work(args: CLIArguments):
-    entries = prepare_csv_entries_from_xml(args.input_file)
+    entries = prepare_csv_entries_from_xml(args.input_path)
 
     csv_path: str
     if os.path.isdir(args.output_path):
-        csv_basename = os.path.splitext(os.path.basename(args.input_file))[0] + '.en.csv'
+        csv_basename = os.path.splitext(os.path.basename(args.input_path))[0] + '.en.csv'
         csv_path = os.path.join(args.output_path, csv_basename)
     else:
         csv_path = args.output_path
 
     save_abbreviated_entries(entries, csv_path)
 
-    log_info(f'String keys from {args.input_file} have been successfully saved to {args.output_path}')
+    log_info(f'String keys from {args.input_path} have been successfully saved to {args.output_path}')
 
 
-#TODO scan scripts directory
 def scripts_dir_context_work(args: CLIArguments):
-    pass
+    if args.prefix == "":
+        raise Exception("No mod strings prefix specified. Use the --prefix option")
+    
+    entries = prepare_csv_entries_from_ws_dir(args.input_path, args.prefix)
+
+    csv_path: str
+    if os.path.isdir(args.output_path):
+        csv_basename = 'scripts.en.csv'
+        csv_path = os.path.join(args.output_path, csv_basename)
+    else:
+        csv_path = args.output_path
+
+    save_abbreviated_entries(entries, csv_path)
+
+    log_info(f'String keys from {args.input_path} have been successfully saved to {args.output_path}')
 
 
 if __name__ == '__main__':
