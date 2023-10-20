@@ -97,6 +97,19 @@ def maybe_file(path:str) -> bool:
     return os.path.splitext(path)[1] != ''
 
 
+def guess_file_encoding(path: str) -> str:
+    with io.open(path, mode="rb") as f:
+        header = f.read(3)
+        if header.startswith(b'\xFF\xFE'):
+            return "UTF-16-LE"
+        elif header.startswith(b'\xFE\xFF'):
+            return "UTF-16-BE"
+        elif header.startswith(b'\xEF\xBB\xBF'):
+            return "UTF-8-SIG"
+
+    return "UTF-8"
+
+
 
 ###############################################################################################################################
 # ENCODER
@@ -295,8 +308,9 @@ class CsvInputDocument:
     has_vanilla_entries: bool
 
     def __init__(self, file_path: str):
-        log_info(f'Reading {file_path}')
-        with io.open(file_path, mode='r', encoding='UTF-8') as file:
+        encoding = guess_file_encoding(file_path)
+        log_info(f'Reading {file_path}. Detected encoding: {encoding}')
+        with io.open(file_path, mode='r', encoding=encoding) as file:
             self.read_target_lang(file_path)
 
             file_lines = file.readlines()
@@ -577,7 +591,9 @@ class ConfigXmlElement:
 
 
 def prepare_csv_entries_from_xml(xml_path: str) -> list[CsvAbbreviatedEntry]:
-    log_info("Processing the XML file...")
+    encoding = guess_file_encoding(xml_path)
+    log_info(f"Reading {xml_path}. Detected encoding: {encoding}")
+
     keys: list[str] = []
     with io.open(xml_path, "r", encoding="UTF-8") as f:
         xml_str = f.read()
@@ -595,6 +611,7 @@ def prepare_csv_entries_from_xml(xml_path: str) -> list[CsvAbbreviatedEntry]:
 
     entries = [CsvAbbreviatedEntry(key, key) for key in keys]
 
+    print(f"Found {len(keys)} string keys in {xml_path}")
     return entries
 
 
@@ -604,9 +621,11 @@ def prepare_csv_entries_from_xml(xml_path: str) -> list[CsvAbbreviatedEntry]:
 ###############################################################################################################################
 
 def prepare_csv_str_keys_from_ws(ws_path: str, prefix: str) -> set[str]:
+    encoding = guess_file_encoding(ws_path)
+    print(f"Reading {ws_path}. Detected encoding: {encoding}")
+
     keys = set[str]()
-    # FIXME needs encoding detection
-    with io.open(ws_path, mode='r') as f:
+    with io.open(ws_path, mode='r', encoding=encoding) as f:
         for line in f:
             quoted = line.split('"')[1::2]
             quoted = list(filter(lambda s: s.startswith(prefix), quoted))
