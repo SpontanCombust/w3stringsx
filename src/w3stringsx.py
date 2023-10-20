@@ -240,7 +240,7 @@ class CsvAbbreviatedEntry:
     key_str: str
     text: str
 
-    def __init__(self, key_str: str, text: str):
+    def __init__(self, key_str: str, text: str = "MISSING_LOCALISATION"):
         self.key_str = key_str
         self.text = text
 
@@ -633,7 +633,7 @@ def prepare_csv_entries_from_xml(xml_path: str, search: str) -> list[CsvAbbrevia
         if search != "":
             keys = list(filter(lambda k: re.search(search, k) is not None, keys))
 
-    entries = [CsvAbbreviatedEntry(key, key) for key in keys]
+    entries = [CsvAbbreviatedEntry(key) for key in keys]
 
     log_info(f"Found {len(keys)} string keys in {xml_path}")
     return entries
@@ -663,7 +663,7 @@ def prepare_csv_str_keys_from_ws(ws_path: str, search: str) -> set[str]:
 def prepare_csv_entries_from_ws(ws_path: str, search: str) -> list[CsvAbbreviatedEntry]:
     keys = prepare_csv_str_keys_from_ws(ws_path, search)
     keys = sorted(keys)
-    entries = [CsvAbbreviatedEntry(key, key) for key in keys]
+    entries = [CsvAbbreviatedEntry(key) for key in keys]
     return entries
 
 
@@ -679,7 +679,7 @@ def prepare_csv_entries_from_ws_dir(ws_dir: str, search: str) -> list[CsvAbbrevi
         keys |= prepare_csv_str_keys_from_ws(ws, search)
 
     keys = sorted(keys)
-    entries = [CsvAbbreviatedEntry(key, key) for key in keys]
+    entries = [CsvAbbreviatedEntry(key) for key in keys]
 
     return entries
 
