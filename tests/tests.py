@@ -11,7 +11,7 @@ def file_hash(file_path: str) -> str:
         return md5.hexdigest()
     
 
-class TestW3Stringsx(unittest.TestCase):
+class Tests(unittest.TestCase):
     def test_decode_en(self):
         self.run_case('decode_en')
 
@@ -68,8 +68,6 @@ class TestW3Stringsx(unittest.TestCase):
 
 
     def run_case(self, case_name: str, extra_args: str = '', input_path: str | None = None, output_path: str | None = None, see_output: bool = False):
-        print(f"Running test case {case_name}")
-
         root_dir = os.path.abspath(os.path.join(__file__, '../../'))
         case_dir = f"{root_dir}/tests/{case_name}"
         input_dir = f"{case_dir}/input"
@@ -96,8 +94,6 @@ class TestW3Stringsx(unittest.TestCase):
                 for output in os.listdir(output_dir):
                     output_path = os.path.join(output_dir, output)
                     os.remove(output_path)
-
-        print()
 
 
     def assert_same_files(self, f1: str, f2: str):
