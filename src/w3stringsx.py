@@ -737,7 +737,8 @@ def make_cli() -> CLIArguments:
 
     parser.add_argument(
         '-o', '--output_path',
-        help='path to the output; default: [input file\'s directory]', #TODO default values with default= key
+        help='path to the output; default: [input file\'s directory]',
+        default='',
         action='store')
     
     parser.add_argument(
@@ -754,6 +755,7 @@ def make_cli() -> CLIArguments:
     parser.add_argument(
         '-s', '--search',
         help='text that will be used to search localized strings; can accept regular expressions',
+        default='',
         dest='search', action='store')
     
     parser.add_argument(
@@ -766,10 +768,10 @@ def make_cli() -> CLIArguments:
 
     cli = CLIArguments()
     cli.input_path = str(args.input_path)
-    cli.output_path = str(args.output_path or '')
+    cli.output_path = str(args.output_path)
     cli.lang = str(args.lang)
-    cli.keep_csv = bool(args.keep_csv or False)
-    cli.search = str(args.search or '')
+    cli.keep_csv = bool(args.keep_csv)
+    cli.search = str(args.search)
 
     global logging_level
     try:
