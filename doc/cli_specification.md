@@ -1,17 +1,25 @@
 ```
-usage: w3stringsx.py [-h] [-o OUTPUT_DIR] [-l LANG] [-k] input_file
+usage: w3stringsx.py [-h] [-o OUTPUT_PATH] [-l LANG] [-k] [-s SEARCH]
+                     input_path
 
-w3stringsx v1.0.0
+w3stringsx v1.1.0
 Script meant to provide an alternative CLI frontend for w3strings encoder to make it simpler and faster to create localized Witcher 3 content
 
 positional arguments:
-  input_file            path to either .csv file (to encode) or .w3strings (to decode)
+  input_path            path to a file [.w3strings, .csv, .xml, .ws] or directory with specific name [scripts]
 
 options:
   -h, --help            show this help message and exit
-  -o OUTPUT_DIR, --output_dir OUTPUT_DIR
-                        output directory for resulting files [default is input file's directory]
+  -o OUTPUT_PATH, --output_path OUTPUT_PATH
+                        path to the output; default: [input file's directory]
   -l LANG, --language LANG
                         set the target encoding language, "all" will generate all possible variants; available: ['an', 'br', 'cn', 'cz', 'de', 'en', 'es', 'esmx', 'fr', 'hu', 'it', 'jp', 'kr', 'pl', 'ru', 'tr', 'zh', 'all']
-  -k, --keep-csv        keep the final form of the CSV file generated during preperation for encoding
+  -k, --keep-csv        keep the final form of the generated CSV file
+  -s SEARCH, --search SEARCH
+                        text that will be used to search localized strings; can accept regular expressions
+
+remarks:
+  * in the case of CSV file context, the output path must be a directory
+  * --language and --keep-csv arguments apply only to CSV file context
+  * --search option applies only to XML, WitcherScript and scripts folder contexts
 ```

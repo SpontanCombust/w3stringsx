@@ -2,7 +2,7 @@
 
 ---
 
-Script meant to be an alternative CLI frontend for w3strings encoder, providing additional functionalities to make working with localized Witcher 3 content easier and faster.
+Script that can be used as an alternative CLI frontend for w3strings encoder while also providing additional functionalities to make working with localized Witcher 3 content easier and faster.
 
 w3stringsx is able to work with the regular form of the CSV file. It is however also capable of reading non-standard data format, which is explained later in this document.
 
@@ -15,8 +15,8 @@ Current CLI specification can be found [here](./doc/cli_specification.md).
 
 ## Features
 
-### File type context awareness
-If you give it a csv file it will encode. If you give it a w3strings file, it will decode it.
+### Input context awareness
+If you give it a csv file it will encode. If you give it a w3strings file, it will decode it etc.
 ```shell
 # Encodes the file
 python w3stringsx.py "path\to\en.csv"
@@ -24,6 +24,14 @@ python w3stringsx.py "path\to\en.csv"
 # Decodes the file
 python w3stringsx.py "path\to\en.w3strings"
 ```
+
+Supported contexts:
+- .csv file - w3strings encoding
+- .w3strings file - w3strings decoding
+- .xml file - parsing menu XML file for displayName attributes
+- .ws file - parsing WitcherScript file for localized strings
+- "scripts" directory - parsing a directory for localised strings in WitcherScript files
+
 
 ### Header optionality
 The encoder requires these two lines to be present in the CSV file at the very beginning:
@@ -77,3 +85,8 @@ python w3stringsx.py "path\to\en.csv"
 # Creates only en.w3strings
 python w3stringsx.py "path\to\en.csv" -l "en"
 ```
+
+### XML and WitcherScript parsing
+Passing menu XMLs or WitcherScript (.ws) files to the script allows to scan them for string keys. In the case of XMLs they're searched in `displayName` attributes. In scripts however, they are looked for in strings that appear in the code. To narrow down the pool of possible candidates, `--search` option is used. It should contain a pattern that will be looked for in these files. Said pattern can be a regular expression if you need the search to be more strict than looking for some singular, simple substring.
+
+Parsed entries are saved to a .csv file that contains abbreviated localisation entries for you to fill in.

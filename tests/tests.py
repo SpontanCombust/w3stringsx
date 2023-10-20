@@ -1,12 +1,7 @@
-# This file should be run from the root of this project
-# Put the encoder itself somewhere in the PATH so that w3stringsx can find it
-
 import hashlib
 import io
 import os
-import shutil
 import subprocess
-import sys
 import unittest
 
 def file_hash(file_path: str) -> str:
@@ -16,7 +11,8 @@ def file_hash(file_path: str) -> str:
         return md5.hexdigest()
     
 
-class TestW3Stringsx(unittest.TestCase):
+class Tests(unittest.TestCase):
+    #TODO automatic test discovery with args passed in an .ini file
     def test_decode_en(self):
         self.run_case('decode_en')
 
@@ -53,34 +49,61 @@ class TestW3Stringsx(unittest.TestCase):
     def test_encode_mixed(self):
         self.run_case('encode_mixed', '-l en -k')
 
+    def test_parse_xml(self):
+        self.run_case('parse_xml')
+
+    def test_parse_xml_custom_names(self):
+        self.run_case('parse_xml_custom_names')
+
+    def test_decode_with_file_output(self):
+        self.run_case('decode_with_file_output', output_path='decoded.csv')
+
+    def test_parse_xml_with_file_output(self):
+        self.run_case('parse_xml_with_file_output', output_path='parsed.csv')
+
     def test_decode_path_with_spaces(self):
         self.run_case('decode path with spaces')
 
     def test_encode_path_with_spaces(self):
         self.run_case('encode path with spaces', '-l en')
 
+    def test_parse_ws(self):
+        self.run_case('parse_ws', '-s "^ibt_"')
+
+    def test_parse_ws_dir(self):
+        self.run_case('parse_ws_dir', '-s "ibt_"', input_path='scripts/')
+
+    def test_parse_xml_search(self):
+        self.run_case('parse_xml_search', '--search "MOD"')
 
 
-    def run_case(self, case_name: str, extra_args: str = ''):
-        case_dir = f"./tests/{case_name}"
-        input_file = os.listdir(f"{case_dir}/input")[0]
-        input_file_path = os.path.join(f"{case_dir}/input", input_file)
+    def run_case(self, case_name: str, extra_args: str = '', input_path: str | None = None, output_path: str | None = None, see_output: bool = False):
+        root_dir = os.path.abspath(os.path.join(__file__, '../../'))
+        case_dir = f"{root_dir}/tests/{case_name}"
+        input_dir = f"{case_dir}/input"
         output_dir = f"{case_dir}/output"
         expected_dir = f"{case_dir}/expected"
+
+        first_input_file = os.listdir(input_dir)[0]
+        input_path = f"{input_dir}/{input_path}" if input_path is not None else f"{input_dir}/{first_input_file}"
+        output_path = f"{output_dir}/{output_path}" if output_path is not None else output_dir
+
+        if not os.path.exists(output_dir):
+            os.mkdir(output_dir)
         
-        cmd = f'python ./src/w3stringsx.py "{input_file_path}" -o "{output_dir}" {extra_args}'
+        cmd = f'python {root_dir}/src/w3stringsx.py "{input_path}" -o "{output_path}" {extra_args}'
         try:
-            subprocess.run(cmd, shell=True, check=True)
-        except Exception as e:
-            print(e, file=sys.stderr)
+            subprocess.run(cmd, shell=True, check=True, stdout=(None if see_output else subprocess.DEVNULL))
+        except:
+            pass
 
         try:
             self.assert_output(expected_dir, output_dir)
-        except Exception as e:
-            raise e
         finally:
-            if os.path.exists(output_dir):
-                shutil.rmtree(output_dir)
+            if not see_output:
+                for output in os.listdir(output_dir):
+                    output_path = os.path.join(output_dir, output)
+                    os.remove(output_path)
 
 
     def assert_same_files(self, f1: str, f2: str):
