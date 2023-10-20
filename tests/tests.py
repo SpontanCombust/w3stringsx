@@ -1,11 +1,7 @@
-# This file should be run from the root of this project
-# Put the encoder itself somewhere in the PATH so that w3stringsx can find it
-
 import hashlib
 import io
 import os
 import subprocess
-import sys
 import unittest
 
 def file_hash(file_path: str) -> str:
@@ -89,14 +85,12 @@ class TestW3Stringsx(unittest.TestCase):
         
         cmd = f"python {root_dir}/src/w3stringsx.py {input_path} -o {output_path} {extra_args}"
         try:
-            subprocess.run(cmd, shell=True, check=True)
-        except Exception as e:
-            print(e, file=sys.stderr)
+            subprocess.run(cmd, shell=True, check=True, stdout=(None if see_output else subprocess.DEVNULL))
+        except:
+            pass
 
         try:
             self.assert_output(expected_dir, output_dir)
-        except Exception as e:
-            raise e
         finally:
             if not see_output:
                 for output in os.listdir(output_dir):

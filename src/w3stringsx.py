@@ -56,7 +56,7 @@ def log_warning(s: str):
     print(f'{COLOR_WARN}[WARN] {s}{COLOR_NONE}')
 
 def log_error(s: str):
-    print(f'{COLOR_ERROR}[ERROR] {s}{COLOR_NONE}')
+    print(f'{COLOR_ERROR}[ERROR] {s}{COLOR_NONE}', file=sys.stderr)
 
 
 # Because encoder ALWAYS puts output in the same directory as input before we are able to move it 
