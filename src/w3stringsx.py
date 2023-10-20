@@ -612,7 +612,7 @@ class ConfigXmlElement:
         return keys
 
 
-def prepare_csv_entries_from_xml(xml_path: str) -> list[CsvAbbreviatedEntry]:
+def prepare_csv_entries_from_xml(xml_path: str, search: str) -> list[CsvAbbreviatedEntry]:
     encoding = guess_file_encoding(xml_path)
     log_info(f"Reading {xml_path}. Detected encoding: {encoding}")
 
@@ -630,6 +630,9 @@ def prepare_csv_entries_from_xml(xml_path: str) -> list[CsvAbbreviatedEntry]:
             if key not in key_set:
                 key_set.add(key)
                 keys.append(key)
+
+        if search != "":
+            keys = list(filter(lambda k: re.search(search, k) is not None, keys))
 
     entries = [CsvAbbreviatedEntry(key, key) for key in keys]
 
@@ -843,8 +846,7 @@ def csv_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, args: CL
 
 
 def xml_context_work(args: CLIArguments):
-    # TODO optionally search string
-    entries = prepare_csv_entries_from_xml(args.input_path)
+    entries = prepare_csv_entries_from_xml(args.input_path, args.search)
     csv_path = resolve_output_path(args.input_path, args.output_path, "{stem}.en.csv")
     # TODO support merging
     save_abbreviated_entries(entries, csv_path)
