@@ -831,7 +831,7 @@ def xml_context_work(args: CLIArguments):
         csv_path = os.path.join(args.output_path, csv_basename)
     else:
         csv_path = args.output_path
-
+    # TODO support merging
     save_abbreviated_entries(entries, csv_path)
 
     log_info(f'String keys from {args.input_path} have been successfully saved to {args.output_path}')
@@ -849,7 +849,7 @@ def witcherscript_context_work(args: CLIArguments):
         csv_path = os.path.join(args.output_path, csv_basename)
     else:
         csv_path = args.output_path
-
+    # TODO support merging
     save_abbreviated_entries(entries, csv_path)
 
     log_info(f'String keys from {args.input_path} have been successfully saved to {args.output_path}')
