@@ -12,7 +12,7 @@ from xml.etree import ElementTree
 
 
 ###############################################################################################################################
-# CONSTANTS
+# CONSTANTS AND ENUMS
 ###############################################################################################################################
 
 W3STRINGSX_VERSION = '1.0.0'
@@ -43,6 +43,37 @@ MOD_ID_RANGE: range = range(2110000000, 2120000000)
 COLOR_NONE = '\033[0m'
 COLOR_WARN = '\033[93m'
 COLOR_ERROR = '\033[91m'
+
+
+class InputPathType(Enum):
+    UNSUPPORTED     = 0
+    W3STRINGS_FILE  = 1
+    CSV_FILE        = 2
+    XML_FILE        = 3
+    WS_FILE         = 4
+    SCRIPTS_DIR     = 5
+
+    @classmethod
+    def from_path(cls, path: str) -> InputPathType:
+        if os.path.isdir(path):
+            if os.path.basename(path) == "scripts":
+                return InputPathType.SCRIPTS_DIR
+        else:
+            _, ext = os.path.splitext(path)
+            match ext:
+                case '.w3strings':
+                    return InputPathType.W3STRINGS_FILE
+                case '.csv':
+                    return InputPathType.CSV_FILE
+                case '.xml':
+                    return InputPathType.XML_FILE
+                case '.ws':
+                    return InputPathType.WS_FILE
+                case _:
+                    return InputPathType.UNSUPPORTED
+                
+        return InputPathType.UNSUPPORTED
+
 
 
 ###############################################################################################################################
@@ -164,12 +195,12 @@ class W3StringsEncoder:
         log_warning(cmd)
 
         try:
-            print('=' * 60)
+            print('=' * 100)
             subprocess.run(cmd, shell=True, check=True)
         except Exception:
             raise Exception('Process exited with an error')
         finally:
-            print('=' * 60)
+            print('=' * 100)
 
     # Returns the path to decoded file
     def decode(self, w3strings_path: str) -> str:
@@ -198,41 +229,6 @@ class W3StringsEncoder:
             os.remove(ws_path)
 
         return w3strings_path
-
-
-
-###############################################################################################################################
-# INPUT TYPES
-###############################################################################################################################
-
-class InputPathType(Enum):
-    UNSUPPORTED     = 0
-    W3STRINGS_FILE  = 1
-    CSV_FILE        = 2
-    XML_FILE        = 3
-    WS_FILE         = 4
-    SCRIPTS_DIR     = 5
-
-    @classmethod
-    def from_path(cls, path: str) -> InputPathType:
-        if os.path.isdir(path):
-            if os.path.basename(path) == "scripts":
-                return InputPathType.SCRIPTS_DIR
-        else:
-            _, ext = os.path.splitext(path)
-            match ext:
-                case '.w3strings':
-                    return InputPathType.W3STRINGS_FILE
-                case '.csv':
-                    return InputPathType.CSV_FILE
-                case '.xml':
-                    return InputPathType.XML_FILE
-                case '.ws':
-                    return InputPathType.WS_FILE
-                case _:
-                    return InputPathType.UNSUPPORTED
-                
-        return InputPathType.UNSUPPORTED
 
 
 
@@ -636,7 +632,7 @@ def prepare_csv_entries_from_xml(xml_path: str, search: str) -> list[CsvAbbrevia
 
     entries = [CsvAbbreviatedEntry(key, key) for key in keys]
 
-    print(f"Found {len(keys)} string keys in {xml_path}")
+    log_info(f"Found {len(keys)} string keys in {xml_path}")
     return entries
 
 
@@ -647,7 +643,7 @@ def prepare_csv_entries_from_xml(xml_path: str, search: str) -> list[CsvAbbrevia
 
 def prepare_csv_str_keys_from_ws(ws_path: str, search: str) -> set[str]:
     encoding = guess_file_encoding(ws_path)
-    print(f"Reading {ws_path}. Detected encoding: {encoding}")
+    log_info(f"Reading {ws_path}. Detected encoding: {encoding}")
 
     keys = set[str]()
     with io.open(ws_path, mode='r', encoding=encoding) as f:
@@ -656,7 +652,7 @@ def prepare_csv_str_keys_from_ws(ws_path: str, search: str) -> set[str]:
             quoted = list(filter(lambda s: re.search(search, s) is not None, quoted))
             keys |= set(quoted)
 
-    print(f"Found {len(keys)} string keys in {ws_path}")
+    log_info(f"Found {len(keys)} string keys in {ws_path}")
     return keys
             
 
@@ -689,7 +685,7 @@ def prepare_csv_entries_from_ws_dir(ws_dir: str, search: str) -> list[CsvAbbrevi
 ###############################################################################################################################
 # CLI
 ###############################################################################################################################
-
+#TODO log level option
 class CLIArguments:
     input_path: str
     output_path: str
@@ -712,7 +708,7 @@ def make_cli() -> CLIArguments:
 
     parser.add_argument(
         'input_path',
-        help='path to a file [.w3strings, .csv, .xml, .ws] or directory [scripts]',
+        help='path to a file [.w3strings, .csv, .xml, .ws] or directory with specific name [scripts]',
         action='store'
     )
 
@@ -815,7 +811,7 @@ def w3strings_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, ar
     output_path = resolve_output_path(scratch.input_copy_path, args.output_path, "{stem}.csv")
     shutil.copy(csv_file, output_path)
 
-    log_info(f'{args.input_path} has been successfully decoded into csv file in {args.output_path}')
+    log_info(f'{args.input_path} has been successfully decoded into {output_path}')
 
 
 def csv_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, args: CLIArguments):
@@ -824,9 +820,7 @@ def csv_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, args: CL
 
     input_doc = CsvInputDocument(scratch.input_copy_path)
     output_doc = prepare_output_csv(input_doc)
-    print("parsed doc")
     output_doc_path = resolve_output_path(scratch.input_copy_path, scratch.folder_path, "{stem}.w3stringsx.csv")
-    print(output_doc_path)
     output_doc.save_to_file(output_doc_path)
 
     try:
@@ -851,7 +845,7 @@ def xml_context_work(args: CLIArguments):
     # TODO support merging
     save_abbreviated_entries(entries, csv_path)
 
-    log_info(f'String keys from {args.input_path} have been successfully saved to {args.output_path}')
+    log_info(f'String keys from {args.input_path} have been successfully saved to {csv_path}')
 
 
 def witcherscript_context_work(args: CLIArguments):
@@ -863,7 +857,7 @@ def witcherscript_context_work(args: CLIArguments):
     # TODO support merging
     save_abbreviated_entries(entries, csv_path)
 
-    log_info(f'String keys from {args.input_path} have been successfully saved to {args.output_path}')
+    log_info(f'String keys from {args.input_path} have been successfully saved to {csv_path}')
 
 
 def scripts_dir_context_work(args: CLIArguments):
@@ -875,7 +869,7 @@ def scripts_dir_context_work(args: CLIArguments):
     # TODO support merging
     save_abbreviated_entries(entries, csv_path)
 
-    log_info(f'String keys from {args.input_path} have been successfully saved to {args.output_path}')
+    log_info(f'String keys from {args.input_path} have been successfully saved to {csv_path}')
 
 
 
