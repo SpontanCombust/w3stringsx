@@ -80,14 +80,19 @@ class InputPathType(Enum):
 # UTILITIES
 ###############################################################################################################################
 
+logging_level: int = 3
+
 def log_info(s: str):
-    print(f'[INFO] {s}')
+    if logging_level >= 3:
+        print(f'[INFO] {s}')
 
 def log_warning(s: str):
-    print(f'{COLOR_WARN}[WARN] {s}{COLOR_NONE}')
+    if logging_level >= 2:
+        print(f'{COLOR_WARN}[WARN] {s}{COLOR_NONE}')
 
 def log_error(s: str):
-    print(f'{COLOR_ERROR}[ERROR] {s}{COLOR_NONE}', file=sys.stderr)
+    if logging_level >= 1:
+        print(f'{COLOR_ERROR}[ERROR] {s}{COLOR_NONE}', file=sys.stderr)
 
 
 # Because encoder ALWAYS puts output in the same directory as input before we are able to move it 
@@ -194,13 +199,17 @@ class W3StringsEncoder:
         log_warning('Executing command:')
         log_warning(cmd)
 
-        try:
+        # we ignore stderr, because it contains only the thread panic message without any information that is helpful to us
+        output = subprocess.run(cmd, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        if logging_level > 0:
             print('=' * 100)
-            subprocess.run(cmd, shell=True, check=True)
-        except Exception:
+            lines = output.stdout.split('\n')
+            for line in lines:
+                self.log_encoder_output(line)
+            print('=' * 100)
+  
+        if output.returncode != 0:
             raise Exception('Process exited with an error')
-        finally:
-            print('=' * 100)
 
     # Returns the path to decoded file
     def decode(self, w3strings_path: str) -> str:
@@ -229,6 +238,17 @@ class W3StringsEncoder:
             os.remove(ws_path)
 
         return w3strings_path
+    
+
+    def log_encoder_output(self, line: str):
+        if line.startswith('INFO'):
+            log_info(line[7:])
+        elif line.startswith('WARN'):
+            log_warning(line[7:])
+        elif line.startswith('ERROR'):
+            log_error(line[8:])
+        elif len(line) > 0:
+            log_info(line)
 
 
 
@@ -688,7 +708,7 @@ def prepare_csv_entries_from_ws_dir(ws_dir: str, search: str) -> list[CsvAbbrevi
 ###############################################################################################################################
 # CLI
 ###############################################################################################################################
-#TODO log level option
+
 class CLIArguments:
     input_path: str
     output_path: str
@@ -717,7 +737,7 @@ def make_cli() -> CLIArguments:
 
     parser.add_argument(
         '-o', '--output_path',
-        help='path to the output; default: [input file\'s directory]',
+        help='path to the output; default: [input file\'s directory]', #TODO default values with default= key
         action='store')
     
     parser.add_argument(
@@ -736,6 +756,12 @@ def make_cli() -> CLIArguments:
         help='text that will be used to search localized strings; can accept regular expressions',
         dest='search', action='store')
     
+    parser.add_argument(
+        '-w', '--warn',
+        help='logging level that should be used; available: [0 - no logs, 1 - only errors, 2 - errors and warnings, 3 - everything]; default: 3',
+        default=3,
+        dest='warn_level', action='store')
+    
     args = parser.parse_args()
 
     cli = CLIArguments()
@@ -744,6 +770,12 @@ def make_cli() -> CLIArguments:
     cli.lang = str(args.lang)
     cli.keep_csv = bool(args.keep_csv or False)
     cli.search = str(args.search or '')
+
+    global logging_level
+    try:
+        logging_level = int(args.warn_level)
+    except ValueError:
+        raise Exception('Invalid logging level value')
 
     return cli
 
