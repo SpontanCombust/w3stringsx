@@ -524,7 +524,7 @@ def save_abbreviated_entries(entries: list[CsvAbbreviatedEntry], file_path: str)
 ###############################################################################################################################
 # XML FILE PARSING
 ###############################################################################################################################
-
+#TODO support for bundled xml (items)
 # A new class, because native ElementTree.Element doesn't have support for easy node parent access
 class ConfigXmlElement:
     parent: Any = None # can't use the same class type for it
@@ -671,7 +671,7 @@ def prepare_csv_entries_from_ws_dir(ws_dir: str, search: str) -> list[CsvAbbrevi
     ws_files: list[str] = []
     for root, _, files in os.walk(ws_dir):
         for file in files:
-            if file.endswith('.ws'):
+            if file.endswith(('.ws', '.wss')):
                 ws_files.append(os.path.join(root, file))
 
     keys = set[str]()
