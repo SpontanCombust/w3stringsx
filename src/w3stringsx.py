@@ -293,7 +293,7 @@ class CsvCompleteEntry:
     def __str__(self) -> str:
         return '|'.join([
             str(self.id).rjust(10, ' '),
-            self.key_hex, #TODO rjust(8, ' '),
+            self.key_hex.rjust(8, ' '),
             self.key_str,
             self.text
         ])
