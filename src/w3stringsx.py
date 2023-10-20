@@ -293,7 +293,7 @@ class CsvCompleteEntry:
     def __str__(self) -> str:
         return '|'.join([
             str(self.id).rjust(10, ' '),
-            self.key_hex,
+            self.key_hex, #TODO rjust(8, ' '),
             self.key_str,
             self.text
         ])
@@ -440,7 +440,7 @@ class CsvInputDocument:
             raise Exception(f'There are multiple entries with the same id: {duplicate_ids}')
 
         if self.header_mod_id_space is None and len(self.entries_abbrev) > 0:
-            raise Exception('No id space was provided in the header to complete abbreviated entries')
+            raise Exception('No id space was provided in the header to complete abbreviated entries') # TODO let content decide ID if it's not in header
         
         self.read_content_id_space()
         
@@ -462,9 +462,6 @@ class CsvInputDocument:
             if self.header_mod_id_space is not None:
                 if self.header_mod_id_space != self.content_mod_id_space:
                     raise Exception(f'Id space in the header ({self.header_mod_id_space}) and id space used in the entries ({self.content_mod_id_space}) are not the same')
-                else:
-                    # TODO smarter ID generation, take the complete entries and make generator exceptions
-                    log_warning('Using complete and abbreviated entries in one file may cause ID overlap. Please settle for one or the other')
         else:
             raise Exception(f'There are entries for multiple mod id spaces: {mod_id_spaces}')
 
@@ -512,10 +509,15 @@ def prepare_output_csv(input: CsvInputDocument) -> CsvOutputDocument:
     output_entries = list[CsvCompleteEntry]()
 
     if input.header_mod_id_space is not None and len(input.entries_abbrev) > 0:
+        id_set = set([entry.id for entry in input.entries_complete])
         id_counter = MOD_ID_RANGE.start + input.header_mod_id_space * 1000
         for entry in input.entries_abbrev:
+            while id_counter in id_set:
+                id_set.remove(id_counter)
+                id_counter += 1
             complete = entry.into_complete(id_counter, '')
             output_entries.append(complete)
+            # A chance for ID overflow is rather low, so we will ignore it
             id_counter += 1
             
     for entry in input.entries_complete:

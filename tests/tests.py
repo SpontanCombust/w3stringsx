@@ -48,6 +48,9 @@ class Tests(unittest.TestCase):
     def test_encode_mixed(self):
         self.run_case('encode_mixed', '-l en -k')
 
+    def test_encode_mixed_overlap(self):
+        self.run_case('encode_mixed_overlap', '-l en -k')
+
     def test_parse_xml(self):
         self.run_case('parse_xml')
 

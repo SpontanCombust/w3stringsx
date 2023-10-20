@@ -72,7 +72,7 @@ panel_mod_settings|Mod settings
 preset_value_mod_default|Default
 ```
 
-Note that you can still add complete lines with IDs if you want to edit vanilla strings. You shouldn't however add complete lines with IDs in the space of your mod as they may overlap with those that were generated from abbreviated entries by the script.
+Note that you can still add complete lines with IDs if you want to edit vanilla strings or give some of the entries a predefined ID (for whatever reason). The script ensures that there will be no ID collisions when complete lines are generated from abbreviated ones.
 
 ### Encoding all possible languages
 Even if your mod was not made with some languages in mind, their respective w3strings files still need to be created so that modded text appears properly, even if in a different language. This is usually done by first encoding one w3strings file in the language of your choosing, for example English as en.w3strings. Then that file is copied and renamed to es.w3strings, fr.w3strings and so on.
