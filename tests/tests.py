@@ -74,7 +74,8 @@ class TestW3Stringsx(unittest.TestCase):
     def run_case(self, case_name: str, extra_args: str = '', input_path: str | None = None, output_path: str | None = None):
         print(f"Running test case {case_name}")
 
-        case_dir = f"./tests/{case_name}"
+        root_dir = os.path.abspath(os.path.join(__file__, '../../'))
+        case_dir = f"{root_dir}/tests/{case_name}"
         input_dir = f"{case_dir}/input"
         output_dir = f"{case_dir}/output"
         expected_dir = f"{case_dir}/expected"
@@ -86,7 +87,7 @@ class TestW3Stringsx(unittest.TestCase):
         if not os.path.exists(output_dir):
             os.mkdir(output_dir)
         
-        cmd = f"python ./src/w3stringsx.py {input_path} -o {output_path} {extra_args}"
+        cmd = f"python {root_dir}/src/w3stringsx.py {input_path} -o {output_path} {extra_args}"
         try:
             subprocess.run(cmd, shell=True, check=True)
         except Exception as e:
