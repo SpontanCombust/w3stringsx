@@ -560,6 +560,9 @@ class ConfigXmlElement:
 
     #TODO support nonLocalized tag
     def loc_str_keys(self) -> list[str]:
+        if self.display_name == "":
+            return []
+        
         match self.tag:
             case "Group":
                 keys: list[str] = []
@@ -649,7 +652,7 @@ def prepare_csv_str_keys_from_ws(ws_path: str, search: str) -> set[str]:
     with io.open(ws_path, mode='r', encoding=encoding) as f:
         for line in f:
             quoted = line.split('"')[1::2]
-            quoted = list(filter(lambda s: re.search(search, s) is not None, quoted))
+            quoted = list(filter(lambda s: s != "" and re.search(search, s) is not None, quoted))
             keys |= set(quoted)
 
     log_info(f"Found {len(keys)} string keys in {ws_path}")
