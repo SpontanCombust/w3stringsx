@@ -28,9 +28,9 @@ python w3stringsx.py "path\to\en.w3strings"
 Supported contexts:
 - .csv file - w3strings encoding
 - .w3strings file - w3strings decoding
-- .xml file - parsing menu XML for displayName attributes
-- .ws file - parsing WitcherScript files for localized strings
-- "scripts" directory - parsing WitcherScript directory for localised strings
+- .xml file - parsing menu XML file for displayName attributes
+- .ws file - parsing WitcherScript file for localized strings
+- "scripts" directory - parsing a directory for localised strings in WitcherScript files
 
 
 ### Header optionality
@@ -87,4 +87,6 @@ python w3stringsx.py "path\to\en.csv" -l "en"
 ```
 
 ### XML and WitcherScript parsing
-#TODO explanation
+Passing menu XMLs or WitcherScript (.ws) files to the script allows to scan them for string keys. In the case of XMLs they're searched in `displayName` attributes. In scripts however, they are looked for in strings that appear in the code. To narrow down the pool of possible candidates, `--search` option is used. It should contain a pattern that will be looked for in these files. Said pattern can be a regular expression if you need the search to be more strict than looking for some singular, simple substring.
+
+Parsed entries are saved to a .csv file that contains abbreviated localisation entries for you to fill in.
