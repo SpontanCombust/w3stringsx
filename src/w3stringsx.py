@@ -784,26 +784,29 @@ def preprocess_cli_args(args: CLIArguments):
 
 def main():
     args = make_cli()
-    encoder = W3StringsEncoder() #TODO create encoder only when necessary
-
     preprocess_cli_args(args)
 
     input_type = InputPathType.from_path(args.input_path)
-    match input_type:
-        case InputPathType.W3STRINGS_FILE:
-            scratch = ScratchFolder(args.input_path)
-            w3strings_context_work(encoder, scratch, args)
-        case InputPathType.CSV_FILE:
-            scratch = ScratchFolder(args.input_path)
-            csv_context_work(encoder, scratch, args)
-        case InputPathType.XML_FILE:
-            xml_context_work(args)
-        case InputPathType.WS_FILE:
-            witcherscript_context_work(args)
-        case InputPathType.SCRIPTS_DIR:
-            scripts_dir_context_work(args)
-        case _:
-            raise Exception(f'Unsupported file type or directory: {os.path.basename(args.input_path)}')
+
+    if input_type in (InputPathType.W3STRINGS_FILE, InputPathType.CSV_FILE):
+        encoder = W3StringsEncoder()
+        scratch = ScratchFolder(args.input_path)
+
+        match input_type:
+            case InputPathType.W3STRINGS_FILE:
+                w3strings_context_work(encoder, scratch, args)
+            case InputPathType.CSV_FILE:
+                csv_context_work(encoder, scratch, args)
+    else:
+        match input_type:
+            case InputPathType.XML_FILE:
+                xml_context_work(args)
+            case InputPathType.WS_FILE:
+                witcherscript_context_work(args)
+            case InputPathType.SCRIPTS_DIR:
+                scripts_dir_context_work(args)
+            case _:
+                raise Exception(f'Unsupported file type or directory: {os.path.basename(args.input_path)}')
 
 
 
