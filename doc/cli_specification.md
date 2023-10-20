@@ -1,5 +1,6 @@
 ```
 usage: w3stringsx.py [-h] [-o OUTPUT_PATH] [-l LANG] [-k] [-s SEARCH]
+                     [-w WARN_LEVEL]
                      input_path
 
 w3stringsx v1.1.0
@@ -17,6 +18,8 @@ options:
   -k, --keep-csv        keep the final form of the generated CSV file
   -s SEARCH, --search SEARCH
                         text that will be used to search localized strings; can accept regular expressions
+  -w WARN_LEVEL, --warn WARN_LEVEL
+                        logging level that should be used; available: [0 - no logs, 1 - only errors, 2 - errors and warnings, 3 - everything]; default: 3
 
 remarks:
   * in the case of CSV file context, the output path must be a directory
