@@ -16,7 +16,7 @@
 			</Preset>
 		</PresetsArray>
    		<VisibleVars>
-			<Var id="MODoption" displayName="mod_tab1_option" displayType="OPTIONS">
+			<Var id="MODoption" displayName="mod_tab1_option" displayType="OPTIONS" tags="nonLocalizedExceptFirst">
 				<OptionsArray>
 					<Option id="0" displayName="mod_opt1">
 						<Entry varId="MODoption" value="0"/>
@@ -32,7 +32,7 @@
             <Var id="MODslider1" displayName="mod_slider_float" displayType="SLIDER;0;1;100"/>
             <Var id="MODslider2" displayName="mod_slider_int" displayType="SLIDER;0;100;100"/>
             <Var id="MODtoggle" displayName="mod_toggle" displayType="TOGGLE"/>
-			<Var id="MODversion" displayName="mod_version" displayType="SLIDER;0;100;100000" visibilityCondition="hideAlways"/>
+			<Var id="MODversion" displayName="mod_version" displayType="SLIDER;0;100;100000" visibilityCondition="hideAlways" tags="nonLocalized"/>
         </VisibleVars>
     </Group>
 	
@@ -40,7 +40,7 @@
 	<Group id="MODtab2" displayName="Mods.my_mod.my_mod_tab2">
 	</Group>
     	
-   	<Group id="MODtab2subtab1" displayName="Mods.my_mod.my_mod_tab2.subtap1">
+   	<Group id="MODtab2subtab1" displayName="Mods.my_mod.my_mod_tab2.subtap1" tags="nonLocalized">
 		<VisibleVars>
 				<Var id="anotherSlider" displayName="mod_another_slider" displayType="SLIDER;-1.5;1.5;30"/>
 		</VisibleVars>

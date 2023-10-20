@@ -12,7 +12,6 @@ def file_hash(file_path: str) -> str:
     
 
 class Tests(unittest.TestCase):
-    #TODO automatic test discovery with args passed in an .ini file
     def test_decode_en(self):
         self.run_case('decode_en')
 
@@ -75,6 +74,9 @@ class Tests(unittest.TestCase):
 
     def test_parse_xml_search(self):
         self.run_case('parse_xml_search', '--search "MOD"')
+
+    def test_parse_xml_non_localized(self):
+        self.run_case('parse_xml_non_localized')
 
 
     def run_case(self, case_name: str, extra_args: str = '', input_path: str | None = None, output_path: str | None = None, see_output: bool = False):

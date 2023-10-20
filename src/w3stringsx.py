@@ -547,23 +547,28 @@ def save_abbreviated_entries(entries: list[CsvAbbreviatedEntry], file_path: str)
 #TODO support for bundled xml (items)
 # A new class, because native ElementTree.Element doesn't have support for easy node parent access
 class ConfigXmlElement:
-    parent: Any = None # can't use the same class type for it
+    element: ElementTree.Element
 
-    tag: str
+    parent: Any = None # can't use the same class type for it
+    children: list[ConfigXmlElement]
+
     display_name: str
     custom_display_name: bool
     custom_names: bool
+    non_localized: bool
+    non_localized_except_first: bool
 
-    children: list[ConfigXmlElement]
 
     # instantiate using base class object
     def __init__(self, element: ElementTree.Element, parent: Any = None):
+        self.element = element
         self.parent = parent
-        self.tag = element.tag
+        self.children = []
         self.display_name = ''
         self.custom_display_name = False
         self.custom_names = False
-        self.children = []
+        self.non_localized = False
+        self.non_localized_except_first = False
 
         try:
             self.display_name = element.attrib["displayName"]
@@ -572,18 +577,22 @@ class ConfigXmlElement:
                 self.custom_display_name = True
             if "customNames" in tags:
                 self.custom_names = True
+            if "nonLocalized" in tags:
+                self.non_localized = True
+            if "nonLocalizedExceptFirst" in tags:
+                self.non_localized_except_first = True
         except KeyError:
             pass
 
         for child in element:
             self.children.append(ConfigXmlElement(child, self))
 
-    #TODO support nonLocalized tag
+
     def loc_str_keys(self) -> list[str]:
-        if self.display_name == "":
+        if self.display_name == "" or self.non_localized:
             return []
         
-        match self.tag:
+        match self.element.tag:
             case "Group":
                 keys: list[str] = []
 
@@ -593,7 +602,7 @@ class ConfigXmlElement:
                 else:
                     keys.extend(panel_components)
                 
-                if "PresetsArray" in [child.tag for child in self.children]:
+                if "PresetsArray" in [child.element.tag for child in self.children]:
                     keys.append(f'preset_{self.display_name.replace(".", "_")}')
 
                 return keys
@@ -606,7 +615,9 @@ class ConfigXmlElement:
                     return [self.display_name]
             case "Option":
                 var_node = cast(ConfigXmlElement, self.parent.parent)
-                if not var_node.custom_names:
+                if var_node.non_localized or (var_node.non_localized_except_first and self.element.attrib["id"] != "0"):
+                    return []
+                elif not var_node.custom_names:
                     return [f'preset_value_{self.display_name}']
                 else:
                     return [self.display_name]
