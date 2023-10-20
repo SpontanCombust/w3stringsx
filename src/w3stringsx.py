@@ -3,6 +3,7 @@ import argparse
 from enum import Enum
 import io
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -620,7 +621,7 @@ def prepare_csv_entries_from_xml(xml_path: str) -> list[CsvAbbreviatedEntry]:
 # WITCHERSCRIPT FILE PARSING
 ###############################################################################################################################
 
-def prepare_csv_str_keys_from_ws(ws_path: str, prefix: str) -> set[str]:
+def prepare_csv_str_keys_from_ws(ws_path: str, search: str) -> set[str]:
     encoding = guess_file_encoding(ws_path)
     print(f"Reading {ws_path}. Detected encoding: {encoding}")
 
@@ -628,7 +629,7 @@ def prepare_csv_str_keys_from_ws(ws_path: str, prefix: str) -> set[str]:
     with io.open(ws_path, mode='r', encoding=encoding) as f:
         for line in f:
             quoted = line.split('"')[1::2]
-            quoted = list(filter(lambda s: s.startswith(prefix), quoted))
+            quoted = list(filter(lambda s: re.search(search, s) is not None, quoted))
             keys |= set(quoted)
 
     print(f"Found {len(keys)} string keys in {ws_path}")
@@ -670,7 +671,7 @@ class CLIArguments:
     output_path: str
     lang: str  # one of ALL_LANGS or 'all'
     keep_csv: bool
-    prefix: str
+    search: str
 
 
 def make_cli() -> CLIArguments:
@@ -682,7 +683,7 @@ def make_cli() -> CLIArguments:
         epilog='remarks:\n'
                 '  * in the case of CSV file context, the output path must be a directory\n'
                 '  * --language and --keep-csv arguments apply only to CSV file context\n'
-                '  * --prefix option applies only to WitcherScript file and scripts folder context'
+                '  * --search option applies only to XML, WitcherScript and scripts folder contexts'
     )
 
     parser.add_argument(
@@ -708,9 +709,9 @@ def make_cli() -> CLIArguments:
         dest='keep_csv', action='store_true')
     
     parser.add_argument(
-        '-p', '--prefix',
-        help='mod string prefix used to identify localized strings in WitcherScript files',
-        dest='prefix', action='store')
+        '-s', '--search',
+        help='text that will be used to search localized strings; can accept regular expressions',
+        dest='search', action='store')
     
     args = parser.parse_args()
 
@@ -719,7 +720,7 @@ def make_cli() -> CLIArguments:
     cli.output_path = str(args.output_path or '')
     cli.lang = str(args.lang)
     cli.keep_csv = bool(args.keep_csv or False)
-    cli.prefix = str(args.prefix or '')
+    cli.search = str(args.search or '')
 
     return cli
 
@@ -748,6 +749,11 @@ def preprocess_cli_args(args: CLIArguments):
 
     args.output_path = os.path.realpath(args.output_path)
 
+    try:
+        re.search(args.search, "test")
+    except Exception as e:
+        raise Exception(f'Invalid regex search string: {e}')
+
 
 ###############################################################################################################################
 # MAIN
@@ -755,7 +761,7 @@ def preprocess_cli_args(args: CLIArguments):
 
 def main():
     args = make_cli()
-    encoder = W3StringsEncoder()
+    encoder = W3StringsEncoder() #TODO create encoder only when necessary
 
     preprocess_cli_args(args)
 
@@ -823,8 +829,10 @@ def csv_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, args: CL
 
 
 def xml_context_work(args: CLIArguments):
+    # TODO optionally search string
     entries = prepare_csv_entries_from_xml(args.input_path)
 
+    # TODO resolving final path in dedicated function
     csv_path: str
     if os.path.isdir(args.output_path):
         csv_basename = os.path.splitext(os.path.basename(args.input_path))[0] + '.en.csv'
@@ -838,10 +846,10 @@ def xml_context_work(args: CLIArguments):
 
 
 def witcherscript_context_work(args: CLIArguments):
-    if args.prefix == "":
-        raise Exception("No mod strings prefix specified. Use the --prefix option")
+    if args.search == "":
+        raise Exception("No search string specified. Use the --search option")
     
-    entries = prepare_csv_entries_from_ws(args.input_path, args.prefix)
+    entries = prepare_csv_entries_from_ws(args.input_path, args.search)
 
     csv_path: str
     if os.path.isdir(args.output_path):
@@ -856,10 +864,10 @@ def witcherscript_context_work(args: CLIArguments):
 
 
 def scripts_dir_context_work(args: CLIArguments):
-    if args.prefix == "":
+    if args.search == "":
         raise Exception("No mod strings prefix specified. Use the --prefix option")
     
-    entries = prepare_csv_entries_from_ws_dir(args.input_path, args.prefix)
+    entries = prepare_csv_entries_from_ws_dir(args.input_path, args.search)
 
     csv_path: str
     if os.path.isdir(args.output_path):
@@ -867,7 +875,7 @@ def scripts_dir_context_work(args: CLIArguments):
         csv_path = os.path.join(args.output_path, csv_basename)
     else:
         csv_path = args.output_path
-
+    # TODO support merging
     save_abbreviated_entries(entries, csv_path)
 
     log_info(f'String keys from {args.input_path} have been successfully saved to {args.output_path}')

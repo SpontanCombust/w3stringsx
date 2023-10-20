@@ -65,13 +65,13 @@ class TestW3Stringsx(unittest.TestCase):
         self.run_case('parse_xml_with_file_output', output_path='parsed.csv')
 
     def test_parse_ws(self):
-        self.run_case('parse_ws', '--prefix ibt_')
+        self.run_case('parse_ws', '-s "^ibt_"')
 
     def test_parse_ws_dir(self):
-        self.run_case('parse_ws_dir', '--prefix ibt_', input_path='scripts/')
+        self.run_case('parse_ws_dir', '-s "ibt_"', input_path='scripts/')
 
 
-    def run_case(self, case_name: str, extra_args: str = '', input_path: str | None = None, output_path: str | None = None):
+    def run_case(self, case_name: str, extra_args: str = '', input_path: str | None = None, output_path: str | None = None, see_output: bool = False):
         print(f"Running test case {case_name}")
 
         root_dir = os.path.abspath(os.path.join(__file__, '../../'))
@@ -98,9 +98,10 @@ class TestW3Stringsx(unittest.TestCase):
         except Exception as e:
             raise e
         finally:
-            for output in os.listdir(output_dir):
-                output_path = os.path.join(output_dir, output)
-                os.remove(output_path)
+            if not see_output:
+                for output in os.listdir(output_dir):
+                    output_path = os.path.join(output_dir, output)
+                    os.remove(output_path)
 
         print()
 
