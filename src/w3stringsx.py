@@ -63,7 +63,7 @@ def log_error(s: str):
 # we first need to create a temporary folder in which we'll execute the commands
 # This way no files will be overwritten without user's consent
 class ScratchFolder:
-    input_copy_path: str
+    input_copy_path: str # basename should be exactly the same as original input basename 
     folder_path: str
 
     # Returns path to input that was copied to scratch 
@@ -93,8 +93,8 @@ def lf_to_crlf(file_path: str):
         f.truncate()
 
 
-# Returns whether this path that does not exist could point to a future file or rather a directory
-def maybe_file(path:str) -> bool:
+# Returns whether this path that may not exist could point to a file
+def maybeisfile(path:str) -> bool:
     return os.path.splitext(path)[1] != ''
 
 
@@ -109,6 +109,26 @@ def guess_file_encoding(path: str) -> str:
             return "UTF-8-SIG"
 
     return "UTF-8"
+
+
+def resolve_output_path(input_path: str, output_path: str, pattern_for_dir: str = '') -> str:
+    if not os.path.isdir(output_path) and maybeisfile(output_path):
+        return output_path
+    
+    # if output_path is not a file, it MUST be an existing directory
+    
+    input_basename = os.path.basename(input_path)
+
+    output_basename: str
+    if pattern_for_dir != '':
+        output_basename = pattern_for_dir
+        if "{stem}" in pattern_for_dir:
+            stem = os.path.splitext(input_basename)[0]
+            output_basename = output_basename.replace("{stem}", stem)
+    else:
+        output_basename = input_basename
+
+    return os.path.join(output_path, output_basename)
 
 
 
@@ -504,6 +524,7 @@ def save_abbreviated_entries(entries: list[CsvAbbreviatedEntry], file_path: str)
         f.write('\n'.join(file_lines))
 
 
+
 ###############################################################################################################################
 # XML FILE PARSING
 ###############################################################################################################################
@@ -637,14 +658,14 @@ def prepare_csv_str_keys_from_ws(ws_path: str, search: str) -> set[str]:
             
 
 
-def prepare_csv_entries_from_ws(ws_path: str, prefix: str) -> list[CsvAbbreviatedEntry]:
-    keys = prepare_csv_str_keys_from_ws(ws_path, prefix)
+def prepare_csv_entries_from_ws(ws_path: str, search: str) -> list[CsvAbbreviatedEntry]:
+    keys = prepare_csv_str_keys_from_ws(ws_path, search)
     keys = sorted(keys)
     entries = [CsvAbbreviatedEntry(key, key) for key in keys]
     return entries
 
 
-def prepare_csv_entries_from_ws_dir(ws_dir: str, prefix: str) -> list[CsvAbbreviatedEntry]:
+def prepare_csv_entries_from_ws_dir(ws_dir: str, search: str) -> list[CsvAbbreviatedEntry]:
     ws_files: list[str] = []
     for root, _, files in os.walk(ws_dir):
         for file in files:
@@ -653,7 +674,7 @@ def prepare_csv_entries_from_ws_dir(ws_dir: str, prefix: str) -> list[CsvAbbrevi
 
     keys = set[str]()
     for ws in ws_files:
-        keys |= prepare_csv_str_keys_from_ws(ws, prefix)
+        keys |= prepare_csv_str_keys_from_ws(ws, search)
 
     keys = sorted(keys)
     entries = [CsvAbbreviatedEntry(key, key) for key in keys]
@@ -736,7 +757,7 @@ def preprocess_cli_args(args: CLIArguments):
     
     if args.output_path != '':
         if not os.path.exists(args.output_path):
-            if not maybe_file(args.output_path):
+            if not maybeisfile(args.output_path):
                 log_warning('Specified output directory does not exist. Attempting to create one...')
                 try:
                     os.mkdir(args.output_path)
@@ -788,32 +809,25 @@ def w3strings_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, ar
     csv_file = encoder.decode(scratch.input_copy_path)
     lf_to_crlf(csv_file) # for whatever reason encoder saves the file with unix line endings
 
-    output_path: str
-    if os.path.isdir(args.output_path):
-        output_basename = os.path.splitext(os.path.basename(scratch.input_copy_path))[0] + '.csv'
-        output_path = os.path.join(args.output_path, output_basename)
-    else:
-        output_path = args.output_path
-
+    output_path = resolve_output_path(scratch.input_copy_path, args.output_path, "{stem}.csv")
     shutil.copy(csv_file, output_path)
 
     log_info(f'{args.input_path} has been successfully decoded into csv file in {args.output_path}')
 
 
 def csv_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, args: CLIArguments):
-    if os.path.isfile(args.output_path) or maybe_file(args.output_path):
+    if os.path.isfile(args.output_path) or maybeisfile(args.output_path):
         raise Exception('CSV context requires the output path to point to a directory')
 
     input_doc = CsvInputDocument(scratch.input_copy_path)
     output_doc = prepare_output_csv(input_doc)
-
-    output_file_basename = os.path.basename(scratch.input_copy_path)[:-4] + '.w3stringsx.csv'
-    output_file = os.path.join(scratch.folder_path, output_file_basename)
-
-    output_doc.save_to_file(output_file)
+    print("parsed doc")
+    output_doc_path = resolve_output_path(scratch.input_copy_path, scratch.folder_path, "{stem}.w3stringsx.csv")
+    print(output_doc_path)
+    output_doc.save_to_file(output_doc_path)
 
     try:
-        w3strings_file = encoder.encode(output_file, output_doc.id_space)
+        w3strings_file = encoder.encode(output_doc_path, output_doc.id_space)
         langs = ALL_LANGS if args.lang == 'all' else [args.lang]
         for lang in langs:
             copied = os.path.join(args.output_path, f'{lang}.w3strings')
@@ -822,8 +836,8 @@ def csv_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, args: CL
   
     finally:
         if args.keep_csv:
-            log_info(f'Saving prepared {output_file_basename} to {args.output_path}')
-            shutil.copy(output_file, args.output_path)
+            log_info(f'Saving prepared {os.path.basename(output_doc_path)} to {args.output_path}')
+            shutil.copy(output_doc_path, args.output_path)
 
     log_info(f'{args.input_path} has been successfully encoded into w3strings file(s) in {args.output_path}')
 
@@ -831,14 +845,7 @@ def csv_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, args: CL
 def xml_context_work(args: CLIArguments):
     # TODO optionally search string
     entries = prepare_csv_entries_from_xml(args.input_path)
-
-    # TODO resolving final path in dedicated function
-    csv_path: str
-    if os.path.isdir(args.output_path):
-        csv_basename = os.path.splitext(os.path.basename(args.input_path))[0] + '.en.csv'
-        csv_path = os.path.join(args.output_path, csv_basename)
-    else:
-        csv_path = args.output_path
+    csv_path = resolve_output_path(args.input_path, args.output_path, "{stem}.en.csv")
     # TODO support merging
     save_abbreviated_entries(entries, csv_path)
 
@@ -850,13 +857,7 @@ def witcherscript_context_work(args: CLIArguments):
         raise Exception("No search string specified. Use the --search option")
     
     entries = prepare_csv_entries_from_ws(args.input_path, args.search)
-
-    csv_path: str
-    if os.path.isdir(args.output_path):
-        csv_basename = os.path.splitext(os.path.basename(args.input_path))[0] + '.en.csv'
-        csv_path = os.path.join(args.output_path, csv_basename)
-    else:
-        csv_path = args.output_path
+    csv_path = resolve_output_path(args.input_path, args.output_path, "{stem}.en.csv")
     # TODO support merging
     save_abbreviated_entries(entries, csv_path)
 
@@ -868,13 +869,7 @@ def scripts_dir_context_work(args: CLIArguments):
         raise Exception("No mod strings prefix specified. Use the --prefix option")
     
     entries = prepare_csv_entries_from_ws_dir(args.input_path, args.search)
-
-    csv_path: str
-    if os.path.isdir(args.output_path):
-        csv_basename = 'scripts.en.csv'
-        csv_path = os.path.join(args.output_path, csv_basename)
-    else:
-        csv_path = args.output_path
+    csv_path = resolve_output_path(args.input_path, args.output_path, "scripts.en.csv")
     # TODO support merging
     save_abbreviated_entries(entries, csv_path)
 
