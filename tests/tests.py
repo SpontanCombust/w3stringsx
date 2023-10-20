@@ -61,6 +61,12 @@ class Tests(unittest.TestCase):
     def test_parse_xml_with_file_output(self):
         self.run_case('parse_xml_with_file_output', output_path='parsed.csv')
 
+    def test_decode_path_with_spaces(self):
+        self.run_case('decode path with spaces')
+
+    def test_encode_path_with_spaces(self):
+        self.run_case('encode path with spaces', '-l en')
+
     def test_parse_ws(self):
         self.run_case('parse_ws', '-s "^ibt_"')
 
@@ -85,7 +91,7 @@ class Tests(unittest.TestCase):
         if not os.path.exists(output_dir):
             os.mkdir(output_dir)
         
-        cmd = f"python {root_dir}/src/w3stringsx.py {input_path} -o {output_path} {extra_args}"
+        cmd = f'python {root_dir}/src/w3stringsx.py "{input_path}" -o "{output_path}" {extra_args}'
         try:
             subprocess.run(cmd, shell=True, check=True, stdout=(None if see_output else subprocess.DEVNULL))
         except:

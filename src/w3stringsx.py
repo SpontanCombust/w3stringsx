@@ -205,12 +205,12 @@ class W3StringsEncoder:
     # Returns the path to decoded file
     def decode(self, w3strings_path: str) -> str:
         log_info(f'Decoding {w3strings_path}...')
-        self.execute(f'-d {w3strings_path}')
+        self.execute(f'-d "{w3strings_path}"')
         return w3strings_path + '.csv' 
 
     # Returns the path to encoded file
     def encode(self, csv_path: str, id_space: int | None) -> str:
-        cmd = f'-e {csv_path} '
+        cmd = f'-e "{csv_path}" '
         if id_space is None:
             DISABLE_ID_CHECK_FLAG = '--force-ignore-id-space-check-i-know-what-i-am-doing'
             log_warning(f'Disabling ID check in the encoder because of the existence of entries outside of a single mod ID range')
