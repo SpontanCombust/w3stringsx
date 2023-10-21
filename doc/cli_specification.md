@@ -7,7 +7,7 @@ w3stringsx v1.1.0
 Script meant to provide an alternative CLI frontend for w3strings encoder to make it simpler and faster to create localized Witcher 3 content
 
 positional arguments:
-  input_path            path to a file [.w3strings, .csv, .xml, .ws] or directory with specific name [scripts]
+  input_path            path to a file [.w3strings, .csv, .xml, .ws] or a directory with [.xml, .ws] files
 
 options:
   -h, --help            show this help message and exit
@@ -24,5 +24,5 @@ options:
 remarks:
   * in the case of CSV file context, the output path must be a directory
   * --language and --keep-csv arguments apply only to CSV file context
-  * --search option applies only to XML, WitcherScript and scripts folder contexts
+  * --search option applies only to XML and WitcherScript contexts
 ```
