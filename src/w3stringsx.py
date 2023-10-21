@@ -55,18 +55,17 @@ COLOR_ERROR = '\033[91m'
 
 
 class InputPathType(Enum):
-    UNSUPPORTED     = 0
-    W3STRINGS_FILE  = 1
-    CSV_FILE        = 2
-    XML_FILE        = 3
-    WS_FILE         = 4
-    SCRIPTS_DIR     = 5
+    UNSUPPORTED         = 0
+    W3STRINGS_FILE      = 1
+    CSV_FILE            = 2
+    XML_FILE            = 3
+    WITCHERSCRIPT_FILE  = 4
+    DIRECTORY           = 5
 
     @classmethod
     def from_path(cls, path: str) -> InputPathType:
         if os.path.isdir(path):
-            if os.path.basename(path) == "scripts":
-                return InputPathType.SCRIPTS_DIR
+            return InputPathType.DIRECTORY
         else:
             _, ext = os.path.splitext(path)
             match ext:
@@ -76,12 +75,10 @@ class InputPathType(Enum):
                     return InputPathType.CSV_FILE
                 case '.xml':
                     return InputPathType.XML_FILE
-                case '.ws':
-                    return InputPathType.WS_FILE
+                case '.ws' | '.wss':
+                    return InputPathType.WITCHERSCRIPT_FILE
                 case _:
                     return InputPathType.UNSUPPORTED
-                
-        return InputPathType.UNSUPPORTED
 
 
 
@@ -668,7 +665,7 @@ class ConfigXmlElement:
         keys.extend(self.child_loc_str_keys())
         return keys
 
-
+# TODO rollback filtering
 def parse_config_xml_for_str_keys(xml_path: str, search: str) -> list[str]:
     encoding = guess_file_encoding(xml_path)
     log_info(f"Reading config XML {xml_path}. Detected encoding: {encoding}")
@@ -706,7 +703,6 @@ def parse_bundled_xml_for_str_keys(xml_path: str, search: str) -> list[str]:
 def is_config_xml(xml_path: str) -> bool:
     encoding = guess_file_encoding(xml_path)
     with io.open(xml_path, "r", encoding=encoding) as f:
-        print("is_config_xml")
         _, root = next(ElementTree.iterparse(f, events=["start"]))
         root = cast(ElementTree.Element, root)
         if root.tag == "UserConfig":
@@ -729,7 +725,7 @@ def parse_xml_for_str_keys(xml_path: str, search: str) -> list[str]:
 
 def parse_ws_for_str_keys(ws_path: str, search: str) -> list[str]:
     encoding = guess_file_encoding(ws_path)
-    log_info(f"Reading {ws_path}. Detected encoding: {encoding}")
+    log_info(f"Reading WitcherScript {ws_path}. Detected encoding: {encoding}")
 
     possible_keys = list[str]()
     with io.open(ws_path, mode='r', encoding=encoding) as f:
@@ -741,20 +737,6 @@ def parse_ws_for_str_keys(ws_path: str, search: str) -> list[str]:
 
     log_info(f"Found {len(possible_keys)} string keys in {ws_path}")
     return possible_keys
-            
-
-def parse_ws_dir_for_str_keys(ws_dir: str, search: str) -> list[str]:
-    ws_files: list[str] = []
-    for root, _, files in os.walk(ws_dir):
-        for file in files:
-            if file.endswith(('.ws', '.wss')):
-                ws_files.append(os.path.join(root, file))
-
-    keys = list[str]()
-    for ws in ws_files:
-        keys.extend(parse_ws_for_str_keys(ws, search))
-
-    return keys
 
 
 
@@ -779,12 +761,12 @@ def make_cli() -> CLIArguments:
         epilog='remarks:\n'
                 '  * in the case of CSV file context, the output path must be a directory\n'
                 '  * --language and --keep-csv arguments apply only to CSV file context\n'
-                '  * --search option applies only to XML, WitcherScript and scripts folder contexts'
+                '  * --search option applies only to XML and WitcherScript contexts'
     )
 
     parser.add_argument(
         'input_path',
-        help='path to a file [.w3strings, .csv, .xml, .ws] or directory with specific name [scripts]',
+        help='path to a file [.w3strings, .csv, .xml, .ws] or a directory with [.xml, .ws] files',
         action='store'
     )
 
@@ -888,10 +870,10 @@ def main():
         match input_type:
             case InputPathType.XML_FILE:
                 xml_context_work(args)
-            case InputPathType.WS_FILE:
+            case InputPathType.WITCHERSCRIPT_FILE:
                 witcherscript_context_work(args)
-            case InputPathType.SCRIPTS_DIR:
-                scripts_dir_context_work(args)
+            case InputPathType.DIRECTORY:
+                directory_context_work(args)
             case _:
                 raise Exception(f'Unsupported file type or directory: {os.path.basename(args.input_path)}')
 
@@ -955,14 +937,26 @@ def witcherscript_context_work(args: CLIArguments):
     log_info(f'Localisation keys from {args.input_path} have been successfully saved to {csv_path}')
 
 
-# TODO make overarching "directory context", which will look for scripts and XMLs to parse
-def scripts_dir_context_work(args: CLIArguments):
+def directory_context_work(args: CLIArguments):
     if args.search == "":
         raise Exception("No search string specified. Use the --search option")
     
-    keys = sorted(parse_ws_dir_for_str_keys(args.input_path, args.search))
+    # TODO divide file into seperate sections
+    keys = list[str]()
+    for root, _, files in os.walk(args.input_path):
+        for file in files:
+            path = os.path.join(root, file)
+            match InputPathType.from_path(path):
+                case InputPathType.WITCHERSCRIPT_FILE:
+                    keys.extend(parse_ws_for_str_keys(path, args.search))
+                case InputPathType.XML_FILE:
+                    keys.extend(parse_xml_for_str_keys(path, args.search))
+                case _:
+                    pass
+
+    keys = sorted(keys)
     entries = [CsvAbbreviatedEntry(key) for key in keys]
-    csv_path = resolve_output_path(args.input_path, args.output_path, "scripts.en.csv")
+    csv_path = resolve_output_path(args.input_path, args.output_path, "{stem}.en.csv")
     # TODO support merging
     save_abbreviated_entries(entries, csv_path)
 
