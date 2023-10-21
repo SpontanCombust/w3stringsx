@@ -84,6 +84,9 @@ class Tests(unittest.TestCase):
     def test_parse_xml_non_localized(self):
         self.run_case('parse_xml_non_localized')
 
+    def test_parse_xml_bundled_items(self):
+        self.run_case('parse_xml_bundled_items')
+
 
     def run_case(self, case_name: str, extra_args: str = '', input_path: str | None = None, output_path: str | None = None, see_output: bool = False):
         root_dir = os.path.abspath(os.path.join(__file__, '../../'))
