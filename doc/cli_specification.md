@@ -17,7 +17,7 @@ options:
                         set the target encoding language, "all" will generate all possible variants; available: ['an', 'br', 'cn', 'cz', 'de', 'en', 'es', 'esmx', 'fr', 'hu', 'it', 'jp', 'kr', 'pl', 'ru', 'tr', 'zh', 'all']
   -k, --keep-csv        keep the final form of the generated CSV file
   -s SEARCH, --search SEARCH
-                        text that will be used to search localized strings; can accept regular expressions
+                        text that will be used to search localisation string keys; can accept regular expressions
   -w WARN_LEVEL, --warn WARN_LEVEL
                         logging level that should be used; available: [0 - no logs, 1 - only errors, 2 - errors and warnings, 3 - everything]; default: 3
 
