@@ -71,6 +71,9 @@ panel_Mods|Mods
 panel_mod_settings|Mod settings
 preset_value_mod_default|Default
 ```
+These entries that contain only string key and text columns are referred to in this project as "abbreviated entries". Entries with all the required columns, that is ID column, hex key, string key and text on the other hand are referred to as "complete entries".
+
+If there exists at least one complete entry in the file with the ID in proper mod ID space, the `;idspace` header is no longer needed.
 
 Note that you can still add complete lines with IDs if you want to edit vanilla strings or give some of the entries a predefined ID (for whatever reason). The script ensures that there will be no ID collisions when complete lines are generated from abbreviated ones.
 

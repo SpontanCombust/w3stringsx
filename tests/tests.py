@@ -39,6 +39,9 @@ class Tests(unittest.TestCase):
     def test_encode_abbreviated(self):
         self.run_case('encode_abbreviated', '-l esmx')
 
+    def test_encode_abbreviated_no_header(self):
+        self.run_case('encode_abbreviated_no_header', '-l pl -k')
+
     def test_encode_keep_csv(self):
         self.run_case('encode_keep_csv', '-l esmx -k')
 

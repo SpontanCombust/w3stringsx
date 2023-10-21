@@ -405,7 +405,7 @@ class CsvInputDocument:
                 if self.header_mod_id_space not in range(0, 10000):
                     raise Exception('Id space value falls out of 0-9999 range')
                 
-                log_info(f'Detected id space {self.header_mod_id_space} in the header. It will be used to complete abbreviated entries')
+                log_warning(f'Detected mod id space in the header: {self.header_mod_id_space}')
 
         if self.target_lang is None and self.header_lang_meta not in (None, 'cleartext'):
             # if it's not cleartext, it's the same as the proper file name
@@ -438,9 +438,6 @@ class CsvInputDocument:
         duplicate_ids = [id for id in all_ids if all_ids.count(id) > 1]
         if len(duplicate_ids) > 1:
             raise Exception(f'There are multiple entries with the same id: {duplicate_ids}')
-
-        if self.header_mod_id_space is None and len(self.entries_abbrev) > 0:
-            raise Exception('No id space was provided in the header to complete abbreviated entries') # TODO let content decide ID if it's not in header
         
         self.read_content_id_space()
         
@@ -457,13 +454,15 @@ class CsvInputDocument:
             self.content_mod_id_space = None
         elif len(mod_id_spaces) == 1:
             self.content_mod_id_space = mod_id_spaces.pop()
-            log_warning(f'Detected mod id space: {self.content_mod_id_space}')
-
-            if self.header_mod_id_space is not None:
-                if self.header_mod_id_space != self.content_mod_id_space:
-                    raise Exception(f'Id space in the header ({self.header_mod_id_space}) and id space used in the entries ({self.content_mod_id_space}) are not the same')
+            log_warning(f'Detected mod id space in entries: {self.content_mod_id_space}')
         else:
             raise Exception(f'There are entries for multiple mod id spaces: {mod_id_spaces}')
+        
+        if self.header_mod_id_space is not None and self.content_mod_id_space is not None:
+            if self.header_mod_id_space != self.content_mod_id_space:
+                raise Exception(f'Id space in the header ({self.header_mod_id_space}) and id space used in the entries ({self.content_mod_id_space}) do not match')
+        elif self.header_mod_id_space is None and self.content_mod_id_space is None and len(self.entries_abbrev) > 0:
+            raise Exception('No id space was provided to complete abbreviated entries')
 
 
 '''Processed form of the document that will be forwarded to w3strings for encoding'''
@@ -504,13 +503,13 @@ def prepare_output_csv(input: CsvInputDocument) -> CsvOutputDocument:
         log_info('No language meta could be deduced. Defaulting to "en"')
 
     target_lang = input.target_lang or 'en'
-    id_space = None if input.has_vanilla_entries else (input.header_mod_id_space or input.content_mod_id_space)
+    id_space = input.header_mod_id_space or input.content_mod_id_space
 
     output_entries = list[CsvCompleteEntry]()
 
-    if input.header_mod_id_space is not None and len(input.entries_abbrev) > 0:
+    if id_space is not None and len(input.entries_abbrev) > 0:
         id_set = set([entry.id for entry in input.entries_complete])
-        id_counter = MOD_ID_RANGE.start + input.header_mod_id_space * 1000
+        id_counter = MOD_ID_RANGE.start + id_space * 1000
         for entry in input.entries_abbrev:
             while id_counter in id_set:
                 id_set.remove(id_counter)
@@ -528,7 +527,7 @@ def prepare_output_csv(input: CsvInputDocument) -> CsvOutputDocument:
     return CsvOutputDocument(
         target_lang,
         header_lang_meta,
-        id_space,
+        id_space if not input.has_vanilla_entries else None,
         output_entries,
     )
 
