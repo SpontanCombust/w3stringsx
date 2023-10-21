@@ -28,8 +28,8 @@ python w3stringsx.py "path\to\en.w3strings"
 Supported contexts:
 - .csv file - w3strings encoding
 - .w3strings file - w3strings decoding
-- .xml file - parsing menu XML file for displayName attributes
-- .ws file - parsing WitcherScript file for localized strings
+- .xml file - parsing menu XML file for displayName attributes or bundled XML file for localisation keys
+- .ws file - parsing WitcherScript file for localisation keys
 - "scripts" directory - parsing a directory for localised strings in WitcherScript files
 
 

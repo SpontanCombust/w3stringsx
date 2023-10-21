@@ -40,6 +40,15 @@ ALL_LANGS_META: dict[str, str] = {
 
 MOD_ID_RANGE: range = range(2110000000, 2120000000)
 
+BUNDLED_XML_LOCALIZATION_ATTRIBS: dict[str, list[str]] = {
+    # gameplay/abilities
+    'effect': ['effectNameLocalisationKey_name', 'effectDescriptionLocalisationKey_name'],
+    'skill': ['localisationName', 'localisationDescriptionNotAcquired', 'localisationDescription', 'localisationDescriptionLevel2', 'localisationDescriptionLevel3'],
+    # gameplay/items
+    'item': ['localisation_key_name', 'localisation_key_description'],
+    'recipe': ['localisation_key_name']
+}
+
 COLOR_NONE = '\033[0m'
 COLOR_WARN = '\033[93m'
 COLOR_ERROR = '\033[91m'
@@ -177,6 +186,7 @@ def remove_duplicate_keys_and_filter(keys: list[str], search: str) -> list[str]:
             key_set.add(k)
             result.append(k)
 
+    result = list(filter(lambda k: k != "", result))
     if search != "":
         result = list(filter(lambda k: re.search(search, k) is not None, result))
 
@@ -561,7 +571,7 @@ def save_abbreviated_entries(entries: list[CsvAbbreviatedEntry], file_path: str)
 ###############################################################################################################################
 # XML FILE PARSING
 ###############################################################################################################################
-#TODO support for bundled xml (items)
+
 # A new class, because native ElementTree.Element doesn't have support for easy node parent access
 class ConfigXmlElement:
     element: ElementTree.Element
@@ -661,10 +671,10 @@ class ConfigXmlElement:
 
 def parse_config_xml_for_str_keys(xml_path: str, search: str) -> list[str]:
     encoding = guess_file_encoding(xml_path)
-    log_info(f"Reading {xml_path}. Detected encoding: {encoding}")
+    log_info(f"Reading config XML {xml_path}. Detected encoding: {encoding}")
 
     keys: list[str] = []
-    with io.open(xml_path, "r", encoding="UTF-8") as f:
+    with io.open(xml_path, "r", encoding=encoding) as f:
         xml_str = f.read()
         root = ElementTree.fromstring(xml_str)
         config_xml = ConfigXmlElement(root)
@@ -673,6 +683,43 @@ def parse_config_xml_for_str_keys(xml_path: str, search: str) -> list[str]:
 
     log_info(f"Found {len(keys)} string keys in {xml_path}")
     return keys
+
+
+def parse_bundled_xml_for_str_keys(xml_path: str, search: str) -> list[str]:
+    encoding = guess_file_encoding(xml_path)
+    log_info(f"Reading bundled XML {xml_path}. Detected encoding: {encoding}")
+
+    keys: list[str] = []
+    with io.open(xml_path, "r", encoding=encoding) as f:
+        for _, elem in ElementTree.iterparse(f, events=["start"]):
+            elem = cast(ElementTree.Element, elem)
+            if elem.tag in BUNDLED_XML_LOCALIZATION_ATTRIBS:
+                for attrib in BUNDLED_XML_LOCALIZATION_ATTRIBS[elem.tag]:
+                    keys.append(elem.attrib.get(attrib, ''))
+
+        keys = remove_duplicate_keys_and_filter(keys, search)
+
+    log_info(f"Found {len(keys)} string keys in {xml_path}")
+    return keys
+
+
+def is_config_xml(xml_path: str) -> bool:
+    encoding = guess_file_encoding(xml_path)
+    with io.open(xml_path, "r", encoding=encoding) as f:
+        print("is_config_xml")
+        _, root = next(ElementTree.iterparse(f, events=["start"]))
+        root = cast(ElementTree.Element, root)
+        if root.tag == "UserConfig":
+            return True
+        
+    return False
+
+
+def parse_xml_for_str_keys(xml_path: str, search: str) -> list[str]:
+    if is_config_xml(xml_path):
+        return parse_config_xml_for_str_keys(xml_path, search)
+    else:
+        return parse_bundled_xml_for_str_keys(xml_path, search)
 
 
 
@@ -760,7 +807,7 @@ def make_cli() -> CLIArguments:
     
     parser.add_argument(
         '-s', '--search',
-        help='text that will be used to search localized strings; can accept regular expressions',
+        help='text that will be used to search localisation string keys; can accept regular expressions',
         default='',
         dest='search', action='store')
     
@@ -886,13 +933,13 @@ def csv_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, args: CL
 
 
 def xml_context_work(args: CLIArguments):
-    keys = parse_config_xml_for_str_keys(args.input_path, args.search)
+    keys = parse_xml_for_str_keys(args.input_path, args.search)
     entries = [CsvAbbreviatedEntry(key) for key in keys]
     csv_path = resolve_output_path(args.input_path, args.output_path, "{stem}.en.csv")
     # TODO support merging
     save_abbreviated_entries(entries, csv_path)
 
-    log_info(f'String keys from {args.input_path} have been successfully saved to {csv_path}')
+    log_info(f'Localisation keys from {args.input_path} have been successfully saved to {csv_path}')
 
 
 def witcherscript_context_work(args: CLIArguments):
@@ -905,13 +952,13 @@ def witcherscript_context_work(args: CLIArguments):
     # TODO support merging
     save_abbreviated_entries(entries, csv_path)
 
-    log_info(f'String keys from {args.input_path} have been successfully saved to {csv_path}')
+    log_info(f'Localisation keys from {args.input_path} have been successfully saved to {csv_path}')
 
 
 # TODO make overarching "directory context", which will look for scripts and XMLs to parse
 def scripts_dir_context_work(args: CLIArguments):
     if args.search == "":
-        raise Exception("No mod strings prefix specified. Use the --prefix option")
+        raise Exception("No search string specified. Use the --search option")
     
     keys = sorted(parse_ws_dir_for_str_keys(args.input_path, args.search))
     entries = [CsvAbbreviatedEntry(key) for key in keys]
@@ -919,7 +966,7 @@ def scripts_dir_context_work(args: CLIArguments):
     # TODO support merging
     save_abbreviated_entries(entries, csv_path)
 
-    log_info(f'String keys from {args.input_path} have been successfully saved to {csv_path}')
+    log_info(f'Localisation keys from {args.input_path} have been successfully saved to {csv_path}')
 
 
 
