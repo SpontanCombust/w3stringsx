@@ -167,6 +167,22 @@ def resolve_output_path(input_path: str, output_path: str, pattern_for_dir: str 
     return os.path.join(output_path, output_basename)
 
 
+# also preserve the order of first appearance
+def remove_duplicate_keys_and_filter(keys: list[str], search: str) -> list[str]:
+    key_set = set[str]()  # using set for fast lookup
+    result = list[str]()
+
+    for k in keys:
+        if k not in key_set:
+            key_set.add(k)
+            result.append(k)
+
+    if search != "":
+        result = list(filter(lambda k: re.search(search, k) is not None, result))
+
+    return result
+
+
 
 ###############################################################################################################################
 # ENCODER
@@ -643,7 +659,7 @@ class ConfigXmlElement:
         return keys
 
 
-def prepare_csv_entries_from_xml(xml_path: str, search: str) -> list[CsvAbbreviatedEntry]:
+def parse_config_xml_for_str_keys(xml_path: str, search: str) -> list[str]:
     encoding = guess_file_encoding(xml_path)
     log_info(f"Reading {xml_path}. Detected encoding: {encoding}")
 
@@ -653,22 +669,10 @@ def prepare_csv_entries_from_xml(xml_path: str, search: str) -> list[CsvAbbrevia
         root = ElementTree.fromstring(xml_str)
         config_xml = ConfigXmlElement(root)
 
-        all_keys = config_xml.all_loc_str_keys()
-        key_set: set[str] = set()  # using a set for fast lookup
-
-        # remove all duplicates and preserve the order of appearance
-        for key in all_keys:
-            if key not in key_set:
-                key_set.add(key)
-                keys.append(key)
-
-        if search != "":
-            keys = list(filter(lambda k: re.search(search, k) is not None, keys))
-
-    entries = [CsvAbbreviatedEntry(key) for key in keys]
+        keys = remove_duplicate_keys_and_filter(config_xml.all_loc_str_keys(), search)
 
     log_info(f"Found {len(keys)} string keys in {xml_path}")
-    return entries
+    return keys
 
 
 
@@ -676,44 +680,34 @@ def prepare_csv_entries_from_xml(xml_path: str, search: str) -> list[CsvAbbrevia
 # WITCHERSCRIPT FILE PARSING
 ###############################################################################################################################
 
-def prepare_csv_str_keys_from_ws(ws_path: str, search: str) -> set[str]:
+def parse_ws_for_str_keys(ws_path: str, search: str) -> list[str]:
     encoding = guess_file_encoding(ws_path)
     log_info(f"Reading {ws_path}. Detected encoding: {encoding}")
 
-    keys = set[str]()
+    possible_keys = list[str]()
     with io.open(ws_path, mode='r', encoding=encoding) as f:
         for line in f:
             quoted = line.split('"')[1::2]
-            quoted = list(filter(lambda s: s != "" and re.search(search, s) is not None, quoted))
-            keys |= set(quoted)
+            possible_keys.extend(quoted)
 
-    log_info(f"Found {len(keys)} string keys in {ws_path}")
-    return keys
+    possible_keys = remove_duplicate_keys_and_filter(possible_keys, search)
+
+    log_info(f"Found {len(possible_keys)} string keys in {ws_path}")
+    return possible_keys
             
 
-
-def prepare_csv_entries_from_ws(ws_path: str, search: str) -> list[CsvAbbreviatedEntry]:
-    keys = prepare_csv_str_keys_from_ws(ws_path, search)
-    keys = sorted(keys)
-    entries = [CsvAbbreviatedEntry(key) for key in keys]
-    return entries
-
-
-def prepare_csv_entries_from_ws_dir(ws_dir: str, search: str) -> list[CsvAbbreviatedEntry]:
+def parse_ws_dir_for_str_keys(ws_dir: str, search: str) -> list[str]:
     ws_files: list[str] = []
     for root, _, files in os.walk(ws_dir):
         for file in files:
             if file.endswith(('.ws', '.wss')):
                 ws_files.append(os.path.join(root, file))
 
-    keys = set[str]()
+    keys = list[str]()
     for ws in ws_files:
-        keys |= prepare_csv_str_keys_from_ws(ws, search)
+        keys.extend(parse_ws_for_str_keys(ws, search))
 
-    keys = sorted(keys)
-    entries = [CsvAbbreviatedEntry(key) for key in keys]
-
-    return entries
+    return keys
 
 
 
@@ -892,7 +886,8 @@ def csv_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, args: CL
 
 
 def xml_context_work(args: CLIArguments):
-    entries = prepare_csv_entries_from_xml(args.input_path, args.search)
+    keys = parse_config_xml_for_str_keys(args.input_path, args.search)
+    entries = [CsvAbbreviatedEntry(key) for key in keys]
     csv_path = resolve_output_path(args.input_path, args.output_path, "{stem}.en.csv")
     # TODO support merging
     save_abbreviated_entries(entries, csv_path)
@@ -904,7 +899,8 @@ def witcherscript_context_work(args: CLIArguments):
     if args.search == "":
         raise Exception("No search string specified. Use the --search option")
     
-    entries = prepare_csv_entries_from_ws(args.input_path, args.search)
+    keys = sorted(parse_ws_for_str_keys(args.input_path, args.search))
+    entries = [CsvAbbreviatedEntry(key) for key in keys]
     csv_path = resolve_output_path(args.input_path, args.output_path, "{stem}.en.csv")
     # TODO support merging
     save_abbreviated_entries(entries, csv_path)
@@ -912,11 +908,13 @@ def witcherscript_context_work(args: CLIArguments):
     log_info(f'String keys from {args.input_path} have been successfully saved to {csv_path}')
 
 
+# TODO make overarching "directory context", which will look for scripts and XMLs to parse
 def scripts_dir_context_work(args: CLIArguments):
     if args.search == "":
         raise Exception("No mod strings prefix specified. Use the --prefix option")
     
-    entries = prepare_csv_entries_from_ws_dir(args.input_path, args.search)
+    keys = sorted(parse_ws_dir_for_str_keys(args.input_path, args.search))
+    entries = [CsvAbbreviatedEntry(key) for key in keys]
     csv_path = resolve_output_path(args.input_path, args.output_path, "scripts.en.csv")
     # TODO support merging
     save_abbreviated_entries(entries, csv_path)
