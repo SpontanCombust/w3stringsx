@@ -16,7 +16,7 @@ Current CLI specification can be found [here](./doc/cli_specification.md).
 ## Features
 
 ### Input context awareness
-If you give it a csv file it will encode. If you give it a w3strings file, it will decode it etc.
+Script performs a different action based on the type of file given to it.
 ```shell
 # Encodes the file
 python w3stringsx.py "path\to\en.csv"
@@ -25,12 +25,12 @@ python w3stringsx.py "path\to\en.csv"
 python w3stringsx.py "path\to\en.w3strings"
 ```
 
-Supported contexts:
+#### Supported input contexts:
 - .csv file - w3strings encoding
 - .w3strings file - w3strings decoding
 - .xml file - parsing menu XML file for displayName attributes or bundled XML file for localisation keys
 - .ws file - parsing WitcherScript file for localisation keys
-- "scripts" directory - parsing a directory for localised strings in WitcherScript files
+- directory - scanning a directory recursively for WitcherScript or XML files to parse
 
 
 ### Header optionality
@@ -90,6 +90,9 @@ python w3stringsx.py "path\to\en.csv" -l "en"
 ```
 
 ### XML and WitcherScript parsing
-Passing menu XMLs or WitcherScript (.ws) files to the script allows to scan them for string keys. In the case of XMLs they're searched in `displayName` attributes. In scripts however, they are looked for in strings that appear in the code. To narrow down the pool of possible candidates, `--search` option is used. It should contain a pattern that will be looked for in these files. Said pattern can be a regular expression if you need the search to be more strict than looking for some singular, simple substring.
+Passing menu XMLs or WitcherScript (.ws) files to the script allows to scan them for string keys. 
+In the case of config XMLs they're searched in `displayName` attributes, in bundled XMLs in `localisation_key_name` and other similair attributes that may hold localisation keys. In scripts however, they are looked for in quoted text that appear in the code.
+
+To narrow down the pool of possible candidates, `--search` option. It should contain a pattern that will be looked for in these files. Said pattern can be a regular expression if you need the search to be more strict than looking for some singular, simple substring.
 
 Parsed entries are saved to a .csv file that contains abbreviated localisation entries for you to fill in.
