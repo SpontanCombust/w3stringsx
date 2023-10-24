@@ -49,6 +49,10 @@ BUNDLED_XML_LOCALIZATION_ATTRIBS: dict[str, list[str]] = {
     'recipe': ['localisation_key_name']
 }
 
+COMMENT_SECTION_MENU = "menu"
+COMMENT_SECTION_BUNDLE = "bundle"
+COMMENT_SECTION_SCRIPTS = "scripts"
+
 COLOR_NONE = '\033[0m'
 COLOR_WARN = '\033[93m'
 COLOR_ERROR = '\033[91m'
@@ -189,6 +193,11 @@ def remove_duplicate_keys_and_filter(keys: list[str], search: str) -> list[str]:
 
     return result
 
+
+# set operation, but done to preserve the order of lhs
+def key_list_difference(lhs: list[str], rhs: list[str]) -> list[str]:
+    rhs_set = set(rhs)
+    return [k for k in lhs if k not in rhs_set]
 
 
 ###############################################################################################################################
@@ -555,10 +564,13 @@ def prepare_output_csv(input: CsvInputDocument) -> CsvOutputDocument:
     )
 
 
-def save_abbreviated_entries(entries: list[CsvAbbreviatedEntry], file_path: str):
+def save_abbreviated_entries(entries: dict[str, list[CsvAbbreviatedEntry]], file_path: str):
     file_lines: list[str] = []
     file_lines.append(";idspace=????")
-    file_lines.extend([str(entry) for entry in entries])
+
+    for section, section_entries in entries.items():
+        file_lines.append(f";{section}")
+        file_lines.extend([str(entry) for entry in section_entries])
 
     with io.open(file_path, mode="w", encoding="UTF-8") as f:
         f.write('\n'.join(file_lines))
@@ -665,7 +677,7 @@ class ConfigXmlElement:
         keys.extend(self.child_loc_str_keys())
         return keys
 
-# TODO rollback filtering
+
 def parse_config_xml_for_str_keys(xml_path: str, search: str) -> list[str]:
     encoding = guess_file_encoding(xml_path)
     log_info(f"Reading config XML {xml_path}. Detected encoding: {encoding}")
@@ -711,11 +723,11 @@ def is_config_xml(xml_path: str) -> bool:
     return False
 
 
-def parse_xml_for_str_keys(xml_path: str, search: str) -> list[str]:
+def parse_xml_for_str_keys(xml_path: str, search: str) -> tuple[list[str], bool]:
     if is_config_xml(xml_path):
-        return parse_config_xml_for_str_keys(xml_path, search)
+        return (parse_config_xml_for_str_keys(xml_path, search), True)
     else:
-        return parse_bundled_xml_for_str_keys(xml_path, search)
+        return (parse_bundled_xml_for_str_keys(xml_path, search), False)
 
 
 
@@ -875,7 +887,7 @@ def main():
             case InputPathType.DIRECTORY:
                 directory_context_work(args)
             case _:
-                raise Exception(f'Unsupported file type or directory: {os.path.basename(args.input_path)}')
+                raise Exception(f'Unsupported file type: {os.path.basename(args.input_path)}')
 
 
 
@@ -915,11 +927,14 @@ def csv_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, args: CL
 
 
 def xml_context_work(args: CLIArguments):
-    keys = parse_xml_for_str_keys(args.input_path, args.search)
+    keys, is_config = parse_xml_for_str_keys(args.input_path, args.search)
     entries = [CsvAbbreviatedEntry(key) for key in keys]
+    section_name = COMMENT_SECTION_MENU if is_config else COMMENT_SECTION_BUNDLE
+    section = {section_name : entries}
+
     csv_path = resolve_output_path(args.input_path, args.output_path, "{stem}.en.csv")
     # TODO support merging
-    save_abbreviated_entries(entries, csv_path)
+    save_abbreviated_entries(section, csv_path)
 
     log_info(f'Localisation keys from {args.input_path} have been successfully saved to {csv_path}')
 
@@ -930,9 +945,11 @@ def witcherscript_context_work(args: CLIArguments):
     
     keys = sorted(parse_ws_for_str_keys(args.input_path, args.search))
     entries = [CsvAbbreviatedEntry(key) for key in keys]
+    section = {COMMENT_SECTION_SCRIPTS : entries}
+
     csv_path = resolve_output_path(args.input_path, args.output_path, "{stem}.en.csv")
     # TODO support merging
-    save_abbreviated_entries(entries, csv_path)
+    save_abbreviated_entries(section, csv_path)
 
     log_info(f'Localisation keys from {args.input_path} have been successfully saved to {csv_path}')
 
@@ -940,25 +957,44 @@ def witcherscript_context_work(args: CLIArguments):
 def directory_context_work(args: CLIArguments):
     if args.search == "":
         raise Exception("No search string specified. Use the --search option")
-    
-    # TODO divide file into seperate sections
-    keys = list[str]()
+
+    menu_keys = list[str]()
+    bundle_keys = list[str]()
+    script_keys = list[str]()
     for root, _, files in os.walk(args.input_path):
         for file in files:
             path = os.path.join(root, file)
             match InputPathType.from_path(path):
                 case InputPathType.WITCHERSCRIPT_FILE:
-                    keys.extend(parse_ws_for_str_keys(path, args.search))
+                    script_keys.extend(parse_ws_for_str_keys(path, args.search))
                 case InputPathType.XML_FILE:
-                    keys.extend(parse_xml_for_str_keys(path, args.search))
+                    keys, for_menu = parse_xml_for_str_keys(path, args.search)
+                    if for_menu:
+                        menu_keys.extend(keys)
+                    else:
+                        bundle_keys.extend(keys)
                 case _:
                     pass
 
-    keys = sorted(keys)
-    entries = [CsvAbbreviatedEntry(key) for key in keys]
+    menu_keys = remove_duplicate_keys_and_filter(menu_keys, '')
+
+    bundle_keys = sorted(remove_duplicate_keys_and_filter(bundle_keys, ''))
+    # remove keys that appear across multiple source types
+    bundle_keys = key_list_difference(bundle_keys, menu_keys)
+
+    script_keys = sorted(remove_duplicate_keys_and_filter(script_keys, ''))
+    script_keys = key_list_difference(script_keys, menu_keys)
+    script_keys = key_list_difference(script_keys, bundle_keys)
+
+    sections = {
+        COMMENT_SECTION_MENU: [CsvAbbreviatedEntry(key) for key in menu_keys],
+        COMMENT_SECTION_BUNDLE: [CsvAbbreviatedEntry(key) for key in bundle_keys],
+        COMMENT_SECTION_SCRIPTS: [CsvAbbreviatedEntry(key) for key in script_keys]
+    }
+
     csv_path = resolve_output_path(args.input_path, args.output_path, "{stem}.en.csv")
     # TODO support merging
-    save_abbreviated_entries(entries, csv_path)
+    save_abbreviated_entries(sections, csv_path)
 
     log_info(f'Localisation keys from {args.input_path} have been successfully saved to {csv_path}')
 
