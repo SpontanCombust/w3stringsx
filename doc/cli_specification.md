@@ -14,7 +14,7 @@ options:
   -o OUTPUT_PATH, --output_path OUTPUT_PATH
                         path to the output; default: [input file's directory]
   -l LANG, --language LANG
-                        set the target encoding language, "all" will generate all possible variants; available: ['an', 'br', 'cn', 'cz', 'de', 'en', 'es', 'esmx', 'fr', 'hu', 'it', 'jp', 'kr', 'pl', 'ru', 'tr', 'zh', 'all']
+                        set the target encoding language, "all" will generate all possible variants; available: ['ar', 'br', 'cn', 'cz', 'de', 'en', 'es', 'esmx', 'fr', 'hu', 'it', 'jp', 'kr', 'pl', 'ru', 'tr', 'zh', 'all']
   -k, --keep-csv        keep the final form of the generated CSV file
   -s SEARCH, --search SEARCH
                         text that will be used to search localisation string keys; can accept regular expressions
