@@ -75,9 +75,6 @@ class Tests(unittest.TestCase):
     def test_parse_ws(self):
         self.run_case('parse_ws', '-s "^ibt_"')
 
-    def test_parse_ws_dir(self):
-        self.run_case('parse_ws_dir', '-s "ibt_"', input_path='scripts/')
-
     def test_parse_xml_search(self):
         self.run_case('parse_xml_search', '--search "MOD"')
 
@@ -87,16 +84,19 @@ class Tests(unittest.TestCase):
     def test_parse_xml_bundled_items(self):
         self.run_case('parse_xml_bundled_items')
 
+    def test_parse_dir(self):
+        self.run_case('parse_dir', '-s "(Mods|ibt_)"')
 
-    def run_case(self, case_name: str, extra_args: str = '', input_path: str | None = None, output_path: str | None = None, see_output: bool = False):
+
+    def run_case(self, case_name: str, extra_args: str = '', output_path: str | None = None, see_output: bool = False):
         root_dir = os.path.abspath(os.path.join(__file__, '../../'))
         case_dir = f"{root_dir}/tests/{case_name}"
         input_dir = f"{case_dir}/input"
         output_dir = f"{case_dir}/output"
         expected_dir = f"{case_dir}/expected"
 
-        first_input_file = os.listdir(input_dir)[0]
-        input_path = f"{input_dir}/{input_path}" if input_path is not None else f"{input_dir}/{first_input_file}"
+        first_input_file_or_dir = os.listdir(input_dir)[0]
+        input_path = f"{input_dir}/{first_input_file_or_dir}"
         output_path = f"{output_dir}/{output_path}" if output_path is not None else output_dir
 
         if not os.path.exists(output_dir):
