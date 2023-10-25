@@ -1,5 +1,8 @@
 <img src="doc/banner.png"/>
 
+<details open>
+  <summary>Table of Contents</summary>
+
 - [Synopsis](#synopsis)
 - [How-To](#how-to)
 - [Features](#features)
@@ -10,6 +13,8 @@
   - [Abbreviated entries](#abbreviated-entries)
   - [Encoding all possible languages](#encoding-all-possible-languages)
   - [Parsing files for localisation keys](#parsing-files-for-localisation-keys)
+
+</details>
 
 ---
 
