@@ -336,12 +336,34 @@ class CsvCompleteEntry:
             return "vanilla"
         else:
             return (self.id % 2110000000) // 1000
-        
 
-def parse_entry(s: str) -> CsvAbbreviatedEntry | CsvCompleteEntry | None:
+
+class CsvCommentAttribute:
+    key: str
+    value: str
+
+    def __init__(self, key: str, value: str):
+        self.key = key
+        self.value = value
+
+    def __str__(self) -> str:
+        return f";{self.key}={self.value}"
+
+
+def parse_entry(s: str) -> CsvAbbreviatedEntry | CsvCompleteEntry | CsvCommentAttribute | str:
     s = s.strip()
     if len(s) == 0:
-        return None
+        return str(s)
+    elif s.startswith(';'):
+        attrib = s[1:].split('=')
+        # attribute should adhere to strict format
+        # ;key=value
+        # where key does not contain any spaces (like an identifier) and the entire lines has exactly one '=' character
+        # because otherwise it's treated as regular informational comment
+        if len(attrib) == 2 and attrib[0].count(' ') == 0:
+            return CsvCommentAttribute(attrib[0], attrib[1])
+        else:
+            return str(s)
 
     split = s.strip().split('|')
     if len(split) == 2:
@@ -419,25 +441,29 @@ class CsvInputDocument:
             if not line.startswith(';'):
                 break
             comment = line.strip().replace(' ', '')
-            if comment.startswith(';meta[language='):
-                lang_meta = comment[15:-1]
-                if lang_meta in ALL_LANGS_META.values():
-                    self.header_lang_meta = lang_meta
-                else:
-                    raise Exception(f'Invalid header language meta: {lang_meta}. Available values: {ALL_LANGS_META.values()}')
-     
-                log_info(f'Detected language meta "{self.header_lang_meta}" based on file header')
-
-            elif comment.startswith(';idspace='):
-                try:
-                    self.header_mod_id_space = int(comment[9:])
-                except ValueError:
-                    raise Exception('Failed to parse id space value into a number')
+            attrib = parse_entry(comment)
+            if isinstance(attrib, CsvCommentAttribute):
+                match attrib.key:
+                    case "meta[language":
+                        lang_meta = attrib.value[:-1]
+                        if lang_meta in ALL_LANGS_META.values():
+                            self.header_lang_meta = lang_meta
+                        else:
+                            raise Exception(f'Invalid header language meta: {lang_meta}. Available values: {ALL_LANGS_META.values()}')
                 
-                if self.header_mod_id_space not in range(0, 10000):
-                    raise Exception('Id space value falls out of 0-9999 range')
-                
-                log_warning(f'Detected mod id space in the header: {self.header_mod_id_space}')
+                        log_info(f'Detected language meta "{self.header_lang_meta}" based on file header')
+                    case "idspace":
+                        try:
+                            self.header_mod_id_space = int(attrib.value)
+                        except ValueError:
+                            raise Exception('Failed to parse id space value into a number')
+                        
+                        if self.header_mod_id_space not in range(0, 10000):
+                            raise Exception('Id space value falls out of 0-9999 range')
+                        
+                        log_warning(f'Detected mod id space in the header: {self.header_mod_id_space}')
+                    case _:
+                        pass
 
         if self.target_lang is None and self.header_lang_meta not in (None, 'cleartext'):
             # if it's not cleartext, it's the same as the proper file name
@@ -454,11 +480,9 @@ class CsvInputDocument:
             if not line.startswith(';'):
                 try:
                     entry = parse_entry(line)
-                    if entry is None:
-                        continue
-                    elif isinstance(entry, CsvAbbreviatedEntry):
+                    if isinstance(entry, CsvAbbreviatedEntry):
                         self.entries_abbrev.append(entry)
-                    else:
+                    elif isinstance(entry, CsvCompleteEntry):
                         self.entries_complete.append(entry)
                 except Exception as e:
                     raise Exception(f'Failed to read line {i}:\n{e}')
@@ -569,11 +593,98 @@ def save_abbreviated_entries(entries: dict[str, list[CsvAbbreviatedEntry]], file
     file_lines.append(";idspace=????")
 
     for section, section_entries in entries.items():
-        file_lines.append(f";{section}")
+        file_lines.append(f";section={section}")
         file_lines.extend([str(entry) for entry in section_entries])
 
     with io.open(file_path, mode="w", encoding="UTF-8") as f:
         f.write('\n'.join(file_lines))
+
+
+
+'''Class made to as non-invasively as possible insert new entries into an existing CSV document'''
+class CsvMergingDocument:
+    file_path: str
+    file_encoding: str
+
+    file_lines: list[str | CsvCommentAttribute | CsvAbbreviatedEntry | CsvCompleteEntry]
+    sections: list[tuple[str, int]] # (section_name, line_idx)
+
+    def __init__(self, file_path: str):
+        self.file_path = file_path
+        self.file_encoding = guess_file_encoding(file_path)
+
+        self.file_lines = []
+        self.sections = []
+
+        with io.open(file_path, mode="r", encoding=self.file_encoding) as f:
+            for i, line in enumerate(f):
+                try:
+                    entry = parse_entry(line)
+                    self.file_lines.append(entry)
+                except Exception as e:
+                    raise Exception(f'Failed to read line {i}:\n{e}')
+
+        for i, line in enumerate(self.file_lines):
+            if isinstance(line, CsvCommentAttribute) and line.key == "section":
+                self.sections.append((line.value, i))
+
+
+    def save(self):
+        log_info(f"Merging entries into an existing file...")
+        with io.open(self.file_path, mode="w", encoding=self.file_encoding) as f:
+            str_lines = [str(line) for line in self.file_lines]
+            f.write('\n'.join(str_lines))
+
+
+    def insert_entries(self, entries: list[CsvAbbreviatedEntry], target_section: str):
+        idx = self.section_range(target_section).stop
+        self.file_lines[idx:idx] = entries
+
+    def section_range(self, target_section: str) -> range:
+        start_idx: int | None = None
+        stop_idx: int | None = None
+
+        # find the last line of target section
+        for i, (section_name, section_line_idx) in enumerate(self.sections):
+            if section_name == target_section:
+                start_idx = section_line_idx + 1
+                # if it's the last section, make stop the end of file
+                if i == len(self.sections) - 1:
+                    stop_idx = len(self.file_lines)
+                # otherwise insert before the next section marker
+                else:
+                    stop_idx = self.sections[i + 1][1]
+                break
+
+        if start_idx is not None and stop_idx is not None:
+            return range(start_idx, stop_idx)
+        
+        # add the section if there isn't one already
+        self.file_lines.append(CsvCommentAttribute("section", target_section))
+        section_line_idx = len(self.file_lines) - 1
+        self.sections.append((target_section, section_line_idx))
+
+        start_idx = section_line_idx + 1
+        stop_idx = len(self.file_lines)
+
+        return range(start_idx, stop_idx)
+        
+
+
+
+def merge_abbreviated_entries(entries: dict[str, list[CsvAbbreviatedEntry]], file_path: str):
+    doc = CsvMergingDocument(file_path)
+    for section, section_entries in entries.items():
+        doc.insert_entries(section_entries, section)
+
+    doc.save()
+
+
+def save_of_merge_abbreviated_entries(entries: dict[str, list[CsvAbbreviatedEntry]], file_path: str):
+    if os.path.exists(file_path):
+        merge_abbreviated_entries(entries, file_path)
+    else:
+        save_abbreviated_entries(entries, file_path)
 
 
 
