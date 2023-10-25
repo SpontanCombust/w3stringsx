@@ -15,7 +15,7 @@ from xml.etree import ElementTree
 # CONSTANTS AND ENUMS
 ###############################################################################################################################
 
-W3STRINGSX_VERSION = '1.1.0'
+W3STRINGSX_VERSION = '1.1.0' #TODO bump
 
 ALL_LANGS: list[str] = ['ar', 'br', 'cn', 'cz', 'de', 'en', 'es', 'esmx', 'fr', 'hu', 'it', 'jp', 'kr', 'pl', 'ru', 'tr', 'zh']
 ALL_LANGS_META: dict[str, str] = {
@@ -603,24 +603,22 @@ def save_abbreviated_entries(entries: dict[str, list[CsvAbbreviatedEntry]], file
 
 '''Class made to as non-invasively as possible insert new entries into an existing CSV document'''
 class CsvMergingDocument:
-    file_path: str
-    file_encoding: str
-
-    file_lines: list[str | CsvCommentAttribute | CsvAbbreviatedEntry | CsvCompleteEntry]
-    sections: list[tuple[str, int]] # (section_name, line_idx)
-
     def __init__(self, file_path: str):
-        self.file_path = file_path
-        self.file_encoding = guess_file_encoding(file_path)
+        self.file_path: str = file_path
+        self.file_encoding: str = guess_file_encoding(file_path)
 
-        self.file_lines = []
-        self.sections = []
+        self.file_lines: list[str | CsvCommentAttribute | CsvAbbreviatedEntry | CsvCompleteEntry] = [] # if str it's a regular comment or empty line
+        self.sections: list[tuple[str, int]]  = [] # (section_name, line_idx)
+        self.str_keys: set[str] = set()
 
         with io.open(file_path, mode="r", encoding=self.file_encoding) as f:
             for i, line in enumerate(f):
                 try:
                     entry = parse_entry(line)
                     self.file_lines.append(entry)
+
+                    if isinstance(entry, CsvAbbreviatedEntry) or isinstance(entry, CsvCompleteEntry):
+                        self.str_keys.add(entry.key_str)
                 except Exception as e:
                     raise Exception(f'Failed to read line {i}:\n{e}')
 
@@ -637,6 +635,9 @@ class CsvMergingDocument:
 
 
     def insert_entries(self, entries: list[CsvAbbreviatedEntry], target_section: str):
+        # filter out entries that already exist in the document
+        entries = list(filter(lambda e: e.key_str not in self.str_keys, entries))
+
         idx = self.section_range(target_section).stop
         self.file_lines[idx:idx] = entries
 
@@ -675,12 +676,13 @@ class CsvMergingDocument:
 def merge_abbreviated_entries(entries: dict[str, list[CsvAbbreviatedEntry]], file_path: str):
     doc = CsvMergingDocument(file_path)
     for section, section_entries in entries.items():
-        doc.insert_entries(section_entries, section)
+        if len(section_entries) > 0:
+            doc.insert_entries(section_entries, section)
 
     doc.save()
 
 
-def save_of_merge_abbreviated_entries(entries: dict[str, list[CsvAbbreviatedEntry]], file_path: str):
+def save_or_merge_abbreviated_entries(entries: dict[str, list[CsvAbbreviatedEntry]], file_path: str):
     if os.path.exists(file_path):
         merge_abbreviated_entries(entries, file_path)
     else:
@@ -1044,8 +1046,7 @@ def xml_context_work(args: CLIArguments):
     section = {section_name : entries}
 
     csv_path = resolve_output_path(args.input_path, args.output_path, "{stem}.en.csv")
-    # TODO support merging
-    save_abbreviated_entries(section, csv_path)
+    save_or_merge_abbreviated_entries(section, csv_path)
 
     log_info(f'Localisation keys from {args.input_path} have been successfully saved to {csv_path}')
 
@@ -1059,8 +1060,7 @@ def witcherscript_context_work(args: CLIArguments):
     section = {COMMENT_SECTION_SCRIPTS : entries}
 
     csv_path = resolve_output_path(args.input_path, args.output_path, "{stem}.en.csv")
-    # TODO support merging
-    save_abbreviated_entries(section, csv_path)
+    save_or_merge_abbreviated_entries(section, csv_path)
 
     log_info(f'Localisation keys from {args.input_path} have been successfully saved to {csv_path}')
 
@@ -1084,7 +1084,7 @@ def directory_context_work(args: CLIArguments):
                         menu_keys.extend(keys)
                     else:
                         bundle_keys.extend(keys)
-                case _:
+                case _: #TODO also read CSV for extra entries
                     pass
 
     menu_keys = remove_duplicate_keys_and_filter(menu_keys, '')
@@ -1104,8 +1104,7 @@ def directory_context_work(args: CLIArguments):
     }
 
     csv_path = resolve_output_path(args.input_path, args.output_path, "{stem}.en.csv")
-    # TODO support merging
-    save_abbreviated_entries(sections, csv_path)
+    save_or_merge_abbreviated_entries(sections, csv_path)
 
     log_info(f'Localisation keys from {args.input_path} have been successfully saved to {csv_path}')
 
