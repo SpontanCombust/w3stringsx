@@ -3,7 +3,7 @@ usage: w3stringsx.py [-h] [-o OUTPUT_PATH] [-l LANG] [-k] [-s SEARCH]
                      [-w WARN_LEVEL]
                      input_path
 
-w3stringsx v1.1.0
+w3stringsx v1.2.0
 Script meant to provide an alternative CLI frontend for w3strings encoder to make it simpler and faster to create localized Witcher 3 content
 
 positional arguments:
