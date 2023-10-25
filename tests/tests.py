@@ -1,6 +1,7 @@
 import hashlib
 import io
 import os
+import shutil
 import subprocess
 import unittest
 
@@ -87,20 +88,30 @@ class Tests(unittest.TestCase):
     def test_parse_dir(self):
         self.run_case('parse_dir', '-s "(Mods|ibt_)"')
 
+    def test_parse_dir_merge(self):
+        self.run_case('parse_dir_merge', '-s "(Mods|ibt_)"')
+
+    def test_parse_dir_merge_no_sections(self):
+        self.run_case('parse_dir_merge_no_sections', '-s "(Mods|ibt_)"')
+
 
     def run_case(self, case_name: str, extra_args: str = '', output_path: str | None = None, see_output: bool = False):
         root_dir = os.path.abspath(os.path.join(__file__, '../../'))
         case_dir = f"{root_dir}/tests/{case_name}"
+
         input_dir = f"{case_dir}/input"
         output_dir = f"{case_dir}/output"
+        output_preload_dir = f"{case_dir}/output_preload"
         expected_dir = f"{case_dir}/expected"
 
-        first_input_file_or_dir = os.listdir(input_dir)[0]
-        input_path = f"{input_dir}/{first_input_file_or_dir}"
+        input_path = f"{input_dir}/{os.listdir(input_dir)[0]}"
         output_path = f"{output_dir}/{output_path}" if output_path is not None else output_dir
 
         if not os.path.exists(output_dir):
             os.mkdir(output_dir)
+        if os.path.exists(output_preload_dir):
+            output_preload_path = f"{output_preload_dir}/{os.listdir(output_preload_dir)[0]}"
+            shutil.copy(output_preload_path, output_dir)
         
         cmd = f'python {root_dir}/src/w3stringsx.py "{input_path}" -o "{output_path}" {extra_args}'
         try:
