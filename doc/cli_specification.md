@@ -4,7 +4,9 @@ usage: w3stringsx.py [-h] [-o OUTPUT_PATH] [-l LANG] [-k] [-s SEARCH]
                      input_path
 
 w3stringsx v1.2.0
-Script meant to provide an alternative CLI frontend for w3strings encoder to make it simpler and faster to create localized Witcher 3 content
+https://github.com/SpontanCombust/w3stringsx
+
+Script that can be used as an alternative CLI frontend for w3strings encoder while also providing additional functionalities to make working with localized Witcher 3 content easier and faster.
 
 positional arguments:
   input_path            path to a file [.w3strings, .csv, .xml, .ws] or a directory with [.xml, .ws] files
