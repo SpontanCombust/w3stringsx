@@ -850,6 +850,9 @@ def parse_xml_for_str_keys(xml_path: str, search: str) -> tuple[list[str], bool]
 ###############################################################################################################################
 
 def parse_ws_for_str_keys(ws_path: str, search: str) -> list[str]:
+    if search == "":
+        raise Exception("Parsing WitcherScript requires to specify the --search parameter")
+
     encoding = guess_file_encoding(ws_path)
     log_info(f"Reading WitcherScript {ws_path}. Detected encoding: {encoding}")
 
@@ -1052,10 +1055,7 @@ def xml_context_work(args: CLIArguments):
     log_info(f'Localisation keys from {args.input_path} have been successfully saved to {csv_path}')
 
 
-def witcherscript_context_work(args: CLIArguments):
-    if args.search == "":
-        raise Exception("No search string specified. Use the --search option")
-    
+def witcherscript_context_work(args: CLIArguments):   
     keys = sorted(parse_ws_for_str_keys(args.input_path, args.search))
     entries = [CsvAbbreviatedEntry(key) for key in keys]
     section = {COMMENT_SECTION_SCRIPTS : entries}
@@ -1067,9 +1067,6 @@ def witcherscript_context_work(args: CLIArguments):
 
 
 def directory_context_work(args: CLIArguments):
-    if args.search == "":
-        raise Exception("No search string specified. Use the --search option")
-
     menu_keys = list[str]()
     bundle_keys = list[str]()
     script_keys = list[str]()
