@@ -884,8 +884,9 @@ class CLIArguments:
 def make_cli() -> CLIArguments:
     parser = argparse.ArgumentParser(
         description=f'w3stringsx v{W3STRINGSX_VERSION}\n'
-                    'Script meant to provide an alternative CLI frontend for w3strings encoder '
-                    'to make it simpler and faster to create localized Witcher 3 content',
+                    'https://github.com/SpontanCombust/w3stringsx\n\n'
+                    'Script that can be used as an alternative CLI frontend for w3strings encoder '
+                    'while also providing additional functionalities to make working with localized Witcher 3 content easier and faster.',
         formatter_class=argparse.RawTextHelpFormatter,
         epilog='remarks:\n'
                 '  * in the case of CSV file context, the output path must be a directory\n'
