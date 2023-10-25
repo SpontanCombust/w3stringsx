@@ -1,6 +1,7 @@
 import hashlib
 import io
 import os
+import shutil
 import subprocess
 import unittest
 
@@ -12,7 +13,6 @@ def file_hash(file_path: str) -> str:
     
 
 class Tests(unittest.TestCase):
-    #TODO automatic test discovery with args passed in an .ini file
     def test_decode_en(self):
         self.run_case('decode_en')
 
@@ -40,6 +40,9 @@ class Tests(unittest.TestCase):
     def test_encode_abbreviated(self):
         self.run_case('encode_abbreviated', '-l esmx')
 
+    def test_encode_abbreviated_no_header(self):
+        self.run_case('encode_abbreviated_no_header', '-l pl -k')
+
     def test_encode_keep_csv(self):
         self.run_case('encode_keep_csv', '-l esmx -k')
 
@@ -48,6 +51,9 @@ class Tests(unittest.TestCase):
 
     def test_encode_mixed(self):
         self.run_case('encode_mixed', '-l en -k')
+
+    def test_encode_mixed_overlap(self):
+        self.run_case('encode_mixed_overlap', '-l en -k')
 
     def test_parse_xml(self):
         self.run_case('parse_xml')
@@ -70,26 +76,42 @@ class Tests(unittest.TestCase):
     def test_parse_ws(self):
         self.run_case('parse_ws', '-s "^ibt_"')
 
-    def test_parse_ws_dir(self):
-        self.run_case('parse_ws_dir', '-s "ibt_"', input_path='scripts/')
-
     def test_parse_xml_search(self):
         self.run_case('parse_xml_search', '--search "MOD"')
 
+    def test_parse_xml_non_localized(self):
+        self.run_case('parse_xml_non_localized')
 
-    def run_case(self, case_name: str, extra_args: str = '', input_path: str | None = None, output_path: str | None = None, see_output: bool = False):
+    def test_parse_xml_bundled_items(self):
+        self.run_case('parse_xml_bundled_items')
+
+    def test_parse_dir(self):
+        self.run_case('parse_dir', '-s "(Mods|ibt_)"')
+
+    def test_parse_dir_merge(self):
+        self.run_case('parse_dir_merge', '-s "(Mods|ibt_)"')
+
+    def test_parse_dir_merge_no_sections(self):
+        self.run_case('parse_dir_merge_no_sections', '-s "(Mods|ibt_)"')
+
+
+    def run_case(self, case_name: str, extra_args: str = '', output_path: str | None = None, see_output: bool = False):
         root_dir = os.path.abspath(os.path.join(__file__, '../../'))
         case_dir = f"{root_dir}/tests/{case_name}"
+
         input_dir = f"{case_dir}/input"
         output_dir = f"{case_dir}/output"
+        output_preload_dir = f"{case_dir}/output_preload"
         expected_dir = f"{case_dir}/expected"
 
-        first_input_file = os.listdir(input_dir)[0]
-        input_path = f"{input_dir}/{input_path}" if input_path is not None else f"{input_dir}/{first_input_file}"
+        input_path = f"{input_dir}/{os.listdir(input_dir)[0]}"
         output_path = f"{output_dir}/{output_path}" if output_path is not None else output_dir
 
         if not os.path.exists(output_dir):
             os.mkdir(output_dir)
+        if os.path.exists(output_preload_dir):
+            output_preload_path = f"{output_preload_dir}/{os.listdir(output_preload_dir)[0]}"
+            shutil.copy(output_preload_path, output_dir)
         
         cmd = f'python {root_dir}/src/w3stringsx.py "{input_path}" -o "{output_path}" {extra_args}'
         try:

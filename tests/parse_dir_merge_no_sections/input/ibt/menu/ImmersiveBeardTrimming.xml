@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<UserConfig>
+	<Group id="ImmersiveBeardTrimming" displayName="Mods.ibt_name">
+		<PresetsArray>
+			<Preset id="0" displayName="ibt_default">
+				<Entry varId="HairShortTied" value="0"/>
+				<Entry varId="HairShortUntied" value="0"/>
+			</Preset>
+		</PresetsArray>
+		<VisibleVars>
+			<Var id="HairShortTied" displayName="ibt_hair_short_tied" displayType="OPTIONS">
+				<OptionsArray>
+					<Option id="0" displayName="ibt_hairstyle_shaved_with_ponytail">
+						<Entry varId="HairShortTied" value="0"/>
+					</Option>
+					<Option id="1" displayName="ibt_hairstyle_mohawk_with_ponytail">
+						<Entry varId="HairShortTied" value="1"/>
+					</Option>
+				</OptionsArray>
+			</Var>
+			<Var id="HairShortUntied" displayName="ibt_hair_short_untied" displayType="OPTIONS">
+				<OptionsArray>
+					<Option id="0" displayName="ibt_hairstyle_short_loose">
+						<Entry varId="HairShortUntied" value="0"/>
+					</Option>
+					<Option id="1" displayName="ibt_hairstyle_elven_rebel">
+						<Entry varId="HairShortUntied" value="1"/>
+					</Option>
+				</OptionsArray>
+			</Var>
+		</VisibleVars>
+	</Group>
+</UserConfig>

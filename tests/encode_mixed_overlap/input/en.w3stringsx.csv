@@ -1,0 +1,20 @@
+; vanilla, complete lines and abbreviated in one file
+;idspace=9001
+2119001000||panel_Mods|Mods
+2119001001||panel_monster_of_the_week|Monster of the week
+2119001005||panel_motw_difficulty|Difficulty
+2119001007||option_motw_no_mans_land|No Man's Land
+2119001104||option_motw_skellige|Skellige
+2119001105||option_motw_kaer_morhen|Kaer Morhen
+2119001106||option_motw_toussaint|Toussaint
+2119001107||preset_value_motw_difficulty_easy|Easy
+2119001108||preset_value_motw_difficulty_medium|Medium
+2119001109||preset_value_motw_difficulty_hard|Hard
+2119001110||panel_motw_monsters|Monsters
+preset_value_motw_monster_ghoul|Ghoul
+preset_value_motw_monster_griffin|Griffin
+preset_value_motw_monster_wolf|Wolf
+preset_value_motw_monster_nekker|Nekker
+preset_value_motw_monster_leshen|Leshen
+preset_value_motw_monster_golem|Golem
+preset_value_motw_monster_wraith|Wraith
