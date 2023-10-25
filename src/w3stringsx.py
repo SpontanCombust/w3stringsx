@@ -15,7 +15,7 @@ from xml.etree import ElementTree
 # CONSTANTS AND ENUMS
 ###############################################################################################################################
 
-W3STRINGSX_VERSION = '1.1.0' #TODO bump
+W3STRINGSX_VERSION = '1.2.0'
 
 ALL_LANGS: list[str] = ['ar', 'br', 'cn', 'cz', 'de', 'en', 'es', 'esmx', 'fr', 'hu', 'it', 'jp', 'kr', 'pl', 'ru', 'tr', 'zh']
 ALL_LANGS_META: dict[str, str] = {
@@ -602,6 +602,7 @@ def save_abbreviated_entries(entries: dict[str, list[CsvAbbreviatedEntry]], file
 
 
 '''Class made to as non-invasively as possible insert new entries into an existing CSV document'''
+'''Doesn't validate and examine the file as thoroughly as CsvInputDocument does'''
 class CsvMergingDocument:
     def __init__(self, file_path: str):
         self.file_path: str = file_path
@@ -1084,7 +1085,7 @@ def directory_context_work(args: CLIArguments):
                         menu_keys.extend(keys)
                     else:
                         bundle_keys.extend(keys)
-                case _: #TODO also read CSV for extra entries
+                case _:
                     pass
 
     menu_keys = remove_duplicate_keys_and_filter(menu_keys, '')
