@@ -226,7 +226,7 @@ class W3StringsEncoder:
 
 
     def execute(self, cmd: str):
-        cmd = f'{self.exe_path} {cmd}'
+        cmd = f'"{self.exe_path}" {cmd}'
 
         log_warning('Executing command:')
         log_warning(cmd)
