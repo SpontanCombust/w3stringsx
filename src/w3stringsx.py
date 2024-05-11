@@ -131,7 +131,8 @@ class ScratchFolder:
 
 
 def lf_to_crlf(file_path: str):
-    with io.open(file_path, mode="r+") as f:
+    encoding = guess_file_encoding(file_path)
+    with io.open(file_path, mode="r+", encoding=encoding) as f:
         data = f.read()
         data.replace('\n', '\r\n')
         f.seek(0)
