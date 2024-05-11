@@ -993,8 +993,10 @@ def preprocess_cli_args(args: CLIArguments):
 ###############################################################################################################################
 
 def main():
+    # if -h flag is set it will immediately 
+    args = make_cli()
+
     try:
-        args = make_cli()
         preprocess_cli_args(args)
 
         input_type = InputPathType.from_path(args.input_path)
@@ -1134,4 +1136,8 @@ def directory_context_work(args: CLIArguments):
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except Exception as e:
+        print(f'{e}', file=sys.stderr)
+        sys.exit(-1)
