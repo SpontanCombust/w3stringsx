@@ -92,17 +92,27 @@ class InputPathType(Enum):
 
 logging_level: int = 3
 
+logs: str = ''
 def log_info(s: str):
     if logging_level >= 3:
         print(f'[INFO] {s}')
+
+        global logs
+        logs += f'[INFO] {s}\n'
 
 def log_warning(s: str):
     if logging_level >= 2:
         print(f'{COLOR_WARN}[WARN] {s}{COLOR_NONE}')
 
+        global logs
+        logs += f'[WARN] {s}\n'
+
 def log_error(s: str):
     if logging_level >= 1:
         print(f'{COLOR_ERROR}[ERROR] {s}{COLOR_NONE}', file=sys.stderr)
+
+        global logs
+        logs += f'[ERROR] {s}\n'
 
 
 # Because encoder ALWAYS puts output in the same directory as input before we are able to move it 
@@ -235,11 +245,11 @@ class W3StringsEncoder:
         # we ignore stderr, because it contains only the thread panic message without any information that is helpful to us
         output = subprocess.run(cmd, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
         if logging_level > 0:
-            print('=' * 100)
+            log_info('=' * 100)
             lines = output.stdout.split('\n')
             for line in lines:
                 self.log_encoder_output(line)
-            print('=' * 100)
+            log_info('=' * 100)
   
         if output.returncode != 0:
             raise Exception('Process exited with an error')
@@ -1007,6 +1017,13 @@ def main():
                 directory_context_work(args)
             case _:
                 raise Exception(f'Unsupported file type: {os.path.basename(args.input_path)}')
+            
+    logs_path = os.path.join(os.path.dirname(__file__), 'w3stringsx.log')
+    with io.open(logs_path, mode='w', encoding='UTF-8') as file:
+        global logs
+        file.write(logs)
+
+        log_info(f'Logs have been written into {logs_path}')
 
 
 
