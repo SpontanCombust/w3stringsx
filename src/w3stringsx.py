@@ -15,7 +15,7 @@ from xml.etree import ElementTree
 # CONSTANTS AND ENUMS
 ###############################################################################################################################
 
-W3STRINGSX_VERSION = '1.2.0'
+W3STRINGSX_VERSION = '1.3.0'
 
 ALL_LANGS: list[str] = ['ar', 'br', 'cn', 'cz', 'de', 'en', 'es', 'esmx', 'fr', 'hu', 'it', 'jp', 'kr', 'pl', 'ru', 'tr', 'zh']
 ALL_LANGS_META: dict[str, str] = {
