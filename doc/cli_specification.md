@@ -27,4 +27,5 @@ remarks:
   * in the case of CSV file context, the output path must be a directory
   * --language and --keep-csv arguments apply only to CSV file context
   * --search option applies only to XML and WitcherScript contexts
+[INFO] Logs have been written into /home/runner/work/w3stringsx/w3stringsx/./src/w3stringsx.log
 ```
