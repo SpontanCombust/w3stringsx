@@ -993,37 +993,42 @@ def preprocess_cli_args(args: CLIArguments):
 ###############################################################################################################################
 
 def main():
-    args = make_cli()
-    preprocess_cli_args(args)
+    try:
+        args = make_cli()
+        preprocess_cli_args(args)
 
-    input_type = InputPathType.from_path(args.input_path)
+        input_type = InputPathType.from_path(args.input_path)
 
-    if input_type in (InputPathType.W3STRINGS_FILE, InputPathType.CSV_FILE):
-        encoder = W3StringsEncoder()
-        scratch = ScratchFolder(args.input_path)
+        if input_type in (InputPathType.W3STRINGS_FILE, InputPathType.CSV_FILE):
+            encoder = W3StringsEncoder()
+            scratch = ScratchFolder(args.input_path)
 
-        match input_type:
-            case InputPathType.W3STRINGS_FILE:
-                w3strings_context_work(encoder, scratch, args)
-            case InputPathType.CSV_FILE:
-                csv_context_work(encoder, scratch, args)
-    else:
-        match input_type:
-            case InputPathType.XML_FILE:
-                xml_context_work(args)
-            case InputPathType.WITCHERSCRIPT_FILE:
-                witcherscript_context_work(args)
-            case InputPathType.DIRECTORY:
-                directory_context_work(args)
-            case _:
-                raise Exception(f'Unsupported file type: {os.path.basename(args.input_path)}')
+            match input_type:
+                case InputPathType.W3STRINGS_FILE:
+                    w3strings_context_work(encoder, scratch, args)
+                case InputPathType.CSV_FILE:
+                    csv_context_work(encoder, scratch, args)
+        else:
+            match input_type:
+                case InputPathType.XML_FILE:
+                    xml_context_work(args)
+                case InputPathType.WITCHERSCRIPT_FILE:
+                    witcherscript_context_work(args)
+                case InputPathType.DIRECTORY:
+                    directory_context_work(args)
+                case _:
+                    raise Exception(f'Unsupported file type: {os.path.basename(args.input_path)}')
+    except Exception as e:
+        log_error(f'{e}')
+        sys.exit(-1)
+    finally:
+        logs_path = os.path.join(os.path.dirname(__file__), 'w3stringsx.log')
+        with io.open(logs_path, mode='w', encoding='UTF-8') as file:
+            global logs
+            file.write(logs)
+
+            log_info(f'Logs have been written into {logs_path}')
             
-    logs_path = os.path.join(os.path.dirname(__file__), 'w3stringsx.log')
-    with io.open(logs_path, mode='w', encoding='UTF-8') as file:
-        global logs
-        file.write(logs)
-
-        log_info(f'Logs have been written into {logs_path}')
 
 
 
@@ -1129,8 +1134,4 @@ def directory_context_work(args: CLIArguments):
 
 
 if __name__ == '__main__':
-    try:
-        main()
-    except Exception as e:
-        log_error(f'{e}')
-        sys.exit(-1)
+    main()
