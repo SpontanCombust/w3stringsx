@@ -26,12 +26,15 @@ w3stringsx is able to work with the regular form of the CSV file. It is however 
 
 
 # How-To
-Put the encoder in the same folder as this script or somehere in the PATH environment variable. Run commands on the script using shell of your choice like cmd.exe.
+Put the encoder in the same folder as this script or somehere in the PATH environment variable. 
+The script can be used by drag-n-dropping .csv or .w3strings files onto the script.
+If you want to use the tool to its full advantage however you should use a terminal like cmd.exe.  
+Read more about features in the next chapter.
 
 Requires [python](https://www.python.org/downloads/) in version >= 3.11 to be installed.
 Current CLI specification can be found [here](./doc/cli_specification.md).
 
-You can see some use [here](./examples/) and [here](./tests/).
+Examples can also be found [here](./examples/) and [here](./tests/).
 
 
 # Features
