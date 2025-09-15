@@ -826,7 +826,6 @@ def parse_bundled_xml_for_str_keys(xml_path: str, search: str) -> list[str]:
     keys: list[str] = []
     with io.open(xml_path, "r", encoding=encoding) as f:
         for _, elem in ElementTree.iterparse(f, events=["start"]):
-            elem = cast(ElementTree.Element, elem)
             if elem.tag in BUNDLED_XML_LOCALIZATION_ATTRIBS:
                 for attrib in BUNDLED_XML_LOCALIZATION_ATTRIBS[elem.tag]:
                     keys.append(elem.attrib.get(attrib, ''))
@@ -841,7 +840,6 @@ def is_config_xml(xml_path: str) -> bool:
     encoding = guess_file_encoding(xml_path)
     with io.open(xml_path, "r", encoding=encoding) as f:
         _, root = next(ElementTree.iterparse(f, events=["start"]))
-        root = cast(ElementTree.Element, root)
         if root.tag == "UserConfig":
             return True
         
