@@ -11,8 +11,9 @@ from typing import Any, Literal, cast
 from xml.etree import ElementTree
 
 from w3stringsx import W3STRINGSX_VERSION
-from w3stringsx.lib.logging import init_logger, get_logger, log_file_path
-from w3stringsx.lib.encoder import W3StringsEncoder
+from w3stringsx.lib.logging import *
+from w3stringsx.lib.encoder import *
+from w3stringsx.lib.utils import *
 
 
 logger = get_logger()
@@ -90,58 +91,6 @@ class InputPathType(Enum):
 # UTILITIES
 ###############################################################################################################################
 
-# Because encoder ALWAYS puts output in the same directory as input before we are able to move it 
-# we first need to create a temporary folder in which we'll execute the commands
-# This way no files will be overwritten without user's consent
-class ScratchFolder:
-    input_copy_path: str # basename should be exactly the same as original input basename 
-    folder_path: str
-
-    # Returns path to input that was copied to scratch 
-    def __init__(self, input_file: str):
-        input_folder, input_basename = os.path.split(input_file)
-        self.folder_path = os.path.join(input_folder, '.tmp.w3stringsx')
-        if not os.path.exists(self.folder_path):
-            logger.info(f'Creating scratch folder {self.folder_path}')
-            os.mkdir(self.folder_path)
-
-        input_copy = os.path.join(self.folder_path, input_basename)
-        shutil.copy(input_file, input_copy)
-        
-        self.input_copy_path = input_copy
-
-    def __del__(self):
-        logger.info(f'Removing scratch folder {self.folder_path}')
-        shutil.rmtree(self.folder_path)
-
-
-def lf_to_crlf(file_path: str):
-    encoding = guess_file_encoding(file_path)
-    with io.open(file_path, mode="r+", encoding=encoding) as f:
-        data = f.read()
-        data.replace('\n', '\r\n')
-        f.seek(0)
-        f.write(data)
-        f.truncate()
-
-
-# Returns whether this path that may not exist could point to a file
-def maybeisfile(path:str) -> bool:
-    return os.path.splitext(path)[1] != ''
-
-
-def guess_file_encoding(path: str) -> str:
-    with io.open(path, mode="rb") as f:
-        header = f.read(3)
-        if header.startswith(b'\xFF\xFE'):
-            return "UTF-16-LE"
-        elif header.startswith(b'\xFE\xFF'):
-            return "UTF-16-BE"
-        elif header.startswith(b'\xEF\xBB\xBF'):
-            return "UTF-8-SIG"
-
-    return "UTF-8"
-
 
 def resolve_output_path(input_path: str, output_path: str, pattern_for_dir: str = '') -> str:
     if not os.path.isdir(output_path) and maybeisfile(output_path):
@@ -178,12 +127,6 @@ def remove_duplicate_keys_and_filter(keys: list[str], search: str) -> list[str]:
         result = list(filter(lambda k: re.search(search, k) is not None, result))
 
     return result
-
-
-# set operation, but done to preserve the order of lhs
-def key_list_difference(lhs: list[str], rhs: list[str]) -> list[str]:
-    rhs_set = set(rhs)
-    return [k for k in lhs if k not in rhs_set]
 
 
 ###############################################################################################################################
@@ -903,7 +846,7 @@ def main():
 
         if input_type in (InputPathType.W3STRINGS_FILE, InputPathType.CSV_FILE):
             encoder = W3StringsEncoder()
-            scratch = ScratchFolder(args.input_path)
+            scratch = ScratchFolder(os.path.dirname(args.input_path))
 
             match input_type:
                 case InputPathType.W3STRINGS_FILE:
@@ -930,10 +873,11 @@ def main():
 
 
 def w3strings_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, args: CLIArguments):
-    csv_file = encoder.decode(scratch.input_copy_path)
+    input_copy_path = scratch.file_scratch_copy(args.input_path)
+    csv_file = encoder.decode(input_copy_path)
     lf_to_crlf(csv_file) # for whatever reason encoder saves the file with unix line endings
 
-    output_path = resolve_output_path(scratch.input_copy_path, args.output_path, "{stem}.csv")
+    output_path = resolve_output_path(input_copy_path, args.output_path, "{stem}.csv")
     shutil.copy(csv_file, output_path)
 
     logger.info(f'{args.input_path} has been successfully decoded into {output_path}')
@@ -943,9 +887,10 @@ def csv_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, args: CL
     if os.path.isfile(args.output_path) or maybeisfile(args.output_path):
         raise Exception('CSV context requires the output path to point to a directory')
 
-    input_doc = CsvInputDocument(scratch.input_copy_path)
+    input_copy_path = scratch.file_scratch_copy(args.input_path)
+    input_doc = CsvInputDocument(input_copy_path)
     output_doc = prepare_output_csv(input_doc)
-    output_doc_path = resolve_output_path(scratch.input_copy_path, scratch.folder_path, "{stem}.w3stringsx.csv")
+    output_doc_path = resolve_output_path(input_copy_path, scratch.folder_path, "{stem}.w3stringsx.csv")
     output_doc.save_to_file(output_doc_path)
 
     try:

@@ -1,11 +1,20 @@
+"""
+w3strings encoder handling
+"""
+
 import os
 import subprocess
 
 from w3stringsx import W3STRINGSX_PKG_ROOT
 from w3stringsx.lib.logging import get_logger
 
+__all__ = [
+    "W3StringsEncoder"
+]
+
 
 logger = get_logger()
+
 
 class W3StringsEncoder:
     exe_path: str
