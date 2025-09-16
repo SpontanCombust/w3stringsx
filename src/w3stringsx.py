@@ -13,6 +13,7 @@ from w3stringsx import W3STRINGSX_VERSION
 from w3stringsx.lib.logging import *
 from w3stringsx.lib.encoder import *
 from w3stringsx.lib.xml_parsing import *
+from w3stringsx.lib.ws_parsing import *
 from w3stringsx.lib.utils import *
 
 
@@ -507,30 +508,6 @@ def save_or_merge_abbreviated_entries(entries: dict[str, list[CsvAbbreviatedEntr
         merge_abbreviated_entries(entries, file_path)
     else:
         save_abbreviated_entries(entries, file_path)
-
-
-
-###############################################################################################################################
-# WITCHERSCRIPT FILE PARSING
-###############################################################################################################################
-
-def parse_ws_for_str_keys(ws_path: str, search: str) -> list[str]:
-    if search == "":
-        raise Exception("Parsing WitcherScript requires to specify the --search parameter")
-
-    encoding = guess_file_encoding(ws_path)
-    logger.info(f"Reading WitcherScript {ws_path}. Detected encoding: {encoding}")
-
-    possible_keys = list[str]()
-    with io.open(ws_path, mode='r', encoding=encoding) as f:
-        for line in f:
-            quoted = line.split('"')[1::2]
-            possible_keys.extend(quoted)
-
-    possible_keys = filter_str_keys(sanitize_str_keys(possible_keys), search)
-
-    logger.info(f"Found {len(possible_keys)} string keys in {ws_path}")
-    return possible_keys
 
 
 
