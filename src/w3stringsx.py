@@ -2,6 +2,7 @@ from __future__ import annotations
 import argparse
 from enum import Enum
 import io
+import logging
 import os
 import re
 import shutil
@@ -10,12 +11,16 @@ import sys
 from typing import Any, Literal, cast
 from xml.etree import ElementTree
 
+from w3stringsx import W3STRINGSX_VERSION
+from w3stringsx.lib.logging import init_logger, get_logger, log_file_path
+
+
+logger = get_logger()
+
 
 ###############################################################################################################################
 # CONSTANTS AND ENUMS
 ###############################################################################################################################
-
-W3STRINGSX_VERSION = '1.3.0'
 
 ALL_LANGS: list[str] = ['ar', 'br', 'cn', 'cz', 'de', 'en', 'es', 'esmx', 'fr', 'hu', 'it', 'jp', 'kr', 'pl', 'ru', 'tr', 'zh']
 ALL_LANGS_META: dict[str, str] = {
@@ -53,11 +58,6 @@ COMMENT_SECTION_MENU = "menu"
 COMMENT_SECTION_BUNDLE = "bundle"
 COMMENT_SECTION_SCRIPTS = "scripts"
 
-COLOR_NONE = '\033[0m'
-COLOR_WARN = '\033[93m'
-COLOR_ERROR = '\033[91m'
-
-
 class InputPathType(Enum):
     UNSUPPORTED         = 0
     W3STRINGS_FILE      = 1
@@ -90,31 +90,6 @@ class InputPathType(Enum):
 # UTILITIES
 ###############################################################################################################################
 
-logging_level: int = 3
-
-logs: str = ''
-def log_info(s: str):
-    if logging_level >= 3:
-        print(f'[INFO] {s}')
-
-        global logs
-        logs += f'[INFO] {s}\n'
-
-def log_warning(s: str):
-    if logging_level >= 2:
-        print(f'{COLOR_WARN}[WARN] {s}{COLOR_NONE}')
-
-        global logs
-        logs += f'[WARN] {s}\n'
-
-def log_error(s: str):
-    if logging_level >= 1:
-        print(f'{COLOR_ERROR}[ERROR] {s}{COLOR_NONE}', file=sys.stderr)
-
-        global logs
-        logs += f'[ERROR] {s}\n'
-
-
 # Because encoder ALWAYS puts output in the same directory as input before we are able to move it 
 # we first need to create a temporary folder in which we'll execute the commands
 # This way no files will be overwritten without user's consent
@@ -127,7 +102,7 @@ class ScratchFolder:
         input_folder, input_basename = os.path.split(input_file)
         self.folder_path = os.path.join(input_folder, '.tmp.w3stringsx')
         if not os.path.exists(self.folder_path):
-            log_info(f'Creating scratch folder {self.folder_path}')
+            logger.info(f'Creating scratch folder {self.folder_path}')
             os.mkdir(self.folder_path)
 
         input_copy = os.path.join(self.folder_path, input_basename)
@@ -136,7 +111,7 @@ class ScratchFolder:
         self.input_copy_path = input_copy
 
     def __del__(self):
-        log_info(f'Removing scratch folder {self.folder_path}')
+        logger.info(f'Removing scratch folder {self.folder_path}')
         shutil.rmtree(self.folder_path)
 
 
@@ -231,7 +206,7 @@ class W3StringsEncoder:
                     break
 
         if os.path.exists(self.exe_path):
-            log_info(f'Found w3strings encoder: {self.exe_path}')
+            logger.info(f'Found w3strings encoder: {self.exe_path}')
         else:
             raise Exception('w3strings encoder couldn\'t be found')
 
@@ -239,24 +214,23 @@ class W3StringsEncoder:
     def execute(self, cmd: str):
         cmd = f'"{self.exe_path}" {cmd}'
 
-        log_warning('Executing command:')
-        log_warning(cmd)
+        logger.warning('Executing command:')
+        logger.warning(cmd)
 
         # we ignore stderr, because it contains only the thread panic message without any information that is helpful to us
         output = subprocess.run(cmd, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-        if logging_level > 0:
-            log_info('=' * 100)
-            lines = output.stdout.split('\n')
-            for line in lines:
-                self.log_encoder_output(line)
-            log_info('=' * 100)
+        logger.info('=' * 100)
+        lines = output.stdout.split('\n')
+        for line in lines:
+            self.log_encoder_output(line)
+        logger.info('=' * 100)
   
         if output.returncode != 0:
             raise Exception('Process exited with an error')
 
     # Returns the path to decoded file
     def decode(self, w3strings_path: str) -> str:
-        log_info(f'Decoding {w3strings_path}...')
+        logger.info(f'Decoding {w3strings_path}...')
         self.execute(f'-d "{w3strings_path}"')
         return w3strings_path + '.csv' 
 
@@ -265,19 +239,19 @@ class W3StringsEncoder:
         cmd = f'-e "{csv_path}" '
         if id_space is None:
             DISABLE_ID_CHECK_FLAG = '--force-ignore-id-space-check-i-know-what-i-am-doing'
-            log_warning(f'Disabling ID check in the encoder because of the existence of entries outside of a single mod ID range')
+            logger.warning(f'Disabling ID check in the encoder because of the existence of entries outside of a single mod ID range')
             cmd += DISABLE_ID_CHECK_FLAG
         else:
             cmd += f'-i {id_space}'
 
-        log_info(f'Encoding {csv_path}...')
+        logger.info(f'Encoding {csv_path}...')
         self.execute(cmd)
 
         w3strings_path = csv_path + '.w3strings'
         ws_path = w3strings_path + '.ws'
 
         if os.path.exists(ws_path):
-            log_info(f'Removing {ws_path}')
+            logger.info(f'Removing {ws_path}')
             os.remove(ws_path)
 
         return w3strings_path
@@ -285,13 +259,13 @@ class W3StringsEncoder:
 
     def log_encoder_output(self, line: str):
         if line.startswith('INFO'):
-            log_info(line[7:])
+            logger.info(line[7:])
         elif line.startswith('WARN'):
-            log_warning(line[7:])
+            logger.warning(line[7:])
         elif line.startswith('ERROR'):
-            log_error(line[8:])
+            logger.error(line[8:])
         elif len(line) > 0:
-            log_info(line)
+            logger.info(line)
 
 
 
@@ -411,7 +385,7 @@ class CsvInputDocument:
 
     def __init__(self, file_path: str):
         encoding = guess_file_encoding(file_path)
-        log_info(f'Reading {file_path}. Detected encoding: {encoding}')
+        logger.info(f'Reading {file_path}. Detected encoding: {encoding}')
         with io.open(file_path, mode='r', encoding=encoding) as file:
             self.read_target_lang(file_path)
 
@@ -437,7 +411,7 @@ class CsvInputDocument:
         for part in basename_parts:
             if part in ALL_LANGS:
                 self.target_lang = part
-                log_info(f'Detected target language in file name: {self.target_lang}')
+                logger.info(f'Detected target language in file name: {self.target_lang}')
                 break
 
 
@@ -445,7 +419,7 @@ class CsvInputDocument:
         self.header_lang_meta = None
         if self.target_lang is not None:
             self.header_lang_meta = ALL_LANGS_META[self.target_lang]
-            log_info(f'Detected language meta "{self.header_lang_meta}" based on target language')
+            logger.info(f'Detected language meta "{self.header_lang_meta}" based on target language')
 
         self.header_mod_id_space = None
         for line in file_lines:
@@ -462,7 +436,7 @@ class CsvInputDocument:
                         else:
                             raise Exception(f'Invalid header language meta: {lang_meta}. Available values: {ALL_LANGS_META.values()}')
                 
-                        log_info(f'Detected language meta "{self.header_lang_meta}" based on file header')
+                        logger.info(f'Detected language meta "{self.header_lang_meta}" based on file header')
                     case "idspace":
                         try:
                             self.header_mod_id_space = int(attrib.value)
@@ -472,13 +446,13 @@ class CsvInputDocument:
                         if self.header_mod_id_space not in range(0, 10000):
                             raise Exception('Id space value falls out of 0-9999 range')
                         
-                        log_warning(f'Detected mod id space in the header: {self.header_mod_id_space}')
+                        logger.warning(f'Detected mod id space in the header: {self.header_mod_id_space}')
                     case _:
                         pass
 
         if self.target_lang is None and self.header_lang_meta not in (None, 'cleartext'):
             # if it's not cleartext, it's the same as the proper file name
-            log_info(f'Detected target language based on language meta: {self.target_lang}')
+            logger.info(f'Detected target language based on language meta: {self.target_lang}')
             self.target_lang = self.header_lang_meta
 
 
@@ -514,14 +488,14 @@ class CsvInputDocument:
         self.has_vanilla_entries = "vanilla" in id_spaces
 
         if self.has_vanilla_entries:
-            log_warning('Detected vanilla strings')
+            logger.warning('Detected vanilla strings')
 
         mod_id_spaces = set([id_space for id_space in id_spaces if isinstance(id_space, int)])
         if len(mod_id_spaces) == 0:
             self.content_mod_id_space = None
         elif len(mod_id_spaces) == 1:
             self.content_mod_id_space = mod_id_spaces.pop()
-            log_warning(f'Detected mod id space in entries: {self.content_mod_id_space}')
+            logger.warning(f'Detected mod id space in entries: {self.content_mod_id_space}')
         else:
             raise Exception(f'There are entries for multiple mod id spaces: {mod_id_spaces}')
         
@@ -567,7 +541,7 @@ def prepare_output_csv(input: CsvInputDocument) -> CsvOutputDocument:
         header_lang_meta = input.header_lang_meta
     else:
         header_lang_meta = 'en'
-        log_info('No language meta could be deduced. Defaulting to "en"')
+        logger.info('No language meta could be deduced. Defaulting to "en"')
 
     target_lang = input.target_lang or 'en'
     id_space = input.header_mod_id_space or input.content_mod_id_space
@@ -640,7 +614,7 @@ class CsvMergingDocument:
 
 
     def save(self):
-        log_info(f"Merging entries into an existing file...")
+        logger.info(f"Merging entries into an existing file...")
         with io.open(self.file_path, mode="w", encoding=self.file_encoding) as f:
             str_lines = [str(line) for line in self.file_lines]
             f.write('\n'.join(str_lines))
@@ -805,7 +779,7 @@ class ConfigXmlElement:
 
 def parse_config_xml_for_str_keys(xml_path: str, search: str) -> list[str]:
     encoding = guess_file_encoding(xml_path)
-    log_info(f"Reading config XML {xml_path}. Detected encoding: {encoding}")
+    logger.info(f"Reading config XML {xml_path}. Detected encoding: {encoding}")
 
     keys: list[str] = []
     with io.open(xml_path, "r", encoding=encoding) as f:
@@ -815,13 +789,13 @@ def parse_config_xml_for_str_keys(xml_path: str, search: str) -> list[str]:
 
         keys = remove_duplicate_keys_and_filter(config_xml.all_loc_str_keys(), search)
 
-    log_info(f"Found {len(keys)} string keys in {xml_path}")
+    logger.info(f"Found {len(keys)} string keys in {xml_path}")
     return keys
 
 
 def parse_bundled_xml_for_str_keys(xml_path: str, search: str) -> list[str]:
     encoding = guess_file_encoding(xml_path)
-    log_info(f"Reading bundled XML {xml_path}. Detected encoding: {encoding}")
+    logger.info(f"Reading bundled XML {xml_path}. Detected encoding: {encoding}")
 
     keys: list[str] = []
     with io.open(xml_path, "r", encoding=encoding) as f:
@@ -832,7 +806,7 @@ def parse_bundled_xml_for_str_keys(xml_path: str, search: str) -> list[str]:
 
         keys = remove_duplicate_keys_and_filter(keys, search)
 
-    log_info(f"Found {len(keys)} string keys in {xml_path}")
+    logger.info(f"Found {len(keys)} string keys in {xml_path}")
     return keys
 
 
@@ -863,7 +837,7 @@ def parse_ws_for_str_keys(ws_path: str, search: str) -> list[str]:
         raise Exception("Parsing WitcherScript requires to specify the --search parameter")
 
     encoding = guess_file_encoding(ws_path)
-    log_info(f"Reading WitcherScript {ws_path}. Detected encoding: {encoding}")
+    logger.info(f"Reading WitcherScript {ws_path}. Detected encoding: {encoding}")
 
     possible_keys = list[str]()
     with io.open(ws_path, mode='r', encoding=encoding) as f:
@@ -873,7 +847,7 @@ def parse_ws_for_str_keys(ws_path: str, search: str) -> list[str]:
 
     possible_keys = remove_duplicate_keys_and_filter(possible_keys, search)
 
-    log_info(f"Found {len(possible_keys)} string keys in {ws_path}")
+    logger.info(f"Found {len(possible_keys)} string keys in {ws_path}")
     return possible_keys
 
 
@@ -888,6 +862,7 @@ class CLIArguments:
     lang: str  # one of ALL_LANGS or 'all'
     keep_csv: bool
     search: str
+    warn_level: int
 
 
 def make_cli() -> CLIArguments:
@@ -947,9 +922,8 @@ def make_cli() -> CLIArguments:
     cli.keep_csv = bool(args.keep_csv)
     cli.search = str(args.search)
 
-    global logging_level
     try:
-        logging_level = int(args.warn_level)
+        cli.warn_level = int(args.warn_level)
     except ValueError:
         raise Exception('Invalid logging level value')
 
@@ -968,15 +942,15 @@ def preprocess_cli_args(args: CLIArguments):
     if args.output_path != '':
         if not os.path.exists(args.output_path):
             if not maybeisfile(args.output_path):
-                log_warning('Specified output directory does not exist. Attempting to create one...')
+                logger.warning('Specified output directory does not exist. Attempting to create one...')
                 try:
                     os.mkdir(args.output_path)
                 except FileNotFoundError:
                     raise Exception('Unable to create output directory. The parent of this directory does not exist.')
-                log_warning(f'Directory {args.output_path} created successfully')
+                logger.warning(f'Directory {args.output_path} created successfully')
     else:
         args.output_path = os.path.dirname(args.input_path)
-        log_info(f'Ouput path set to directory {args.output_path}')
+        logger.info(f'Ouput path set to directory {args.output_path}')
 
     args.output_path = os.path.realpath(args.output_path)
 
@@ -991,8 +965,19 @@ def preprocess_cli_args(args: CLIArguments):
 ###############################################################################################################################
 
 def main():
-    # if -h flag is set it will immediately 
+    # if -h flag is set it will forcefully exit the function
     args = make_cli()
+
+    log_level = logging.INFO
+    if args.warn_level == 0:
+        # allowing only logs above CRITICAL level effectively should disable all logs
+        log_level = logging.CRITICAL + 1 
+    elif args.warn_level == 1:
+        log_level = logging.ERROR
+    elif args.warn_level == 2:
+        log_level = logging.WARNING
+
+    init_logger(log_level)
 
     try:
         preprocess_cli_args(args)
@@ -1019,15 +1004,10 @@ def main():
                 case _:
                     raise Exception(f'Unsupported file type: {os.path.basename(args.input_path)}')
     except Exception as e:
-        log_error(f'{e}')
+        logger.error(f'{e}')
         sys.exit(-1)
     finally:
-        logs_path = os.path.join(os.path.dirname(__file__), 'w3stringsx.log')
-        with io.open(logs_path, mode='w', encoding='UTF-8') as file:
-            global logs
-            file.write(logs)
-
-            log_info(f'Logs have been written into {logs_path}')
+        logger.info(f'Logs have been written into {log_file_path()}')
             
 
 
@@ -1039,7 +1019,7 @@ def w3strings_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, ar
     output_path = resolve_output_path(scratch.input_copy_path, args.output_path, "{stem}.csv")
     shutil.copy(csv_file, output_path)
 
-    log_info(f'{args.input_path} has been successfully decoded into {output_path}')
+    logger.info(f'{args.input_path} has been successfully decoded into {output_path}')
 
 
 def csv_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, args: CLIArguments):
@@ -1056,15 +1036,15 @@ def csv_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, args: CL
         langs = ALL_LANGS if args.lang == 'all' else [args.lang]
         for lang in langs:
             copied = os.path.join(args.output_path, f'{lang}.w3strings')
-            log_info(f'Creating {copied}')
+            logger.info(f'Creating {copied}')
             shutil.copy(w3strings_file, copied)
   
     finally:
         if args.keep_csv:
-            log_info(f'Saving prepared {os.path.basename(output_doc_path)} to {args.output_path}')
+            logger.info(f'Saving prepared {os.path.basename(output_doc_path)} to {args.output_path}')
             shutil.copy(output_doc_path, args.output_path)
 
-    log_info(f'{args.input_path} has been successfully encoded into w3strings file(s) in {args.output_path}')
+    logger.info(f'{args.input_path} has been successfully encoded into w3strings file(s) in {args.output_path}')
 
 
 def xml_context_work(args: CLIArguments):
@@ -1076,7 +1056,7 @@ def xml_context_work(args: CLIArguments):
     csv_path = resolve_output_path(args.input_path, args.output_path, "{stem}.en.csv")
     save_or_merge_abbreviated_entries(section, csv_path)
 
-    log_info(f'Localisation keys from {args.input_path} have been successfully saved to {csv_path}')
+    logger.info(f'Localisation keys from {args.input_path} have been successfully saved to {csv_path}')
 
 
 def witcherscript_context_work(args: CLIArguments):   
@@ -1087,7 +1067,7 @@ def witcherscript_context_work(args: CLIArguments):
     csv_path = resolve_output_path(args.input_path, args.output_path, "{stem}.en.csv")
     save_or_merge_abbreviated_entries(section, csv_path)
 
-    log_info(f'Localisation keys from {args.input_path} have been successfully saved to {csv_path}')
+    logger.info(f'Localisation keys from {args.input_path} have been successfully saved to {csv_path}')
 
 
 def directory_context_work(args: CLIArguments):
@@ -1128,7 +1108,7 @@ def directory_context_work(args: CLIArguments):
     csv_path = resolve_output_path(args.input_path, args.output_path, "{stem}.en.csv")
     save_or_merge_abbreviated_entries(sections, csv_path)
 
-    log_info(f'Localisation keys from {args.input_path} have been successfully saved to {csv_path}')
+    logger.info(f'Localisation keys from {args.input_path} have been successfully saved to {csv_path}')
 
 
 
