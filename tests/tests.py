@@ -115,7 +115,7 @@ class Tests(unittest.TestCase):
         
         cmd = f'python {root_dir}/src/w3stringsx.py "{input_path}" -o "{output_path}" {extra_args}'
         try:
-            subprocess.run(cmd, shell=True, check=True, stdout=(None if see_output else subprocess.DEVNULL))
+            subprocess.run(cmd, shell=True, check=True, stdout=(None if see_output else subprocess.DEVNULL), stderr=(None if see_output else subprocess.DEVNULL))
         except:
             pass
 
