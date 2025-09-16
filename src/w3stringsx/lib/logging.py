@@ -1,8 +1,10 @@
 import logging
 import os
 
+from w3stringsx import W3STRINGSX_PKG_ROOT
 
-_LOG_FORMAT = "%(asctime)s [%(levelname)s] %(message)s (%(filename)s:%(lineno)d)"
+
+_LOG_FORMAT = "%(asctime)s [%(levelname)s] %(message)s (%(pathname)s:%(lineno)d)"
 
 
 class _ColoredTerminalFormatter(logging.Formatter):
@@ -28,7 +30,7 @@ def get_logger():
     return logging.getLogger('w3stringsx')
 
 def log_file_path():
-    return os.path.join(os.path.realpath(os.path.curdir), 'w3stringsx.log')
+    return os.path.join(os.path.dirname(W3STRINGSX_PKG_ROOT), 'w3stringsx.log')
 
 def init_logger(log_level: int):
     stdio_handler = logging.StreamHandler()
