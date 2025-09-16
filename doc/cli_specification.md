@@ -3,7 +3,7 @@ usage: w3stringsx.py [-h] [-o OUTPUT_PATH] [-l LANG] [-k] [-s SEARCH]
                      [-w WARN_LEVEL]
                      input_path
 
-w3stringsx v1.3.0
+w3stringsx v2.0.0
 https://github.com/SpontanCombust/w3stringsx
 
 Script that can be used as an alternative CLI frontend for w3strings encoder while also providing additional functionalities to make working with localized Witcher 3 content easier and faster.
