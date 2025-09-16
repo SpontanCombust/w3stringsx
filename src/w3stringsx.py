@@ -112,23 +112,6 @@ def resolve_output_path(input_path: str, output_path: str, pattern_for_dir: str 
     return os.path.join(output_path, output_basename)
 
 
-# also preserve the order of first appearance
-def remove_duplicate_keys_and_filter(keys: list[str], search: str) -> list[str]:
-    key_set = set[str]()  # using set for fast lookup
-    result = list[str]()
-
-    for k in keys:
-        if k not in key_set:
-            key_set.add(k)
-            result.append(k)
-
-    result = list(filter(lambda k: k != "", result))
-    if search != "":
-        result = list(filter(lambda k: re.search(search, k) is not None, result))
-
-    return result
-
-
 ###############################################################################################################################
 # CSV FILE PARSING
 ###############################################################################################################################
@@ -647,7 +630,7 @@ def parse_config_xml_for_str_keys(xml_path: str, search: str) -> list[str]:
         root = ElementTree.fromstring(xml_str)
         config_xml = ConfigXmlElement(root)
 
-        keys = remove_duplicate_keys_and_filter(config_xml.all_loc_str_keys(), search)
+        keys = filter_str_keys(sanitize_str_keys(config_xml.all_loc_str_keys()), search)
 
     logger.info(f"Found {len(keys)} string keys in {xml_path}")
     return keys
@@ -664,7 +647,7 @@ def parse_bundled_xml_for_str_keys(xml_path: str, search: str) -> list[str]:
                 for attrib in BUNDLED_XML_LOCALIZATION_ATTRIBS[elem.tag]:
                     keys.append(elem.attrib.get(attrib, ''))
 
-        keys = remove_duplicate_keys_and_filter(keys, search)
+        keys = filter_str_keys(sanitize_str_keys(keys), search)
 
     logger.info(f"Found {len(keys)} string keys in {xml_path}")
     return keys
@@ -705,7 +688,7 @@ def parse_ws_for_str_keys(ws_path: str, search: str) -> list[str]:
             quoted = line.split('"')[1::2]
             possible_keys.extend(quoted)
 
-    possible_keys = remove_duplicate_keys_and_filter(possible_keys, search)
+    possible_keys = filter_str_keys(sanitize_str_keys(possible_keys), search)
 
     logger.info(f"Found {len(possible_keys)} string keys in {ws_path}")
     return possible_keys
@@ -951,15 +934,15 @@ def directory_context_work(args: CLIArguments):
                 case _:
                     pass
 
-    menu_keys = remove_duplicate_keys_and_filter(menu_keys, '')
+    menu_keys = sanitize_str_keys(menu_keys)
 
-    bundle_keys = sorted(remove_duplicate_keys_and_filter(bundle_keys, ''))
+    bundle_keys = sorted(sanitize_str_keys(bundle_keys))
     # remove keys that appear across multiple source types
-    bundle_keys = key_list_difference(bundle_keys, menu_keys)
+    bundle_keys = str_key_list_difference(bundle_keys, menu_keys)
 
-    script_keys = sorted(remove_duplicate_keys_and_filter(script_keys, ''))
-    script_keys = key_list_difference(script_keys, menu_keys)
-    script_keys = key_list_difference(script_keys, bundle_keys)
+    script_keys = sorted(sanitize_str_keys(script_keys))
+    script_keys = str_key_list_difference(script_keys, menu_keys)
+    script_keys = str_key_list_difference(script_keys, bundle_keys)
 
     sections = {
         COMMENT_SECTION_MENU: [CsvAbbreviatedEntry(key) for key in menu_keys],
