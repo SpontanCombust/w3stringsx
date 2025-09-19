@@ -4,18 +4,29 @@ from typing import Iterable
 
 from w3stringsx.lib.logging import get_logger
 from w3stringsx.lib.utils import guess_file_encoding
+from w3stringsx.lib.localization import *
+
+
+__all__ = [
+    "W3StringsCsvCompleteEntry",
+    "W3StringsCsvShortEntry",
+    "W3StringsCsvPlainComment",
+    "W3StringsCsvAttributeComment",
+    "W3StringsCsvDocumentLine",
+    "W3StringsCsvDocument"
+]
 
 
 logger = get_logger()
 
 
 class W3StringsCsvCompleteEntry:
-    id: int
+    id: StringId
     key_hex: str
     key_str: str
     text: str
 
-    def __init__(self, id: int, key_hex: str, key_str: str, text: str) -> None:
+    def __init__(self, id: StringId, key_hex: str, key_str: str, text: str) -> None:
         self.id = id
         self.key_hex = key_hex
         self.key_str = key_str
@@ -43,7 +54,7 @@ class W3StringsCsvShortEntry:
             self.text
         ])
 
-    def into_complete(self, id: int, key_hex: str) -> W3StringsCsvCompleteEntry:
+    def into_complete(self, id: StringId, key_hex: str = '') -> W3StringsCsvCompleteEntry:
         return W3StringsCsvCompleteEntry(
             id,
             key_hex,
@@ -52,13 +63,13 @@ class W3StringsCsvShortEntry:
         )
 
 class W3StringsCsvPlainComment:
-    line: str
+    comment_text: str
 
     def __init__(self, line: str):
-        self.line = line
+        self.comment_text = line
 
     def __str__(self) -> str:
-        return self.line
+        return f';{self.comment_text}'
         
 class W3StringsCsvAttributeComment:
     key: str
@@ -71,8 +82,8 @@ class W3StringsCsvAttributeComment:
     def __str__(self) -> str:
         return f";{self.key}={self.value}"
     
-
 W3StringsCsvDocumentLine = W3StringsCsvCompleteEntry | W3StringsCsvShortEntry | W3StringsCsvPlainComment | W3StringsCsvAttributeComment
+
 
 class W3StringsCsvDocument:
     file_path: str
@@ -81,14 +92,18 @@ class W3StringsCsvDocument:
     def __init__(self, file_path: str):
         self.file_path = file_path
 
-    def __iter__(self):
-        return self.lines
-    
     def append(self, line: W3StringsCsvDocumentLine):
         self.lines.append(line)
 
     def extend(self, lines: Iterable[W3StringsCsvDocumentLine]):
         self.lines.extend(lines)
+
+    def swap_lines(self, line1_idx: int, line2_idx: int):
+        line_range = range(0, len(self.lines))
+        if line1_idx in line_range and line2_idx in line_range:
+            line1 = self.lines[line1_idx]
+            self.lines[line1_idx] = self.lines[line2_idx]
+            self.lines[line2_idx] = line1
 
     def read_from_file(self):
         if not os.path.exists(self.file_path):
@@ -136,14 +151,14 @@ class W3StringsCsvDocument:
                 split[1]
             )
         elif len(split) == 4:
-            id: int
+            id_num: int
             try:
-                id = int(split[0])
+                id_num = int(split[0])
             except ValueError:
                 raise Exception('Failed to parse id column to a number')
 
             return W3StringsCsvCompleteEntry(
-                id,
+                StringId(id_num),
                 split[1],
                 split[2],
                 split[3]
@@ -154,7 +169,7 @@ class W3StringsCsvDocument:
     @staticmethod
     def _read_comment(comment_line: str) -> W3StringsCsvPlainComment | W3StringsCsvAttributeComment:
         if not comment_line.count('=') == 1:
-            return W3StringsCsvPlainComment(comment_line)
+            return W3StringsCsvPlainComment(comment_line[1:])
         
         stripped_line = comment_line[1:]\
             .strip()\
