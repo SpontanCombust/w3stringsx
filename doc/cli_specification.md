@@ -1,5 +1,5 @@
 ```
-usage: w3stringsx.py [-h] [-o OUTPUT_PATH] [-l LANG] [-k] [-s SEARCH]
+usage: w3stringsx.py [-h] [-o OUTPUT_DIR] [-l LANG] [-k] [-s SEARCH]
                      [-w WARN_LEVEL]
                      input_path
 
@@ -13,8 +13,8 @@ positional arguments:
 
 options:
   -h, --help            show this help message and exit
-  -o OUTPUT_PATH, --output_path OUTPUT_PATH
-                        path to the output; default: [input file's directory]
+  -o OUTPUT_DIR, --output_dir OUTPUT_DIR
+                        output directory to place the output in; default: [input file's directory]
   -l LANG, --language LANG
                         set the target encoding language, "all" will generate all possible variants; available: ['ar', 'br', 'cn', 'cz', 'de', 'en', 'es', 'esmx', 'fr', 'hu', 'it', 'jp', 'kr', 'pl', 'ru', 'tr', 'zh', 'all']
   -k, --keep-csv        keep the final form of the generated CSV file
