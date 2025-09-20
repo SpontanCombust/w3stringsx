@@ -6,7 +6,7 @@ usage: w3stringsx.py [-h] [-o OUTPUT_DIR] [-l LANG] [-k] [-s SEARCH]
 w3stringsx v2.0.0
 https://github.com/SpontanCombust/w3stringsx
 
-Script that can be used as an alternative CLI frontend for w3strings encoder while also providing additional functionalities to make working with localized Witcher 3 content easier and faster.
+Script acting as an alternative CLI frontend for w3strings encoder while also providing additional functionalities to make working with localized Witcher 3 content easier and faster.
 
 positional arguments:
   input_path            path to a file [.w3strings, .csv, .xml, .ws] or a directory with [.xml, .ws] files
@@ -24,7 +24,6 @@ options:
                         logging level that should be used; available: [0 - no logs, 1 - only errors, 2 - errors and warnings, 3 - everything]; default: 3
 
 remarks:
-  * in the case of CSV file context, the output path must be a directory
   * --language and --keep-csv arguments apply only to CSV file context
   * --search option applies only to XML and WitcherScript contexts
 ```
