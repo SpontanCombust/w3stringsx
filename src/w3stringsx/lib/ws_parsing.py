@@ -14,7 +14,7 @@ logger = get_logger()
 
 def parse_ws_for_str_keys(ws_path: str, search: str) -> list[str]:
     if search == "":
-        raise Exception("Parsing WitcherScript requires to specify the --search parameter")
+        raise Exception("Parsing WitcherScript requires to specify the searched keyword")
 
     encoding = guess_file_encoding(ws_path)
     logger.info(f"Reading WitcherScript {ws_path}. Detected encoding: {encoding}")

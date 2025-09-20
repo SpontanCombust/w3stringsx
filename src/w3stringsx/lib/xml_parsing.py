@@ -1,6 +1,6 @@
 from __future__ import annotations
 import io
-from typing import Any, cast
+from typing import Any, cast, Literal
 from xml.etree import ElementTree
 
 from w3stringsx.lib.logging import get_logger
@@ -8,7 +8,8 @@ from w3stringsx.lib.utils import guess_file_encoding, sanitize_str_keys, filter_
 
 
 __all__ = [
-    "parse_xml_for_str_keys"
+    "parse_xml_for_str_keys",
+    "XmlParseResult"
 ]
 
 
@@ -164,9 +165,21 @@ def _is_config_xml(xml_path: str) -> bool:
     return False
 
 
-def parse_xml_for_str_keys(xml_path: str, search: str) -> tuple[list[str], bool]:
+class XmlParseResult:
+    source: Literal["config"] | Literal["bundle"]
+    keys: list[str]
+
+    def __init__(self, source: Literal["config"] | Literal["bundle"], keys: list[str]) -> None:
+        self.source = source
+        self.keys = keys
+
+def parse_xml_for_str_keys(xml_path: str, search: str) -> XmlParseResult:
     if _is_config_xml(xml_path):
-        return (_parse_config_xml_for_str_keys(xml_path, search), True)
+        source = "config"
+        keys = _parse_config_xml_for_str_keys(xml_path, search)
     else:
-        return (_parse_bundled_xml_for_str_keys(xml_path, search), False)
+        source = "bundle"
+        keys = _parse_bundled_xml_for_str_keys(xml_path, search)
+        
+    return XmlParseResult(source, keys)
 

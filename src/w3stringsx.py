@@ -14,6 +14,7 @@ from w3stringsx.lib.logging import *
 from w3stringsx.lib.encoder import *
 from w3stringsx.lib.xml_parsing import *
 from w3stringsx.lib.ws_parsing import *
+from w3stringsx.lib.directory_parsing import *
 from w3stringsx.lib.utils import *
 
 
@@ -709,9 +710,9 @@ def csv_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, args: CL
 
 
 def xml_context_work(args: CLIArguments):
-    keys, is_config = parse_xml_for_str_keys(args.input_path, args.search)
-    entries = [CsvAbbreviatedEntry(key) for key in keys]
-    section_name = COMMENT_SECTION_MENU if is_config else COMMENT_SECTION_BUNDLE
+    result = parse_xml_for_str_keys(args.input_path, args.search)
+    entries = [CsvAbbreviatedEntry(key) for key in result.keys]
+    section_name = COMMENT_SECTION_MENU if result.source == 'config' else COMMENT_SECTION_BUNDLE
     section = {section_name : entries}
 
     csv_path = resolve_output_path(args.input_path, args.output_path, "{stem}.en.csv")
@@ -732,38 +733,12 @@ def witcherscript_context_work(args: CLIArguments):
 
 
 def directory_context_work(args: CLIArguments):
-    menu_keys = list[str]()
-    bundle_keys = list[str]()
-    script_keys = list[str]()
-    for root, _, files in os.walk(args.input_path):
-        for file in files:
-            path = os.path.join(root, file)
-            match InputPathType.from_path(path):
-                case InputPathType.WITCHERSCRIPT_FILE:
-                    script_keys.extend(parse_ws_for_str_keys(path, args.search))
-                case InputPathType.XML_FILE:
-                    keys, for_menu = parse_xml_for_str_keys(path, args.search)
-                    if for_menu:
-                        menu_keys.extend(keys)
-                    else:
-                        bundle_keys.extend(keys)
-                case _:
-                    pass
-
-    menu_keys = sanitize_str_keys(menu_keys)
-
-    bundle_keys = sorted(sanitize_str_keys(bundle_keys))
-    # remove keys that appear across multiple source types
-    bundle_keys = str_key_list_difference(bundle_keys, menu_keys)
-
-    script_keys = sorted(sanitize_str_keys(script_keys))
-    script_keys = str_key_list_difference(script_keys, menu_keys)
-    script_keys = str_key_list_difference(script_keys, bundle_keys)
+    result = parse_directory_for_str_keys(args.input_path, args.search)
 
     sections = {
-        COMMENT_SECTION_MENU: [CsvAbbreviatedEntry(key) for key in menu_keys],
-        COMMENT_SECTION_BUNDLE: [CsvAbbreviatedEntry(key) for key in bundle_keys],
-        COMMENT_SECTION_SCRIPTS: [CsvAbbreviatedEntry(key) for key in script_keys]
+        COMMENT_SECTION_MENU: [CsvAbbreviatedEntry(key) for key in result.config_keys],
+        COMMENT_SECTION_BUNDLE: [CsvAbbreviatedEntry(key) for key in result.bundle_keys],
+        COMMENT_SECTION_SCRIPTS: [CsvAbbreviatedEntry(key) for key in result.script_keys]
     }
 
     csv_path = resolve_output_path(args.input_path, args.output_path, "{stem}.en.csv")

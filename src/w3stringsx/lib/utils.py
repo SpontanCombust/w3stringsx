@@ -24,7 +24,7 @@ logger = get_logger()
 
 
 # Because encoder ALWAYS puts output in the same directory as input before we are able to move it 
-# we first need to create a temporary folder in which we'll execute the commands
+# we first need to create a temporary folder in which we'll execute the commands.
 # This way no files will be overwritten without user's consent
 class ScratchFolder:
     folder_path: str
@@ -54,7 +54,9 @@ class ScratchFolder:
         
         return copy_path
     
-
+"""
+Converts new line endings in the file from Unix style to Windows style 
+"""
 def lf_to_crlf(file_path: str):
     encoding = guess_file_encoding(file_path)
     with io.open(file_path, mode="r+", encoding=encoding) as f:
@@ -65,7 +67,9 @@ def lf_to_crlf(file_path: str):
         f.truncate()
 
 
-# Returns whether this path that may not exist could point to a file
+"""
+Returns whether this path that may not exist could point to a file
+"""
 def maybeisfile(path:str) -> bool:
     return os.path.splitext(path)[1] != ''
 
@@ -82,12 +86,16 @@ def guess_file_encoding(path: str) -> str:
 
     return "UTF-8"
 
-# set operation, but done to preserve the order of lhs
+"""
+Set operation, but done to preserve the order of lhs
+"""
 def str_key_list_difference(lhs: list[str], rhs: list[str]) -> list[str]:
     rhs_set = set(rhs)
     return [k for k in lhs if k not in rhs_set]
 
-# Remove empty and duplicated keys while preserving the order of first appearance
+"""
+Remove empty and duplicated keys while preserving the order of first appearance
+"""
 def sanitize_str_keys(keys: list[str]) -> list[str]:
     key_set = set[str]()  # using set for fast lookup
     result = list[str]()
