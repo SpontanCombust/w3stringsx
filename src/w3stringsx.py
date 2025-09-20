@@ -81,31 +81,6 @@ class InputPathType(Enum):
 
 
 ###############################################################################################################################
-# UTILITIES
-###############################################################################################################################
-
-
-def resolve_output_path(input_path: str, output_path: str, pattern_for_dir: str = '') -> str:
-    if not os.path.isdir(output_path) and maybeisfile(output_path):
-        return output_path
-    
-    # if output_path is not a file, it MUST be an existing directory
-    
-    input_basename = os.path.basename(input_path)
-
-    output_basename: str
-    if pattern_for_dir != '':
-        output_basename = pattern_for_dir
-        if "{stem}" in pattern_for_dir:
-            stem = os.path.splitext(input_basename)[0]
-            output_basename = output_basename.replace("{stem}", stem)
-    else:
-        output_basename = input_basename
-
-    return os.path.join(output_path, output_basename)
-
-
-###############################################################################################################################
 # CSV FILE PARSING
 ###############################################################################################################################
 
@@ -518,7 +493,7 @@ def save_or_merge_abbreviated_entries(entries: dict[str, list[CsvAbbreviatedEntr
 
 class CLIArguments:
     input_path: str
-    output_path: str
+    output_dir: str
     lang: str  # one of ALL_LANGS or 'all'
     keep_csv: bool
     search: str
@@ -545,8 +520,8 @@ def make_cli() -> CLIArguments:
     )
 
     parser.add_argument(
-        '-o', '--output_path',
-        help='path to the output; default: [input file\'s directory]',
+        '-o', '--output_dir',
+        help='output directory to place the output in; default: [input file\'s directory]',
         default='',
         action='store')
     
@@ -577,7 +552,7 @@ def make_cli() -> CLIArguments:
 
     cli = CLIArguments()
     cli.input_path = str(args.input_path)
-    cli.output_path = str(args.output_path)
+    cli.output_dir = str(args.output_dir)
     cli.lang = str(args.lang)
     cli.keep_csv = bool(args.keep_csv)
     cli.search = str(args.search)
@@ -599,20 +574,25 @@ def preprocess_cli_args(args: CLIArguments):
     if args.lang not in ALL_LANGS and args.lang != 'all':
         raise Exception(f'Invalid value for the --language option: {args.lang}')
     
-    if args.output_path != '':
-        if not os.path.exists(args.output_path):
-            if not maybeisfile(args.output_path):
-                logger.warning('Specified output directory does not exist. Attempting to create one...')
-                try:
-                    os.mkdir(args.output_path)
-                except FileNotFoundError:
-                    raise Exception('Unable to create output directory. The parent of this directory does not exist.')
-                logger.warning(f'Directory {args.output_path} created successfully')
-    else:
-        args.output_path = os.path.dirname(args.input_path)
-        logger.info(f'Ouput path set to directory {args.output_path}')
+    if args.output_dir != '':
+        if not os.path.isdir(args.output_dir):
+            if os.path.isfile(args.output_dir):
+                raise Exception("Specified output path points to an existing regular path instead of a directory.")
+            if not os.path.isdir(os.path.dirname(args.output_dir)):
+                raise Exception("Parent directory of the specified output path does not exist")
 
-    args.output_path = os.path.realpath(args.output_path)
+            logger.warning('Specified output directory does not exist. Attempting to create one...')
+            try:
+                os.mkdir(args.output_dir)
+            except Exception as ex:
+                raise Exception('Could not create output directory.', ex)
+            logger.warning(f'Directory {args.output_dir} created successfully')
+    else:
+        # default to the parent directory of the input
+        args.output_dir = os.path.dirname(args.input_path)
+        logger.info(f'Ouput path set to directory {args.output_dir}')
+
+    args.output_dir = os.path.realpath(args.output_dir)
 
     try:
         re.search(args.search, "test")
@@ -677,36 +657,33 @@ def w3strings_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, ar
     csv_file = encoder.decode(input_copy_path)
     lf_to_crlf(csv_file) # for whatever reason encoder saves the file with unix line endings
 
-    output_path = resolve_output_path(input_copy_path, args.output_path, "{stem}.csv")
-    shutil.copy(csv_file, output_path)
+    output_csv_path = replace_path_ext(replace_path_dirname(input_copy_path, args.output_dir), ".csv")
+    shutil.copy(csv_file, output_csv_path)
 
-    logger.info(f'{args.input_path} has been successfully decoded into {output_path}')
+    logger.info(f'{args.input_path} has been successfully decoded into {output_csv_path}')
 
 
 def csv_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, args: CLIArguments):
-    if os.path.isfile(args.output_path) or maybeisfile(args.output_path):
-        raise Exception('CSV context requires the output path to point to a directory')
-
     input_copy_path = scratch.file_scratch_copy(args.input_path)
     input_doc = CsvInputDocument(input_copy_path)
     output_doc = prepare_output_csv(input_doc)
-    output_doc_path = resolve_output_path(input_copy_path, scratch.folder_path, "{stem}.w3stringsx.csv")
+    output_doc_path = replace_path_ext(replace_path_dirname(input_copy_path, scratch.folder_path), ".w3stringsx.csv")
     output_doc.save_to_file(output_doc_path)
 
     try:
         w3strings_file = encoder.encode(output_doc_path, output_doc.id_space)
         langs = ALL_LANGS if args.lang == 'all' else [args.lang]
         for lang in langs:
-            copied = os.path.join(args.output_path, f'{lang}.w3strings')
+            copied = os.path.join(args.output_dir, f'{lang}.w3strings')
             logger.info(f'Creating {copied}')
             shutil.copy(w3strings_file, copied)
   
     finally:
         if args.keep_csv:
-            logger.info(f'Saving prepared {os.path.basename(output_doc_path)} to {args.output_path}')
-            shutil.copy(output_doc_path, args.output_path)
+            logger.info(f'Saving prepared {os.path.basename(output_doc_path)} to {args.output_dir}')
+            shutil.copy(output_doc_path, args.output_dir)
 
-    logger.info(f'{args.input_path} has been successfully encoded into w3strings file(s) in {args.output_path}')
+    logger.info(f'{args.input_path} has been successfully encoded into w3strings file(s) in {args.output_dir}')
 
 
 def xml_context_work(args: CLIArguments):
@@ -715,7 +692,7 @@ def xml_context_work(args: CLIArguments):
     section_name = COMMENT_SECTION_MENU if result.source == 'config' else COMMENT_SECTION_BUNDLE
     section = {section_name : entries}
 
-    csv_path = resolve_output_path(args.input_path, args.output_path, "{stem}.en.csv")
+    csv_path = replace_path_ext(replace_path_dirname(args.input_path, args.output_dir), ".en.csv")
     save_or_merge_abbreviated_entries(section, csv_path)
 
     logger.info(f'Localisation keys from {args.input_path} have been successfully saved to {csv_path}')
@@ -726,7 +703,7 @@ def witcherscript_context_work(args: CLIArguments):
     entries = [CsvAbbreviatedEntry(key) for key in keys]
     section = {COMMENT_SECTION_SCRIPTS : entries}
 
-    csv_path = resolve_output_path(args.input_path, args.output_path, "{stem}.en.csv")
+    csv_path = replace_path_ext(replace_path_dirname(args.input_path, args.output_dir), ".en.csv")
     save_or_merge_abbreviated_entries(section, csv_path)
 
     logger.info(f'Localisation keys from {args.input_path} have been successfully saved to {csv_path}')
@@ -741,7 +718,7 @@ def directory_context_work(args: CLIArguments):
         COMMENT_SECTION_SCRIPTS: [CsvAbbreviatedEntry(key) for key in result.script_keys]
     }
 
-    csv_path = resolve_output_path(args.input_path, args.output_path, "{stem}.en.csv")
+    csv_path = replace_path_ext(replace_path_dirname(args.input_path, args.output_dir), ".en.csv")
     save_or_merge_abbreviated_entries(sections, csv_path)
 
     logger.info(f'Localisation keys from {args.input_path} have been successfully saved to {csv_path}')

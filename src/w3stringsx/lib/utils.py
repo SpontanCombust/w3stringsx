@@ -10,9 +10,10 @@ import shutil
 from w3stringsx.lib.logging import get_logger
 
 __all__ = [
+    "replace_path_ext",
+    "replace_path_dirname",
     "ScratchFolder",
     "lf_to_crlf",
-    "maybeisfile",
     "guess_file_encoding",
     "str_key_list_difference",
     "sanitize_str_keys",
@@ -23,6 +24,23 @@ __all__ = [
 logger = get_logger()
 
 
+
+"""
+Replaces the extension part in a file path
+"""
+def replace_path_ext(path: str, new_ext: str) -> str:
+    if new_ext[0] != '.':
+        new_ext = '.' + new_ext
+    stem, _ = os.path.splitext(path)
+    return stem + new_ext
+
+"""
+Returns a new path with the parent directory part replaced
+"""
+def replace_path_dirname(path: str, new_dirname: str) -> str:
+    basename = os.path.basename(path)
+    return os.path.join(new_dirname, basename)
+
 # Because encoder ALWAYS puts output in the same directory as input before we are able to move it 
 # we first need to create a temporary folder in which we'll execute the commands.
 # This way no files will be overwritten without user's consent
@@ -30,10 +48,8 @@ class ScratchFolder:
     folder_path: str
 
     def __init__(self, work_dir: str):
-        if not os.path.exists(work_dir):
-            raise Exception("Working directory for the scratch folder does not exist")
-        elif not os.path.isdir(work_dir):
-            raise Exception("Working directory for the scratch folder is not a directory")
+        if not os.path.isdir(work_dir):
+            raise Exception("Working directory for the scratch folder is not an existing directory")
 
         self.folder_path = os.path.join(work_dir, '.tmp.w3stringsx')
         if not os.path.exists(self.folder_path):
@@ -46,8 +62,7 @@ class ScratchFolder:
         shutil.rmtree(self.folder_path)
 
     def file_scratch_copy(self, input_path: str) -> str:
-        input_basename = os.path.basename(input_path)
-        copy_path = os.path.join(self.folder_path, input_basename)
+        copy_path = replace_path_dirname(input_path, self.folder_path)
 
         if not os.path.exists(copy_path):
             shutil.copy(input_path, copy_path)
@@ -65,14 +80,6 @@ def lf_to_crlf(file_path: str):
         f.seek(0)
         f.write(data)
         f.truncate()
-
-
-"""
-Returns whether this path that may not exist could point to a file
-"""
-def maybeisfile(path:str) -> bool:
-    return os.path.splitext(path)[1] != ''
-
 
 def guess_file_encoding(path: str) -> str:
     with io.open(path, mode="rb") as f:
