@@ -13,6 +13,9 @@ __all__ = [
 logger = get_logger()
 
 
+_MOD_ID_COMMENT_KEY = "mod_id"
+_MOD_ID_LEGACY_COMMENT_KEY = "mod_id_legacy"
+
 """
 Translates CSVs to a form acceptable for the w3strings encoder
 """
@@ -98,7 +101,7 @@ class W3StringsCsvDocumentEncodingPreprocessor:
         for (line_idx, line) in enumerate(self._doc.lines):
             try:
                 if isinstance(line, W3StringsCsvAttributeComment):
-                    if line.key == "mod_id":
+                    if line.key == _MOD_ID_COMMENT_KEY:
                         current_string_id_iter = None
 
                         mod_id = 0
@@ -108,10 +111,36 @@ class W3StringsCsvDocumentEncodingPreprocessor:
                             logger.error('Failed to parse mod id value into a number: %s (line %d)', line.value, line_idx + 1)
                             continue
 
+                        if mod_id < 0:
+                            logger.error("Negative mod IDs are not permitted! (line %d)", line_idx + 1)
+                            continue
                         if mod_id >= 100000:
                             logger.warning('Using mod ID with more than 5 digits: %d (line %d)', mod_id, line_idx + 1)
 
                         id_space = StringIdSpace.modern_modded(mod_id)
+                        if id_space.start in used_string_ids:
+                            logger.error("ID space for mod with ID %d established more than once (line %d)", mod_id, line_idx + 1)
+                            continue
+
+                        current_string_id_iter = iter(id_space)
+                    elif line.key == _MOD_ID_LEGACY_COMMENT_KEY:
+                        current_string_id_iter = None
+
+                        mod_id = 0
+                        try:
+                            mod_id = int(line.value)
+                        except ValueError:
+                            logger.error('Failed to parse mod id value into a number: %s (line %d)', line.value, line_idx + 1)
+                            continue
+
+                        if mod_id < 0:
+                            logger.error("Negative mod IDs are not permitted! (line %d)", line_idx + 1)
+                            continue
+                        if mod_id >= 10000:
+                            logger.error('Using a mod ID greater than 9999 requires switching to a modern ID space convention (line %d)', mod_id, line_idx + 1)
+                            continue
+
+                        id_space = StringIdSpace.legacy_modded(mod_id)
                         if id_space.start in used_string_ids:
                             logger.error("ID space for mod with ID %d established more than once (line %d)", mod_id, line_idx + 1)
                             continue
