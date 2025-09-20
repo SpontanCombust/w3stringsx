@@ -66,9 +66,8 @@ class W3StringsEncoder:
     def encode(self, csv_path: str, id_space: int | None) -> str:
         cmd = f'-e "{csv_path}" '
         if id_space is None:
-            # TODO always use this flag and do checks only on w3stringsx's side
             DISABLE_ID_CHECK_FLAG = '--force-ignore-id-space-check-i-know-what-i-am-doing'
-            logger.warning(f'Disabling ID check in the encoder because of the existence of entries outside of a single mod ID range')
+            logger.warning(f'Disabling ID check in the w3strings encoder')
             cmd += DISABLE_ID_CHECK_FLAG
         else:
             cmd += f'-i {id_space}'

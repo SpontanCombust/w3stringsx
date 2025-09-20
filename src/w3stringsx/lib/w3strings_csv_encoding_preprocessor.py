@@ -6,7 +6,7 @@ from w3stringsx.lib.w3strings_csv import *
 
 
 __all__ = [
-    "W3StringsCsvDocumentProcessorForEncoder"
+    "W3StringsCsvDocumentEncodingPreprocessor"
 ]
 
 
@@ -16,13 +16,15 @@ logger = get_logger()
 """
 Translates CSVs to a form acceptable for the w3strings encoder
 """
-class W3StringsCsvDocumentProcessorForEncoder:
+class W3StringsCsvDocumentEncodingPreprocessor:
     _doc: W3StringsCsvDocument
     _title_lang: str | None
     _header_meta_lang: str | None
 
     def __init__(self, doc: W3StringsCsvDocument) -> None:
         self._doc = doc
+        self._title_lang = None
+        self._header_meta_lang = None
 
     def process_to(self, output_file_path: str) -> W3StringsCsvDocument:
         self._read_input_doc_title()
@@ -86,6 +88,7 @@ class W3StringsCsvDocumentProcessorForEncoder:
     def _generate_output_content(self, output: W3StringsCsvDocument):
         current_string_id_iter: StringIdSpaceIterator | None = None
         used_string_ids: set[StringId] = set()
+        used_string_keys: set[str] = set()
 
         modded_detected_count = 0
         vanilla_detected_count = 0
@@ -120,6 +123,10 @@ class W3StringsCsvDocumentProcessorForEncoder:
                         logger.error("String ID %d has already been used before (line %d)", line.id.id_num, line_idx + 1)
                         errored_detected_count += 1
                         continue
+                    if line.key_str in used_string_keys:
+                        logger.error("String key %s has already been used before (line %d)", line.key_str, line_idx + 1)
+                        errored_detected_count += 1
+                        continue
 
                     if line.id.is_vanilla():
                         output.append(line)
@@ -141,6 +148,10 @@ class W3StringsCsvDocumentProcessorForEncoder:
                         invalid_detected_count += 1
 
                 elif isinstance(line, W3StringsCsvShortEntry):
+                    if line.key_str in used_string_keys:
+                        logger.error("String key %s has already been used before (line %d)", line.key_str, line_idx + 1)
+                        errored_detected_count += 1
+                        continue
                     if current_string_id_iter is None:
                         logger.error("Valid ID space could not be attributed to line %d", line_idx + 1)
                         errored_detected_count += 1

@@ -26,7 +26,7 @@ class W3StringsCsvCompleteEntry:
     key_str: str
     text: str
 
-    def __init__(self, id: StringId, key_hex: str, key_str: str, text: str) -> None:
+    def __init__(self, id: StringId, key_hex: str, key_str: str, text: str = "MISSING_LOCALISATION") -> None:
         self.id = id
         self.key_hex = key_hex
         self.key_str = key_str
@@ -91,6 +91,7 @@ class W3StringsCsvDocument:
 
     def __init__(self, file_path: str):
         self.file_path = file_path
+        self.lines = []
 
     def append(self, line: W3StringsCsvDocumentLine):
         self.lines.append(line)

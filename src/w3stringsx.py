@@ -1,17 +1,19 @@
 from __future__ import annotations
 import argparse
 from enum import Enum
-import io
 import logging
 import os
 import re
 import shutil
 import sys
-from typing import Literal
 
 from w3stringsx import W3STRINGSX_VERSION
+from w3stringsx.lib.localization import ALL_LANGS
 from w3stringsx.lib.logging import *
 from w3stringsx.lib.encoder import *
+from w3stringsx.lib.w3strings_csv import *
+from w3stringsx.lib.w3strings_csv_encoding_preprocessor import *
+from w3stringsx.lib.sectioned_w3strings_csv import *
 from w3stringsx.lib.xml_parsing import *
 from w3stringsx.lib.ws_parsing import *
 from w3stringsx.lib.directory_parsing import *
@@ -24,33 +26,6 @@ logger = get_logger()
 ###############################################################################################################################
 # CONSTANTS AND ENUMS
 ###############################################################################################################################
-
-ALL_LANGS: list[str] = ['ar', 'br', 'cn', 'cz', 'de', 'en', 'es', 'esmx', 'fr', 'hu', 'it', 'jp', 'kr', 'pl', 'ru', 'tr', 'zh']
-ALL_LANGS_META: dict[str, str] = {
-    'ar':   'cleartext',
-    'br':   'cleartext',
-    'cn':   'cleartext',
-    'cz':   'cz',
-    'de':   'de',
-    'en':   'en',
-    'es':   'es',
-    'esmx': 'cleartext',
-    'fr':   'fr',
-    'hu':   'hu',
-    'it':   'it',
-    'jp':   'jp',
-    'kr':   'cleartext',
-    'pl':   'pl',
-    'ru':   'ru',
-    'tr':   'cleartext',
-    'zh':   'zh',
-}
-
-MOD_ID_RANGE: range = range(2110000000, 2120000000)
-
-COMMENT_SECTION_MENU = "menu"
-COMMENT_SECTION_BUNDLE = "bundle"
-COMMENT_SECTION_SCRIPTS = "scripts"
 
 class InputPathType(Enum):
     UNSUPPORTED         = 0
@@ -79,414 +54,6 @@ class InputPathType(Enum):
                     return InputPathType.UNSUPPORTED
 
 
-
-###############################################################################################################################
-# CSV FILE PARSING
-###############################################################################################################################
-
-class CsvAbbreviatedEntry:
-    key_str: str
-    text: str
-
-    def __init__(self, key_str: str, text: str = "MISSING_LOCALISATION"):
-        self.key_str = key_str
-        self.text = text
-
-    def __str__(self) -> str:
-        return f'{self.key_str}|{self.text}'
-
-    def into_complete(self, id: int, key_hex: str) -> CsvCompleteEntry:
-        return CsvCompleteEntry(
-            id,
-            key_hex,
-            self.key_str,
-            self.text
-        )
-
-
-IdSpace = int | Literal["vanilla"]
-
-class CsvCompleteEntry:
-    id: int
-    key_hex: str
-    key_str: str
-    text: str
-
-    def __init__(self, id: int, key_hex: str, key_str: str, text: str) -> None:
-        self.id = id
-        self.key_hex = key_hex
-        self.key_str = key_str
-        self.text = text
-
-    def __str__(self) -> str:
-        return '|'.join([
-            str(self.id).rjust(10, ' '),
-            self.key_hex.rjust(8, ' '),
-            self.key_str,
-            self.text
-        ])
-    
-        
-    def id_space(self) -> IdSpace:
-        if self.id not in MOD_ID_RANGE:
-            return "vanilla"
-        else:
-            return (self.id % 2110000000) // 1000
-
-
-class CsvCommentAttribute:
-    key: str
-    value: str
-
-    def __init__(self, key: str, value: str):
-        self.key = key
-        self.value = value
-
-    def __str__(self) -> str:
-        return f";{self.key}={self.value}"
-
-
-def parse_entry(s: str) -> CsvAbbreviatedEntry | CsvCompleteEntry | CsvCommentAttribute | str:
-    s = s.strip()
-    if len(s) == 0:
-        return str(s)
-    elif s.startswith(';'):
-        attrib = s[1:].split('=')
-        # attribute should adhere to strict format
-        # ;key=value
-        # where key does not contain any spaces (like an identifier) and the entire lines has exactly one '=' character
-        # because otherwise it's treated as regular informational comment
-        if len(attrib) == 2 and attrib[0].count(' ') == 0:
-            return CsvCommentAttribute(attrib[0], attrib[1])
-        else:
-            return str(s)
-
-    split = s.strip().split('|')
-    if len(split) == 2:
-        return CsvAbbreviatedEntry(
-            split[0], 
-            split[1]
-        )
-    elif len(split) == 4:
-        id: int
-        try:
-            id = int(split[0])
-        except ValueError:
-            raise Exception('Failed to parse id column to a number')
-
-        return CsvCompleteEntry(
-            id,
-            split[1],
-            split[2],
-            split[3]
-        )
-    else:
-        raise Exception(f'Invalid column count. Expected 2 or 4, got {len(split)}')
-
-
-'''Input form of the document that can have features such as skipped header or abbreviated entries that will be converted into output document'''
-class CsvInputDocument:
-    target_lang: str | None
-    header_lang_meta: str | None
-    header_mod_id_space: int | None  # id space from a custom attribute in the header
-    entries_abbrev: list[CsvAbbreviatedEntry]
-    entries_complete: list[CsvCompleteEntry]
-    content_mod_id_space: int | None  # id space deduced from id column in entries; None if there are only vanilla Ids and/or abbreviated entries
-    has_vanilla_entries: bool
-
-    def __init__(self, file_path: str):
-        encoding = guess_file_encoding(file_path)
-        logger.info(f'Reading {file_path}. Detected encoding: {encoding}')
-        with io.open(file_path, mode='r', encoding=encoding) as file:
-            self.read_target_lang(file_path)
-
-            file_lines = file.readlines()
-
-            try:
-                self.read_header(file_lines)
-            except Exception as e:
-                raise Exception(f'Failed to read file header:\n{e}')
-
-            try:
-                self.read_content(file_lines)
-            except Exception as e:
-                raise Exception(f'Failed to read file content:\n{e}')
-  
-
-    def read_target_lang(self, file_path: str):
-        self.target_lang = None
-
-        basename = os.path.basename(file_path)
-        basename_parts = basename.split('.')[:-1] # without the extension
-
-        for part in basename_parts:
-            if part in ALL_LANGS:
-                self.target_lang = part
-                logger.info(f'Detected target language in file name: {self.target_lang}')
-                break
-
-
-    def read_header(self, file_lines: list[str]):
-        self.header_lang_meta = None
-        if self.target_lang is not None:
-            self.header_lang_meta = ALL_LANGS_META[self.target_lang]
-            logger.info(f'Detected language meta "{self.header_lang_meta}" based on target language')
-
-        self.header_mod_id_space = None
-        for line in file_lines:
-            if not line.startswith(';'):
-                break
-            comment = line.strip().replace(' ', '')
-            attrib = parse_entry(comment)
-            if isinstance(attrib, CsvCommentAttribute):
-                match attrib.key:
-                    case "meta[language":
-                        lang_meta = attrib.value[:-1]
-                        if lang_meta in ALL_LANGS_META.values():
-                            self.header_lang_meta = lang_meta
-                        else:
-                            raise Exception(f'Invalid header language meta: {lang_meta}. Available values: {ALL_LANGS_META.values()}')
-                
-                        logger.info(f'Detected language meta "{self.header_lang_meta}" based on file header')
-                    case "idspace":
-                        try:
-                            self.header_mod_id_space = int(attrib.value)
-                        except ValueError:
-                            raise Exception('Failed to parse id space value into a number')
-                        
-                        if self.header_mod_id_space not in range(0, 10000):
-                            raise Exception('Id space value falls out of 0-9999 range')
-                        
-                        logger.warning(f'Detected mod id space in the header: {self.header_mod_id_space}')
-                    case _:
-                        pass
-
-        if self.target_lang is None and self.header_lang_meta not in (None, 'cleartext'):
-            # if it's not cleartext, it's the same as the proper file name
-            logger.info(f'Detected target language based on language meta: {self.target_lang}')
-            self.target_lang = self.header_lang_meta
-
-
-
-    def read_content(self, file_lines: list[str]):
-        self.entries_abbrev = []
-        self.entries_complete = []
-
-        for i, line in enumerate(file_lines):
-            if not line.startswith(';'):
-                try:
-                    entry = parse_entry(line)
-                    if isinstance(entry, CsvAbbreviatedEntry):
-                        self.entries_abbrev.append(entry)
-                    elif isinstance(entry, CsvCompleteEntry):
-                        self.entries_complete.append(entry)
-                except Exception as e:
-                    raise Exception(f'Failed to read line {i}:\n{e}')
-
-        if len(self.entries_abbrev) + len(self.entries_complete) == 0:
-            raise Exception('File has no data to encode')
-        
-        all_ids = [entry.id for entry in self.entries_complete]
-        duplicate_ids = [id for id in all_ids if all_ids.count(id) > 1]
-        if len(duplicate_ids) > 1:
-            raise Exception(f'There are multiple entries with the same id: {duplicate_ids}')
-        
-        self.read_content_id_space()
-        
-
-    def read_content_id_space(self):
-        id_spaces = set[IdSpace]([entry.id_space() for entry in self.entries_complete])
-        self.has_vanilla_entries = "vanilla" in id_spaces
-
-        if self.has_vanilla_entries:
-            logger.warning('Detected vanilla strings')
-
-        mod_id_spaces = set([id_space for id_space in id_spaces if isinstance(id_space, int)])
-        if len(mod_id_spaces) == 0:
-            self.content_mod_id_space = None
-        elif len(mod_id_spaces) == 1:
-            self.content_mod_id_space = mod_id_spaces.pop()
-            logger.warning(f'Detected mod id space in entries: {self.content_mod_id_space}')
-        else:
-            raise Exception(f'There are entries for multiple mod id spaces: {mod_id_spaces}')
-        
-        if self.header_mod_id_space is not None and self.content_mod_id_space is not None:
-            if self.header_mod_id_space != self.content_mod_id_space:
-                raise Exception(f'Id space in the header ({self.header_mod_id_space}) and id space used in the entries ({self.content_mod_id_space}) do not match')
-        elif self.header_mod_id_space is None and self.content_mod_id_space is None and len(self.entries_abbrev) > 0:
-            raise Exception('No id space was provided to complete abbreviated entries')
-
-
-'''Processed form of the document that will be forwarded to w3strings for encoding'''
-class CsvOutputDocument:
-    target_lang: str
-    header_lang_meta: str
-    entries: list[CsvCompleteEntry]
-    id_space: int | None # None means there are non-mod ids in the file and id check has to be force-disabled
-
-    def __init__(self, target_lang: str, header_lang_meta: str, id_space: int | None, entries: list[CsvCompleteEntry]):
-        self.target_lang = target_lang
-        self.header_lang_meta = header_lang_meta
-        self.id_space = id_space
-        self.entries = entries
-
-    def __str__(self) -> str:
-        file_lines: list[str] = []
-
-        file_lines.append(f';meta[language={self.header_lang_meta}]')
-        file_lines.append(';       id|key(hex)|key(str)|text')
-        file_lines.extend([str(entry) for entry in self.entries])
-
-        return '\n'.join(file_lines)
-
-    def save_to_file(self, file_path: str):
-        with io.open(file_path, mode='w', encoding='UTF-8') as file:
-            output_str = str(self)
-            file.write(output_str)
-
-
-def prepare_output_csv(input: CsvInputDocument) -> CsvOutputDocument:
-    # default to english language meta if it wasn't deduced during parsing
-    header_lang_meta: str
-    if input.header_lang_meta is not None:
-        header_lang_meta = input.header_lang_meta
-    else:
-        header_lang_meta = 'en'
-        logger.info('No language meta could be deduced. Defaulting to "en"')
-
-    target_lang = input.target_lang or 'en'
-    id_space = input.header_mod_id_space or input.content_mod_id_space
-
-    output_entries = list[CsvCompleteEntry]()
-
-    if id_space is not None and len(input.entries_abbrev) > 0:
-        id_set = set([entry.id for entry in input.entries_complete])
-        id_counter = MOD_ID_RANGE.start + id_space * 1000
-        for entry in input.entries_abbrev:
-            while id_counter in id_set:
-                id_set.remove(id_counter)
-                id_counter += 1
-            complete = entry.into_complete(id_counter, '')
-            output_entries.append(complete)
-            # A chance for ID overflow is rather low, so we will ignore it
-            id_counter += 1
-            
-    for entry in input.entries_complete:
-        output_entries.append(entry)
-
-    output_entries.sort(key=lambda entry: entry.id)
-
-    return CsvOutputDocument(
-        target_lang,
-        header_lang_meta,
-        id_space if not input.has_vanilla_entries else None,
-        output_entries,
-    )
-
-
-def save_abbreviated_entries(entries: dict[str, list[CsvAbbreviatedEntry]], file_path: str):
-    file_lines: list[str] = []
-    file_lines.append(";idspace=????")
-
-    for section, section_entries in entries.items():
-        file_lines.append(f";section={section}")
-        file_lines.extend([str(entry) for entry in section_entries])
-
-    with io.open(file_path, mode="w", encoding="UTF-8") as f:
-        f.write('\n'.join(file_lines))
-
-
-
-'''Class made to as non-invasively as possible insert new entries into an existing CSV document'''
-'''Doesn't validate and examine the file as thoroughly as CsvInputDocument does'''
-class CsvMergingDocument:
-    def __init__(self, file_path: str):
-        self.file_path: str = file_path
-        self.file_encoding: str = guess_file_encoding(file_path)
-
-        self.file_lines: list[str | CsvCommentAttribute | CsvAbbreviatedEntry | CsvCompleteEntry] = [] # if str it's a regular comment or empty line
-        self.sections: list[tuple[str, int]]  = [] # (section_name, line_idx)
-        self.str_keys: set[str] = set()
-
-        with io.open(file_path, mode="r", encoding=self.file_encoding) as f:
-            for i, line in enumerate(f):
-                try:
-                    entry = parse_entry(line)
-                    self.file_lines.append(entry)
-
-                    if isinstance(entry, CsvAbbreviatedEntry) or isinstance(entry, CsvCompleteEntry):
-                        self.str_keys.add(entry.key_str)
-                except Exception as e:
-                    raise Exception(f'Failed to read line {i}:\n{e}')
-
-        for i, line in enumerate(self.file_lines):
-            if isinstance(line, CsvCommentAttribute) and line.key == "section":
-                self.sections.append((line.value, i))
-
-
-    def save(self):
-        logger.info(f"Merging entries into an existing file...")
-        with io.open(self.file_path, mode="w", encoding=self.file_encoding) as f:
-            str_lines = [str(line) for line in self.file_lines]
-            f.write('\n'.join(str_lines))
-
-
-    def insert_entries(self, entries: list[CsvAbbreviatedEntry], target_section: str):
-        # filter out entries that already exist in the document
-        entries = list(filter(lambda e: e.key_str not in self.str_keys, entries))
-
-        idx = self.section_range(target_section).stop
-        self.file_lines[idx:idx] = entries
-
-    def section_range(self, target_section: str) -> range:
-        start_idx: int | None = None
-        stop_idx: int | None = None
-
-        # find the last line of target section
-        for i, (section_name, section_line_idx) in enumerate(self.sections):
-            if section_name == target_section:
-                start_idx = section_line_idx + 1
-                # if it's the last section, make stop the end of file
-                if i == len(self.sections) - 1:
-                    stop_idx = len(self.file_lines)
-                # otherwise insert before the next section marker
-                else:
-                    stop_idx = self.sections[i + 1][1]
-                break
-
-        if start_idx is not None and stop_idx is not None:
-            return range(start_idx, stop_idx)
-        
-        # add the section if there isn't one already
-        self.file_lines.append(CsvCommentAttribute("section", target_section))
-        section_line_idx = len(self.file_lines) - 1
-        self.sections.append((target_section, section_line_idx))
-
-        start_idx = section_line_idx + 1
-        stop_idx = len(self.file_lines)
-
-        return range(start_idx, stop_idx)
-        
-
-
-
-def merge_abbreviated_entries(entries: dict[str, list[CsvAbbreviatedEntry]], file_path: str):
-    doc = CsvMergingDocument(file_path)
-    for section, section_entries in entries.items():
-        if len(section_entries) > 0:
-            doc.insert_entries(section_entries, section)
-
-    doc.save()
-
-
-def save_or_merge_abbreviated_entries(entries: dict[str, list[CsvAbbreviatedEntry]], file_path: str):
-    if os.path.exists(file_path):
-        merge_abbreviated_entries(entries, file_path)
-    else:
-        save_abbreviated_entries(entries, file_path)
-
-
-
 ###############################################################################################################################
 # CLI
 ###############################################################################################################################
@@ -504,11 +71,10 @@ def make_cli() -> CLIArguments:
     parser = argparse.ArgumentParser(
         description=f'w3stringsx v{W3STRINGSX_VERSION}\n'
                     'https://github.com/SpontanCombust/w3stringsx\n\n'
-                    'Script that can be used as an alternative CLI frontend for w3strings encoder '
+                    'Script acting as an alternative CLI frontend for w3strings encoder '
                     'while also providing additional functionalities to make working with localized Witcher 3 content easier and faster.',
         formatter_class=argparse.RawTextHelpFormatter,
         epilog='remarks:\n'
-                '  * in the case of CSV file context, the output path must be a directory\n'
                 '  * --language and --keep-csv arguments apply only to CSV file context\n'
                 '  * --search option applies only to XML and WitcherScript contexts'
     )
@@ -665,13 +231,16 @@ def w3strings_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, ar
 
 def csv_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, args: CLIArguments):
     input_copy_path = scratch.file_scratch_copy(args.input_path)
-    input_doc = CsvInputDocument(input_copy_path)
-    output_doc = prepare_output_csv(input_doc)
+    input_doc = W3StringsCsvDocument(input_copy_path)
+    input_doc.read_from_file()
+
+    output_doc_processor = W3StringsCsvDocumentEncodingPreprocessor(input_doc)
     output_doc_path = replace_path_ext(replace_path_dirname(input_copy_path, scratch.folder_path), ".w3stringsx.csv")
-    output_doc.save_to_file(output_doc_path)
+    output_doc = output_doc_processor.process_to(output_doc_path)
+    output_doc.save_to_file()
 
     try:
-        w3strings_file = encoder.encode(output_doc_path, output_doc.id_space)
+        w3strings_file = encoder.encode(output_doc_path, None)
         langs = ALL_LANGS if args.lang == 'all' else [args.lang]
         for lang in langs:
             copied = os.path.join(args.output_dir, f'{lang}.w3strings')
@@ -688,38 +257,43 @@ def csv_context_work(encoder: W3StringsEncoder, scratch: ScratchFolder, args: CL
 
 def xml_context_work(args: CLIArguments):
     result = parse_xml_for_str_keys(args.input_path, args.search)
-    entries = [CsvAbbreviatedEntry(key) for key in result.keys]
-    section_name = COMMENT_SECTION_MENU if result.source == 'config' else COMMENT_SECTION_BUNDLE
-    section = {section_name : entries}
+    entries = [W3StringsCsvShortEntry(key) for key in result.keys]
 
     csv_path = replace_path_ext(replace_path_dirname(args.input_path, args.output_dir), ".en.csv")
-    save_or_merge_abbreviated_entries(section, csv_path)
+    doc = SectionedW3StringsCsvDocument(csv_path)
+    if result.source == 'config':
+        doc.extend_to_config_strings(entries)
+    else:
+        doc.extend_to_bundle_strings(entries)
+    doc.save_to_file()
 
     logger.info(f'Localisation keys from {args.input_path} have been successfully saved to {csv_path}')
 
 
 def witcherscript_context_work(args: CLIArguments):   
     keys = sorted(parse_ws_for_str_keys(args.input_path, args.search))
-    entries = [CsvAbbreviatedEntry(key) for key in keys]
-    section = {COMMENT_SECTION_SCRIPTS : entries}
+    entries = [W3StringsCsvShortEntry(key) for key in keys]
 
     csv_path = replace_path_ext(replace_path_dirname(args.input_path, args.output_dir), ".en.csv")
-    save_or_merge_abbreviated_entries(section, csv_path)
+    doc = SectionedW3StringsCsvDocument(csv_path)
+    doc.extend_to_script_strings(entries)
+    doc.save_to_file()
 
     logger.info(f'Localisation keys from {args.input_path} have been successfully saved to {csv_path}')
 
 
 def directory_context_work(args: CLIArguments):
     result = parse_directory_for_str_keys(args.input_path, args.search)
-
-    sections = {
-        COMMENT_SECTION_MENU: [CsvAbbreviatedEntry(key) for key in result.config_keys],
-        COMMENT_SECTION_BUNDLE: [CsvAbbreviatedEntry(key) for key in result.bundle_keys],
-        COMMENT_SECTION_SCRIPTS: [CsvAbbreviatedEntry(key) for key in result.script_keys]
-    }
-
+    config_entries = [W3StringsCsvShortEntry(key) for key in result.config_keys]
+    bundle_entries = [W3StringsCsvShortEntry(key) for key in result.bundle_keys]
+    script_entries = [W3StringsCsvShortEntry(key) for key in result.script_keys]
+    
     csv_path = replace_path_ext(replace_path_dirname(args.input_path, args.output_dir), ".en.csv")
-    save_or_merge_abbreviated_entries(sections, csv_path)
+    doc = SectionedW3StringsCsvDocument(csv_path)
+    doc.extend_to_config_strings(config_entries)
+    doc.extend_to_bundle_strings(bundle_entries)
+    doc.extend_to_script_strings(script_entries)
+    doc.save_to_file()
 
     logger.info(f'Localisation keys from {args.input_path} have been successfully saved to {csv_path}')
 
