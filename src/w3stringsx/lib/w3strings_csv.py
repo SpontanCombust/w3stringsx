@@ -126,8 +126,8 @@ class W3StringsCsvDocument:
 
     def save_to_file(self):
         with io.open(self.file_path, mode='w', encoding='UTF-8') as file:
-            lines_as_strs = [str(line) for line in self.lines]
-            file.write(os.linesep.join(lines_as_strs))
+            lines_as_strs = [str(line) + '\n' for line in self.lines]
+            file.writelines(lines_as_strs)
     
     @staticmethod
     def _read_line(line: str) -> W3StringsCsvDocumentLine | None:
@@ -142,10 +142,8 @@ class W3StringsCsvDocument:
 
     @staticmethod 
     def _read_string_entry(entry_line: str) -> W3StringsCsvCompleteEntry | W3StringsCsvShortEntry | None:
-        split = entry_line\
-            .strip()\
-            .split('|')
-        
+        split = entry_line.split('|')
+            
         if len(split) == 2:
             return W3StringsCsvShortEntry(
                 split[0], 
@@ -172,10 +170,7 @@ class W3StringsCsvDocument:
         if not comment_line.count('=') == 1:
             return W3StringsCsvPlainComment(comment_line[1:])
         
-        stripped_line = comment_line[1:]\
-            .strip()\
-            .replace(' ', '')
-        
+        stripped_line = comment_line[1:].replace(' ', '')
         split = stripped_line.split('=')
         return W3StringsCsvAttributeComment(split[0], split[1])
         
