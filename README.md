@@ -83,9 +83,9 @@ If the file contains vanilla IDs it will disable the ID check. The entire proces
 
 ## Abbreviated entries
 Writing IDs by hand can be tiresome. This is why w3stringsx allows to completely get rid of that step.
-At the top of file write a comment that specifies the ID space that should be used:
+At the top of file write a comment that specifies the mod ID from which string ID space will be deduced, like so:
 ```csv
-;idspace=5018
+;mod_id=5018
 ```
 Then you will be able to add records that have only string key and text columns like so:
 ```csv
@@ -95,7 +95,7 @@ preset_value_mod_default|Default
 ```
 These entries that contain only string key and text columns are referred to in this project as "abbreviated entries". Entries with all the required columns, that is ID column, hex key, string key and text on the other hand are referred to as "complete entries".
 
-If there exists at least one complete entry in the file with the ID in proper mod ID space, the `;idspace` header can be omitted.
+If there exists at least one complete entry in the file with the ID in proper mod ID space, the `;mod_id` header can be omitted.
 
 Note that you can still add complete lines with IDs if you want to edit vanilla strings or give some of the entries a predefined ID (for whatever reason). The script ensures that there will be no ID collisions when complete lines are generated from the abbreviated ones.
 

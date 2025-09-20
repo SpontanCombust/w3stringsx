@@ -2,7 +2,7 @@
 ; At the top of the file put a line that describes the ID space of file.
 ; It will be used to complete abbreviated lines without ID column below.
 ; Said ID by the convention should the the identifier of your mod on NexusMods, like so:
-; idspace=9001
+; mod_id=9001
 preset_value_motw_monster_ghoul|Ghoul
 preset_value_motw_monster_griffin|Griffin
 preset_value_motw_monster_wolf|Wolf

@@ -1,5 +1,5 @@
-;idspace=????
-;section=menu
+;mod_id=?????
+;section=configuration
 panel_Mods|MISSING_LOCALISATION
 panel_ibt_name|MISSING_LOCALISATION
 preset_Mods_ibt_name|MISSING_LOCALISATION
@@ -10,7 +10,7 @@ preset_value_ibt_hairstyle_mohawk_with_ponytail|MISSING_LOCALISATION
 option_ibt_hair_short_untied|MISSING_LOCALISATION
 preset_value_ibt_hairstyle_short_loose|MISSING_LOCALISATION
 preset_value_ibt_hairstyle_elven_rebel|MISSING_LOCALISATION
-;section=bundle
+;section=bundles
 item_desc_ibt_hairtie|MISSING_LOCALISATION
 item_desc_ibt_scissors|MISSING_LOCALISATION
 item_desc_ibt_tonic_beard|MISSING_LOCALISATION

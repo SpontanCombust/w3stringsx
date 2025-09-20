@@ -52,6 +52,8 @@ class InputPathType(Enum):
                     return InputPathType.WITCHERSCRIPT_FILE
                 case _:
                     return InputPathType.UNSUPPORTED
+                
+PARSED_STR_KEYS_CSV_HEADER = W3StringsCsvAttributeComment('mod_id', '?????')
 
 
 ###############################################################################################################################
@@ -261,6 +263,7 @@ def xml_context_work(args: CLIArguments):
 
     csv_path = replace_path_ext(replace_path_dirname(args.input_path, args.output_dir), ".en.csv")
     doc = SectionedW3StringsCsvDocument(csv_path)
+    doc.append(PARSED_STR_KEYS_CSV_HEADER)
     if result.source == 'config':
         doc.extend_to_config_strings(entries)
     else:
@@ -276,6 +279,7 @@ def witcherscript_context_work(args: CLIArguments):
 
     csv_path = replace_path_ext(replace_path_dirname(args.input_path, args.output_dir), ".en.csv")
     doc = SectionedW3StringsCsvDocument(csv_path)
+    doc.append(PARSED_STR_KEYS_CSV_HEADER)
     doc.extend_to_script_strings(entries)
     doc.save_to_file()
 
@@ -290,6 +294,7 @@ def directory_context_work(args: CLIArguments):
     
     csv_path = replace_path_ext(replace_path_dirname(args.input_path, args.output_dir), ".en.csv")
     doc = SectionedW3StringsCsvDocument(csv_path)
+    doc.append(PARSED_STR_KEYS_CSV_HEADER)
     doc.extend_to_config_strings(config_entries)
     doc.extend_to_bundle_strings(bundle_entries)
     doc.extend_to_script_strings(script_entries)

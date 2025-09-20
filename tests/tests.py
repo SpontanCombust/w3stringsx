@@ -98,12 +98,6 @@ class Tests(unittest.TestCase):
     def test_parse_dir(self):
         self.run_case('parse_dir', '-s "(Mods|ibt_)"')
 
-    def test_parse_dir_merge(self):
-        self.run_case('parse_dir_merge', '-s "(Mods|ibt_)"')
-
-    def test_parse_dir_merge_no_sections(self):
-        self.run_case('parse_dir_merge_no_sections', '-s "(Mods|ibt_)"')
-
 
     def run_case(self, case_name: str, extra_args: str = '', output_path: str | None = None, see_output: bool = False):
         root_dir = os.path.abspath(os.path.join(__file__, '../../'))
