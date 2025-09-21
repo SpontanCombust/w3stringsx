@@ -44,6 +44,9 @@ class Tests(unittest.TestCase):
     def test_encode_pl_from_header(self):
         self.run_case('encode_pl_from_header', "-l pl")
 
+    def test_encode_multi_lang(self):
+        self.run_case('encode_multi_lang', "-l en -l pl -l fr -l de")
+
     def test_encode_default_lang(self):
         self.run_case('encode_default_lang')
 

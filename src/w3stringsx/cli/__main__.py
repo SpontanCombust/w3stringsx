@@ -62,7 +62,7 @@ def main():
             case InputPathType.W3STRINGS_FILE:
                 file_handler.handle_w3strings(args.input_path, args.output_dir)
             case InputPathType.CSV_FILE:
-                file_handler.handle_csv(args.input_path, args.output_dir, [args.lang], args.keep_csv)
+                file_handler.handle_csv(args.input_path, args.output_dir, args.langs, args.keep_csv)
             case InputPathType.XML_FILE:
                 file_handler.handle_xml(args.input_path, args.output_dir, args.search)
             case InputPathType.WITCHERSCRIPT_FILE:

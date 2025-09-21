@@ -19,7 +19,7 @@ logger = get_logger()
 class CLIArguments:
     input_path: str
     output_dir: str
-    lang: str  # one of ALL_LANGS or 'all'
+    langs: list[str]
     keep_csv: bool
     search: str
     warn_level: int
@@ -34,7 +34,7 @@ def make_cli() -> CLIArguments:
         formatter_class=argparse.RawTextHelpFormatter,
         epilog='remarks:\n'
                 '  * --language and --keep-csv arguments apply only to CSV file context\n'
-                '  * --search option applies only to XML and WitcherScript contexts'
+                '  * --search option applies only to XML, WitcherScript and directory contexts'
     )
 
     parser.add_argument(
@@ -48,12 +48,12 @@ def make_cli() -> CLIArguments:
         help='output directory to place the output in; default: [input file\'s directory]',
         default='',
         action='store')
-    #FIXME allow multiple
+
     parser.add_argument(
         '-l', '--language', 
-        help=f'set the target encoding language, "all" will generate all possible variants; available: {ALL_LANGS + ["all"]}',
-        default='all',
-        dest='lang', action='store')
+        help=f'set the target encoding language, argument may be passed multiple times; omitting this argument will generate all possible variants; available: {ALL_LANGS}',
+        default=[],
+        dest='langs', action='append')
 
     parser.add_argument(
         '-k', '--keep-csv',
@@ -77,7 +77,7 @@ def make_cli() -> CLIArguments:
     cli = CLIArguments()
     cli.input_path = str(args.input_path)
     cli.output_dir = str(args.output_dir)
-    cli.lang = str(args.lang)
+    cli.langs = list(args.langs)
     cli.keep_csv = bool(args.keep_csv)
     cli.search = str(args.search)
 
@@ -90,7 +90,12 @@ def make_cli() -> CLIArguments:
 
 
 def preprocess_cli_args(args: CLIArguments):
+    args.input_path = os.path.realpath(args.input_path)
+
     if args.output_dir == '':
         # default to the parent directory of the input
         args.output_dir = os.path.dirname(args.input_path)
         logger.info(f'Ouput path set to directory {args.output_dir}')
+
+    if len(args.langs) == 0:
+        args.langs = ALL_LANGS

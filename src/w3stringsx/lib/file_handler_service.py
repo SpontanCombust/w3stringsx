@@ -157,15 +157,12 @@ class FileHandlerService:
         return os.path.realpath(output_dir)
     
     def __validate_target_langs(self, target_langs: list[str]) -> list[str]:
-        if 'all' in target_langs:
-            return ALL_LANGS
-        else:
-            # remvoe duplicates
-            target_langs = list(set(target_langs))
-            for lang in target_langs:
-                if lang not in ALL_LANGS:
-                    raise Exception(f"Invalid target language identifier: {lang}")
-            return target_langs
+        # remove duplicates
+        target_langs = list(set(target_langs))
+        for lang in target_langs:
+            if lang not in ALL_LANGS:
+                raise Exception(f"Invalid target language identifier: {lang}")
+        return target_langs
         
     def __validate_regex_search_string(self, search: str) -> str:
         if search == '':
