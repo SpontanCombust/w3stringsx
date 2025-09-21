@@ -220,3 +220,5 @@ class W3StringsCsvDocumentEncodingPreprocessor:
         logger.info("Completed generating CSV entries (%d mod entries, %d vanilla entries, %d entries with errors)",
                     modded_detected_count, vanilla_detected_count, errored_detected_count + invalid_detected_count)
 
+        if errored_detected_count + invalid_detected_count > 0:
+            raise Exception("Generating CSV entries finished with errors")

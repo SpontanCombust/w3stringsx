@@ -115,6 +115,7 @@ class W3StringsCsvDocument:
         logger.info('Reading %s. Detected encoding: %s', self.file_path, encoding)
 
         self.lines = []
+        parsed_with_errors = False
         with io.open(self.file_path, mode='r', encoding=encoding) as file:
             for (line_num, line) in enumerate(file.readlines()):
                 try:
@@ -123,6 +124,10 @@ class W3StringsCsvDocument:
                         self.lines.append(parsed)
                 except Exception as ex:
                     logger.error("Parsing error at line %d: %s", line_num + 1, ex)
+                    parsed_with_errors = True
+
+        if parsed_with_errors:
+            raise Exception("Errors occured while reading the file (check logs for details)")
 
     def save_to_file(self):
         with io.open(self.file_path, mode='w', encoding='UTF-8') as file:
