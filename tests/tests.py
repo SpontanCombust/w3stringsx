@@ -50,6 +50,9 @@ class Tests(unittest.TestCase):
     def test_encode_abbreviated(self):
         self.run_case('encode_abbreviated', '-l esmx')
 
+    def test_encode_abbreviated_legacy(self):
+        self.run_case('encode_abbreviated_legacy', '-l esmx')
+
     def test_encode_abbreviated_no_header(self):
         self.run_case('encode_abbreviated_no_header', '-l pl -k')
 
@@ -99,7 +102,7 @@ class Tests(unittest.TestCase):
         self.run_case('parse_dir', '-s "(Mods|ibt_)"')
 
 
-    def run_case(self, case_name: str, extra_args: str = '', output_path: str | None = None, see_output: bool = False):
+    def run_case(self, case_name: str, extra_args: str = '', output_path: str | None = None, see_output: bool = False, can_error: bool = False):
         root_dir = os.path.abspath(os.path.join(__file__, '../../'))
         case_dir = os.path.join(root_dir, "tests", case_name)
 
@@ -121,7 +124,8 @@ class Tests(unittest.TestCase):
         try:
             subprocess.run(cmd, shell=True, check=True, stdout=(None if see_output else subprocess.DEVNULL), stderr=(None if see_output else subprocess.DEVNULL))
         except:
-            pass
+            if not can_error:
+                self.fail("w3stringsx returned with non-zero return code")
 
         try:
             self.assert_output(expected_dir, output_dir)
@@ -140,7 +144,7 @@ class Tests(unittest.TestCase):
 
         f1_hash = file_hash(f1)
         f2_hash = file_hash(f2)
-        self.assertEqual(f1_hash, f2_hash)
+        self.assertEqual(f1_hash, f2_hash, f"{f1} != {f1}")
 
     def assert_output(self, expected_dir: str, output_dir: str):
         self.assertTrue(os.path.exists(output_dir), output_dir + " doesn't exist")

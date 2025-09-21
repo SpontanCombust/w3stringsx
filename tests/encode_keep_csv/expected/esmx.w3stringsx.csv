@@ -1,32 +1,32 @@
-;meta[language=cleartext]
+;meta[language=esmx]
 ;       id|key(hex)|key(str)|text
-2119002000|        |panel_Mods|Mody
-2119002001|        |panel_monster_of_the_week|Potwór Tygodnia
-2119002002|        |panel_motw_difficulty|Poziom trudności
-2119002003|        |option_motw_no_mans_land|Ziemia Niczyja
-2119002004|        |option_motw_skellige|Skellige
-2119002005|        |option_motw_kaer_morhen|Kaer Morhen
-2119002006|        |option_motw_toussaint|Toussaint
-2119002007|        |preset_value_motw_difficulty_easy|Łatwy
-2119002008|        |preset_value_motw_difficulty_medium|Średni
-2119002009|        |preset_value_motw_difficulty_hard|Trudny
-2119002010|        |panel_motw_monsters|Potwory
-2119002011|        |preset_value_motw_monster_ghoul|Ghoul
-2119002012|        |preset_value_motw_monster_griffin|Gryf
-2119002013|        |preset_value_motw_monster_wolf|Wilk
-2119002014|        |preset_value_motw_monster_nekker|Nekker
-2119002015|        |preset_value_motw_monster_leshen|Leszy
-2119002016|        |preset_value_motw_monster_golem|Golem
-2119002017|        |preset_value_motw_monster_wraith|Zjawa
-2119002018|        |preset_value_motw_monster_siren|Syrena
-2119002019|        |preset_value_motw_monster_bear|Niedźwiedź
-2119002020|        |preset_value_motw_monster_cyclops|Cyklop
-2119002021|        |preset_value_motw_monster_werewolf|Wilkołak
-2119002022|        |preset_value_motw_monster_harpy|Harpia
-2119002023|        |preset_value_motw_monster_archespore|Archespor
-2119002024|        |preset_value_motw_monster_panther|Pantera
-2119002025|        |preset_value_motw_monster_slyzard|Oszluzg
-2119002026|        |preset_value_motw_monster_centipede|Skolopendromorf
-2119002027|        |preset_value_motw_monster_shaelmaar|Szarlej
-2119002028|        |preset_value_motw_monster_bruxa|Bruxa
-2119002029|        |preset_value_motw_monster_fleder|Fleder
+1090020000|        |panel_Mods|Mody
+1090020001|        |panel_monster_of_the_week|Potwór Tygodnia
+1090020002|        |panel_motw_difficulty|Poziom trudności
+1090020003|        |option_motw_no_mans_land|Ziemia Niczyja
+1090020004|        |option_motw_skellige|Skellige
+1090020005|        |option_motw_kaer_morhen|Kaer Morhen
+1090020006|        |option_motw_toussaint|Toussaint
+1090020007|        |preset_value_motw_difficulty_easy|Łatwy
+1090020008|        |preset_value_motw_difficulty_medium|Średni
+1090020009|        |preset_value_motw_difficulty_hard|Trudny
+1090020010|        |panel_motw_monsters|Potwory
+1090020011|        |preset_value_motw_monster_ghoul|Ghoul
+1090020012|        |preset_value_motw_monster_griffin|Gryf
+1090020013|        |preset_value_motw_monster_wolf|Wilk
+1090020014|        |preset_value_motw_monster_nekker|Nekker
+1090020015|        |preset_value_motw_monster_leshen|Leszy
+1090020016|        |preset_value_motw_monster_golem|Golem
+1090020017|        |preset_value_motw_monster_wraith|Zjawa
+1090020018|        |preset_value_motw_monster_siren|Syrena
+1090020019|        |preset_value_motw_monster_bear|Niedźwiedź
+1090020020|        |preset_value_motw_monster_cyclops|Cyklop
+1090020021|        |preset_value_motw_monster_werewolf|Wilkołak
+1090020022|        |preset_value_motw_monster_harpy|Harpia
+1090020023|        |preset_value_motw_monster_archespore|Archespor
+1090020024|        |preset_value_motw_monster_panther|Pantera
+1090020025|        |preset_value_motw_monster_slyzard|Oszluzg
+1090020026|        |preset_value_motw_monster_centipede|Skolopendromorf
+1090020027|        |preset_value_motw_monster_shaelmaar|Szarlej
+1090020028|        |preset_value_motw_monster_bruxa|Bruxa
+1090020029|        |preset_value_motw_monster_fleder|Fleder
