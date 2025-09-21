@@ -92,7 +92,7 @@ def make_cli() -> CLIArguments:
         help='output directory to place the output in; default: [input file\'s directory]',
         default='',
         action='store')
-    
+    #FIXME allow multiple
     parser.add_argument(
         '-l', '--language', 
         help=f'set the target encoding language, "all" will generate all possible variants; available: {ALL_LANGS + ["all"]}',
@@ -194,13 +194,13 @@ def main():
 
         if input_type in (InputPathType.W3STRINGS_FILE, InputPathType.CSV_FILE):
             encoder = W3StringsEncoder()
-            scratch = ScratchFolder(os.path.dirname(args.input_path))
+            with ScratchFolder(os.path.dirname(args.input_path)) as scratch:
+                match input_type:
+                    case InputPathType.W3STRINGS_FILE:
+                        w3strings_context_work(encoder, scratch, args)
+                    case InputPathType.CSV_FILE:
+                        csv_context_work(encoder, scratch, args)
 
-            match input_type:
-                case InputPathType.W3STRINGS_FILE:
-                    w3strings_context_work(encoder, scratch, args)
-                case InputPathType.CSV_FILE:
-                    csv_context_work(encoder, scratch, args)
         else:
             match input_type:
                 case InputPathType.XML_FILE:
@@ -216,6 +216,8 @@ def main():
         sys.exit(-1)
     finally:
         logger.info(f'Logs have been written into {log_file_path()}')
+
+    #TODO make sure user sees logs if there were errors
             
 
 

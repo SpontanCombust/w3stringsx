@@ -2,10 +2,12 @@
 Various utility classes and functions
 """
 
+from __future__ import annotations
 import io
 import os
 import re
 import shutil
+from types import TracebackType
 
 from w3stringsx.lib.logging import get_logger
 
@@ -52,12 +54,14 @@ class ScratchFolder:
             raise Exception("Working directory for the scratch folder is not an existing directory")
 
         self.folder_path = os.path.join(work_dir, '.tmp.w3stringsx')
+
+    def __enter__(self) -> ScratchFolder:
         if not os.path.exists(self.folder_path):
             logger.info(f'Creating scratch folder {self.folder_path}')
             os.mkdir(self.folder_path)
+        return self
 
-
-    def __del__(self):
+    def __exit__(self, exc_type: type[BaseException] | None, exc_value: BaseException | None, traceback: TracebackType | None):
         logger.info(f'Removing scratch folder {self.folder_path}')
         shutil.rmtree(self.folder_path)
 
