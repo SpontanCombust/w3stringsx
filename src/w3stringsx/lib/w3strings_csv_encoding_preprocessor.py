@@ -161,10 +161,14 @@ class W3StringsCsvDocumentEncodingPreprocessor:
                         output.append(line)
                         vanilla_detected_count += 1
                         used_string_ids.add(line.id)
+                        if line.key_str != '':
+                            used_string_keys.add(line.key_str)
                     elif line.id.is_modded():
                         output.append(line)
                         modded_detected_count += 1
                         used_string_ids.add(line.id)
+                        if line.key_str != '':
+                            used_string_keys.add(line.key_str)
 
                         # update currently used ID space for completing short entries
                         mod_id = line.id.mod_id()
@@ -177,6 +181,10 @@ class W3StringsCsvDocumentEncodingPreprocessor:
                         invalid_detected_count += 1
 
                 elif isinstance(line, W3StringsCsvShortEntry):
+                    if line.key_str == '':
+                        logger.error("String key must not be empty for a short entry (line %d)", line_idx + 1)
+                        errored_detected_count += 1
+                        continue
                     if line.key_str in used_string_keys:
                         logger.error("String key %s has already been used before (line %d)", line.key_str, line_idx + 1)
                         errored_detected_count += 1
@@ -204,6 +212,7 @@ class W3StringsCsvDocumentEncodingPreprocessor:
                     output.append(complete)
                     modded_detected_count += 1
                     used_string_ids.add(id)
+                    used_string_keys.add(line.key_str)
 
             except Exception as ex:
                 logger.error("Unexpected error at line %d: %s", line_idx + 1, ex)
