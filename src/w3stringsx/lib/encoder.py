@@ -5,7 +5,7 @@ w3strings encoder handling
 import os
 import subprocess
 
-from w3stringsx import W3STRINGSX_PKG_ROOT
+from w3stringsx import W3STRINGSX_EXE_PATH
 from w3stringsx.lib.logging import get_logger
 
 __all__ = [
@@ -22,7 +22,7 @@ class W3StringsEncoder:
     def __init__(self):
         # TODO cache encoder path
         logger.info('Looking for w3strings encoder in w3stringsx\'s directory...')
-        self.exe_path = os.path.join(os.path.dirname(W3STRINGSX_PKG_ROOT), 'w3strings.exe')
+        self.exe_path = os.path.join(os.path.dirname(W3STRINGSX_EXE_PATH), 'w3strings.exe')
         
         if not os.path.exists(self.exe_path):
             logger.info('w3strings encoder not found in w3stringsx\'s directory. Checking the PATH environment variable...')

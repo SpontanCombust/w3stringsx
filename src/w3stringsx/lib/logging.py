@@ -5,7 +5,7 @@ Common logging tooling.
 import logging
 import os
 
-from w3stringsx import W3STRINGSX_PKG_ROOT
+from w3stringsx import W3STRINGSX_EXE_PATH
 
 
 __all__ = [
@@ -41,7 +41,7 @@ def get_logger():
     return logging.getLogger('w3stringsx')
 
 def log_file_path():
-    return os.path.join(os.path.dirname(W3STRINGSX_PKG_ROOT), 'w3stringsx.log')
+    return os.path.join(os.path.dirname(W3STRINGSX_EXE_PATH), 'w3stringsx.log')
 
 def init_logger(log_level: int):
     stdio_handler = logging.StreamHandler()
