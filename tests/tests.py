@@ -120,9 +120,9 @@ class Tests(unittest.TestCase):
             output_preload_path = os.path.join(output_preload_dir, os.listdir(output_preload_dir)[0])
             shutil.copy(output_preload_path, output_dir)
         
-        cmd = f'python {root_dir}/src/w3stringsx.py "{input_path}" -o "{output_path}" {extra_args}'
+        cmd = f'python -m w3stringsx.cli "{input_path}" -o "{output_path}" {extra_args}'
         try:
-            subprocess.run(cmd, shell=True, check=True, stdout=(None if see_output else subprocess.DEVNULL), stderr=(None if see_output else subprocess.DEVNULL))
+            subprocess.run(cmd, cwd=f'{root_dir}/src', shell=True, check=True, stdout=(None if see_output else subprocess.DEVNULL), stderr=(None if see_output else subprocess.DEVNULL))
         except:
             if not can_error:
                 self.fail("w3stringsx returned with non-zero return code")
