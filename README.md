@@ -9,8 +9,8 @@
   - [Input context awareness](#input-context-awareness)
   - [Header optionality](#header-optionality)
   - [Language context awareness](#language-context-awareness)
-  - [ID space deduction](#id-space-deduction)
-  - [Abbreviated entries](#abbreviated-entries)
+  - [ID auto-generation and short entries](#id-auto-generation-and-short-entries)
+  - [Multiple ID spaces](#multiple-id-spaces)
   - [Encoding all possible languages](#encoding-all-possible-languages)
   - [Parsing files for localisation keys](#parsing-files-for-localisation-keys)
 
@@ -72,43 +72,61 @@ Files don't have to be named exactly that, only one of the components divided by
 
 If the traditional CSV header is still present, it will take the metadata from there. If no language metadata could be deduced in any way it defaults to English (`meta[language=en]`).
 
-## ID space deduction
-Script will go through all the records in the CSV file and see what ID space is used. For example
-```csv
-2115018009|        |panel_Mods|Mods
-``` 
-yields 5018. This ID will be passed onto the encoder.
+## ID auto-generation and short entries
+All string entries need to have a unique ID. w3stringsx can auto-generate them for you.  
 
-If the file contains vanilla IDs it will disable the ID check. The entire process is accompanied by informative messages so you know if everything was read correctly.
-
-## Abbreviated entries
-Writing IDs by hand can be tiresome. This is why w3stringsx allows to completely get rid of that step.
-At the top of file write a comment that specifies the mod ID from which string ID space will be deduced, like so:
+Normally for all string entries you need to list the ID, key hash (optional), key string and localization text separated by the '|' character, like so:
 ```csv
-;mod_id=5018
+1050180009|        |panel_Mods|Mods
 ```
-Then you will be able to add records that have only string key and text columns like so:
+
+With w3stringsx this can be shortened into a version with only key string and localization text:
 ```csv
 panel_Mods|Mods
-panel_mod_settings|Mod settings
-preset_value_mod_default|Default
 ```
-These entries that contain only string key and text columns are referred to in this project as "abbreviated entries". Entries with all the required columns, that is ID column, hex key, string key and text on the other hand are referred to as "complete entries".
 
-If there exists at least one complete entry in the file with the ID in proper mod ID space, the `;mod_id` header can be omitted.
+All you have to do to make use of this is to do either of two things:
+1. Above your entries add a comment describing the string ID space you want to use:
+    ```csv
+    ;mod_id=5018
+    ```
+    This will effectively tell w3stringsx to generate suspequent string IDs starting with `1050180000`, which is a convention suggested by modders on the official Witcher 3 Discord server. It derives this "mod ID" from the number assigned to a modification uploaded to NexusMods website, which is the biggest host of Witcher 3 mods to date.  
+    Alternatively if you have used rmemr's w3strings encoder before REDkit in this case you would expect IDs to start from `2115018000`. You can enable this generation method by writing a different comment instead:
+    ```csv
+    ;mod_id_legacy=5018
+    ```
+    Note that with this method won't allow you to use mod ID greater than 9999.
 
-Note that you can still add complete lines with IDs if you want to edit vanilla strings or give some of the entries a predefined ID (for whatever reason). The script ensures that there will be no ID collisions when complete lines are generated from the abbreviated ones.
+2. Before short entries write a complete one:
+    ```csv
+    1050180000|        |panel_Mods|Mods
+    ```
+    This will tell w3stringsx that the next short entry after it should have ID `1050180001` and so on. You can put these lines with ID already filled in multiple times to some IDs if you need to. Note that only modded IDs will cause this ID generation context to be set - if you put a string entry with vanilla ID it won't affect the flow of ID generation.
+
+## Multiple ID spaces
+With w3stringsx a single CSV file may contain string entries for multiple mods and vanilla strings without a hassle:
+```csv
+;mod_id=10100
+item_name_fireworks|Fireworks
+item_desc_firecrackers|Firecrackers
+;mod_id=5432
+vilgefortz_name|Vilgefortz
+;vanilla
+350496|43078142||Warrior
+302053|67827706||Temple Guard
+392738|05dc6a8f||Ghost
+```
 
 ## Encoding all possible languages
 Even if your mod was not made with some languages in mind, their respective w3strings files still need to be created so that modded text appears properly, even if in a different language. This is usually done by first encoding one w3strings file in the language of your choosing, for example English as en.w3strings. Then that file is copied and renamed to es.w3strings, fr.w3strings and so on.
 
-w3stringsx can to this automatically after encoding. The `-l` or `--language` option specifies the target encoding language. It can take `"all"` value, which means it will create w3strings file for every possible language. It is the default value.
+w3stringsx can to this automatically after encoding. The `-l` or `--language` option specifies the target encoding language. Argument may be repeated to encode for more languages. If you want to encode for all possible languages you can simply omit this argument as the default behaviour is to handle all cases. 
 ```shell
 # Creates all possible w3strings files
 python w3stringsx.py "path\to\en.csv"
 
-# Creates only en.w3strings
-python w3stringsx.py "path\to\en.csv" -l "en"
+# Creates only en.w3strings and pl.w3strings
+python w3stringsx.py "path\to\en.csv" --language "en" --language "pl"
 ```
 
 ## Parsing files for localisation keys
@@ -125,7 +143,7 @@ To narrow down the pool of possible candidates, `--search` option is available. 
 Example: if you use `abc_` prefix for localisation keys in your mod you should add `--search "abc_"` argument to the program.
 Parsing WitcherScript always requires that option.
 
-Parsed entries are saved to a .csv file that contains abbreviated localisation entries for you to localise.
+Parsed entries are saved to a .csv file that contains short localisation entries for you to localise.
 Entries coming from different sources will be seperate by a `;section` comment, for example `;section=scripts`.
 
 If the output file already exists however, w3stringsx will not overwrite the file. It will only add to it those entries that are not yet contained inside it and leave everything else as it was. This saves you from having to retranslate everything every time you parse your project for localisation keys. It also allows to use the same file for entries that cannot be parsed by w3stringsx, i.e. CR2W files.
