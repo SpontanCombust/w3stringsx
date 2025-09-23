@@ -2,10 +2,7 @@ name: update-docs
 
 on:
   push:
-    branches: '*'
-
-env:
-  CARGO_TERM_COLOR: always
+    branches: ['*']
 
 jobs:
   update-docs:
@@ -21,8 +18,9 @@ jobs:
       - name: CLI specification
         run: |
           echo  '```' > "./doc/cli_specification.md"
-          python "./src/w3stringsx.py" -h >> "./doc/cli_specification.md"
+          python -m w3stringsx.cli -h >> "./doc/cli_specification.md"
           echo  '```' >> "./doc/cli_specification.md"
+        working-directory: src
       - name: Check for changes in the project
         id: get_changes
         run: echo "changed=$(git status --porcelain | wc -l)" >> $GITHUB_OUTPUT

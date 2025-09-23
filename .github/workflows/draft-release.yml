@@ -2,10 +2,7 @@ name: draft-release
 
 on:
   push:
-    tags: '*'
-
-env:
-  CARGO_TERM_COLOR: always
+    tags: ['*']
 
 jobs:
   release:
@@ -14,16 +11,16 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
-    - name: Zip the script
-      uses: thedoctor0/zip-release@main
+    - name: Setup python
+      uses: actions/setup-python@v4
       with:
-        type: 'zip'
-        filename: "w3stringsx.zip"
-        path: "./src/w3stringsx.py"
-        custom: "-j" # don't preserve file structure, only take the file
+        python-version: '3.11' 
+    - name: Produce .pyz
+      run:
+        python tasks/zip_cli.py
     - name: Create draft release
       uses: ncipollo/release-action@v1
       with:
-        artifacts: "w3stringsx.zip"
+        artifacts: "out/w3stringsx.pyz"
         draft: true
         generateReleaseNotes: true
