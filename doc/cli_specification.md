@@ -1,7 +1,7 @@
 ```
-usage: w3stringsx.py [-h] [-o OUTPUT_DIR] [-l LANG] [-k] [-s SEARCH]
-                     [-w WARN_LEVEL]
-                     input_path
+usage: __main__.py [-h] [-o OUTPUT_DIR] [-l LANGS] [-k] [-s SEARCH]
+                   [-w WARN_LEVEL]
+                   input_path
 
 w3stringsx v2.0.0
 https://github.com/SpontanCombust/w3stringsx
@@ -15,8 +15,8 @@ options:
   -h, --help            show this help message and exit
   -o OUTPUT_DIR, --output_dir OUTPUT_DIR
                         output directory to place the output in; default: [input file's directory]
-  -l LANG, --language LANG
-                        set the target encoding language, "all" will generate all possible variants; available: ['ar', 'br', 'cn', 'cz', 'de', 'en', 'es', 'esmx', 'fr', 'hu', 'it', 'jp', 'kr', 'pl', 'ru', 'tr', 'zh', 'all']
+  -l LANGS, --language LANGS
+                        set the target encoding language, argument may be passed multiple times; omitting this argument will generate all possible variants; available: ['ar', 'br', 'cn', 'cz', 'de', 'en', 'es', 'esmx', 'fr', 'hu', 'it', 'jp', 'kr', 'pl', 'ru', 'tr', 'zh']
   -k, --keep-csv        keep the final form of the generated CSV file
   -s SEARCH, --search SEARCH
                         text that will be used to search localisation string keys; can accept regular expressions
@@ -25,5 +25,5 @@ options:
 
 remarks:
   * --language and --keep-csv arguments apply only to CSV file context
-  * --search option applies only to XML and WitcherScript contexts
+  * --search option applies only to XML, WitcherScript and directory contexts
 ```
