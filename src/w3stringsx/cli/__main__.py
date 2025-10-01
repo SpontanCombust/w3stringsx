@@ -6,8 +6,9 @@ import sys
 import traceback
 
 from w3stringsx.cli.cli import *
-from w3stringsx.lib.file_handler_service import FileHandlerService
 from w3stringsx.lib.logging import *
+from w3stringsx.svc.string_key_discovery_service import StringKeyDiscoveryService
+from w3stringsx.svc.w3strings_service import W3StringsService
 
 
 logger = get_logger()
@@ -57,18 +58,22 @@ def main():
     try:
         preprocess_cli_args(args)
 
-        file_handler = FileHandlerService()
         match InputPathType.from_path(args.input_path):
             case InputPathType.W3STRINGS_FILE:
-                file_handler.handle_w3strings(args.input_path, args.output_dir)
+                w3strings_svc = W3StringsService()
+                w3strings_svc.decode_w3strings_to_csv(args.input_path, args.output_dir)
             case InputPathType.CSV_FILE:
-                file_handler.handle_csv(args.input_path, args.output_dir, args.langs, args.keep_csv)
+                w3strings_svc = W3StringsService()
+                w3strings_svc.encode_w3strings_from_csv(args.input_path, args.output_dir, args.langs, args.keep_csv)
             case InputPathType.XML_FILE:
-                file_handler.handle_xml(args.input_path, args.output_dir, args.search)
+                discovery_svc = StringKeyDiscoveryService()
+                discovery_svc.discover_str_keys_in_xml(args.input_path, args.output_dir, args.search)
             case InputPathType.WITCHERSCRIPT_FILE:
-                file_handler.handle_witcherscript(args.input_path, args.output_dir, args.search)
+                discovery_svc = StringKeyDiscoveryService()
+                discovery_svc.discover_str_keys_in_witcherscript(args.input_path, args.output_dir, args.search)
             case InputPathType.DIRECTORY:
-                file_handler.handle_directory(args.input_path, args.output_dir, args.search)
+                discovery_svc = StringKeyDiscoveryService()
+                discovery_svc.discover_str_keys_in_directory(args.input_path, args.output_dir, args.search)
             case _:
                 raise Exception(f'Unsupported file type: {os.path.basename(args.input_path)}')
                         
@@ -78,8 +83,6 @@ def main():
         sys.exit(-1)
     finally:
         logger.info(f'Logs have been written into {log_file_path()}')
-
-    #TODO make sure user sees logs if there were errors
 
 
 if __name__ == '__main__':

@@ -8,6 +8,7 @@ TARGET= os.path.join(TARGET_DIR, 'w3stringsx.pyz')
 WHITELIST = [
     "w3stringsx/*.py",
     "w3stringsx/lib/*.py",
+    "w3stringsx/svc/*.py",
     "w3stringsx/cli/*.py",
 ]
 BLACKLIST = [

@@ -8,6 +8,7 @@ TARGET= os.path.join(TARGET_DIR, 'w3stringsx_gui.pyzw')
 WHITELIST = [
     "w3stringsx/*.py",
     "w3stringsx/lib/*.py",
+    "w3stringsx/svc/*.py",
     "w3stringsx/gui/*.py",
     "w3stringsx/gui/views/*.py"
 ]

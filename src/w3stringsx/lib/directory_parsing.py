@@ -1,6 +1,5 @@
 import os
 
-from w3stringsx.lib.logging import get_logger
 from w3stringsx.lib.utils import sanitize_str_keys, str_key_list_difference
 from w3stringsx.lib.ws_parsing import parse_ws_for_str_keys
 from w3stringsx.lib.xml_parsing import parse_xml_for_str_keys
@@ -10,9 +9,6 @@ __all__ = [
     "parse_directory_for_str_keys",
     "DirectoryParseResult"
 ]
-
-
-logger = get_logger()
 
 
 class DirectoryParseResult:
