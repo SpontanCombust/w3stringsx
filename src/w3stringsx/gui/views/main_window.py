@@ -1,11 +1,25 @@
-from PySide6.QtWidgets import QMainWindow
+from typing import cast
 
-from .ui_main_window import Ui_MainWindow
+from PySide6.QtQuick import QQuickWindow
+from PySide6.QtQml import QQmlApplicationEngine, QQmlContext, QQmlComponent
+
+from w3stringsx.lib.logging import get_logger
 
 
-class MainWindow(QMainWindow):
-    def __init__(self):
-        super(MainWindow, self).__init__()
-        self.ui = Ui_MainWindow()
-        self.ui.setupUi(self) # type: ignore
+logger = get_logger()
 
+
+class MainWindow:
+    __comp: QQmlComponent
+    __view: QQuickWindow
+
+    def __init__(self, engine: QQmlApplicationEngine):
+        ctx = QQmlContext(engine)
+        self.__comp = QQmlComponent(engine, "qrc:/qml/MainWindow.qml")
+        view = self.__comp.create(ctx)
+        if self.__comp.isError():
+            logger.error(self.__comp.errorString())
+        self.__view = cast(QQuickWindow, view)
+
+    def show(self):
+        self.__view.show()
