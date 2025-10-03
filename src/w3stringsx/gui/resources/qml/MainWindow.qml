@@ -1,16 +1,17 @@
-import QtQuick 2.15
-import QtQuick.Controls 2.15
+import QtQuick 6.9
+import QtQuick.Controls.Imagine
+import QtQuick.Controls 6.9
 
 ApplicationWindow {
-    width: 800
-    height: 400
-    visible: true
-    title: "w3stringsx GUI"
+  width: 1000
+  height: 600
+  visible: true
+  title: "w3stringsx GUI"
 
-    StackView {
-        id: stack
-        anchors.fill: parent
+  StackView {
+    id: stack
+    anchors.fill: parent
 
-        // initialItem: MainPage { stack: stack }
-    }
+    initialItem: MainPage { stack: stack }
+  }
 }
