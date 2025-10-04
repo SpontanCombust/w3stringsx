@@ -1,7 +1,6 @@
 import argparse
 import os
 
-from w3stringsx import W3STRINGSX_VERSION
 from w3stringsx.lib.localization import ALL_LANGS
 from w3stringsx.lib.logging import get_logger
 
@@ -24,6 +23,8 @@ class CLIArguments:
     search: str
     warn_level: int
 
+
+W3STRINGSX_VERSION = '2.0.0' #TODO replace with data taken from build system
 
 def make_cli() -> CLIArguments:
     parser = argparse.ArgumentParser(

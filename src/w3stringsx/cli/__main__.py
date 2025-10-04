@@ -53,17 +53,21 @@ def main():
         log_level = logging.ERROR
     elif args.warn_level == 2:
         log_level = logging.WARNING
-    init_logger(log_level)
+
+    # path outside of the .pyz archive
+    W3STRINGSX_APP_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+
+    init_logger(log_level, W3STRINGSX_APP_DIR)
 
     try:
         preprocess_cli_args(args)
 
         match InputPathType.from_path(args.input_path):
             case InputPathType.W3STRINGS_FILE:
-                w3strings_svc = W3StringsService()
+                w3strings_svc = W3StringsService(W3STRINGSX_APP_DIR)
                 w3strings_svc.decode_w3strings_to_csv(args.input_path, args.output_dir)
             case InputPathType.CSV_FILE:
-                w3strings_svc = W3StringsService()
+                w3strings_svc = W3StringsService(W3STRINGSX_APP_DIR)
                 w3strings_svc.encode_w3strings_from_csv(args.input_path, args.output_dir, args.langs, args.keep_csv)
             case InputPathType.XML_FILE:
                 discovery_svc = StringKeyDiscoveryService()
@@ -82,7 +86,7 @@ def main():
         logger.error(traceback.format_exc())
         sys.exit(-1)
     finally:
-        logger.info(f'Logs have been written into {log_file_path()}')
+        logger.info(f'Logs have been written into {get_log_file_path()}')
 
 
 if __name__ == '__main__':

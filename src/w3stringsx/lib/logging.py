@@ -5,12 +5,10 @@ Common logging tooling.
 import logging
 import os
 
-from w3stringsx import W3STRINGSX_EXE_PATH
-
 
 __all__ = [
     "get_logger",
-    "log_file_path",
+    "get_log_file_path",
     "init_logger"
 ]
 
@@ -37,18 +35,23 @@ class _ColoredTerminalFormatter(logging.Formatter):
         return formatter.format(record)
 
 
+_LOG_FILE_NAME = 'w3stringsx.log'
+_log_file_path = os.path.join('.', _LOG_FILE_NAME)
+
 def get_logger():
     return logging.getLogger('w3stringsx')
 
-def log_file_path():
-    return os.path.join(os.path.dirname(W3STRINGSX_EXE_PATH), 'w3stringsx.log')
+def get_log_file_path():
+    return _log_file_path
 
-def init_logger(log_level: int):
+def init_logger(log_level: int, log_file_dir: str):
     stdio_handler = logging.StreamHandler()
     stdio_handler.setLevel(log_level)
     stdio_handler.setFormatter(_ColoredTerminalFormatter())
 
-    file_handler = logging.FileHandler(log_file_path())
+    global _log_file_path
+    _log_file_path = os.path.join(log_file_dir or os.getcwd(), _LOG_FILE_NAME)
+    file_handler = logging.FileHandler(_log_file_path)
     file_handler.setLevel(log_level)
     file_handler.setFormatter(logging.Formatter(_LOG_FORMAT))
 

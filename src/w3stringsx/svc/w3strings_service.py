@@ -18,11 +18,14 @@ logger = get_logger()
 
 
 class W3StringsService:
+    def __init__(self, app_dir: str) -> None:
+        self.app_dir: str = app_dir
+
     def decode_w3strings_to_csv(self, input_path: str, output_dir: str):
         input_path = validate_file_input_path(input_path, "w3strings", ['.w3strings'])
         output_dir = validate_output_dir(output_dir)
         
-        encoder = W3StringsEncoder()
+        encoder = W3StringsEncoder(self.app_dir)
         with ScratchFolder(os.path.dirname(input_path)) as scratch:
             input_copy_path = scratch.file_scratch_copy(input_path)
             csv_file = encoder.decode(input_copy_path)
@@ -39,7 +42,7 @@ class W3StringsService:
         output_dir = validate_output_dir(output_dir)
         target_langs = validate_target_langs(target_langs)
 
-        encoder = W3StringsEncoder()
+        encoder = W3StringsEncoder(self.app_dir)
         with ScratchFolder(os.path.dirname(input_path)) as scratch:
             input_copy_path = scratch.file_scratch_copy(input_path)
             input_doc = W3StringsCsvDocument(input_copy_path)
