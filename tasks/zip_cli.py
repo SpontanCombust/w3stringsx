@@ -1,25 +1,14 @@
 import os
-from pathlib import Path
-import zipapp
+import subprocess
 import zipfile
 import zlib
 
 ROOT = os.path.realpath(os.path.dirname(os.path.dirname(__name__)))
+ORIG_CWD = os.getcwd()
 
-TARGET_DIR= os.path.join(ROOT, 'out')
-TARGET_ZIPAPP= os.path.join(TARGET_DIR, 'w3stringsx.pyz')
-WHITELIST = [
-    "w3stringsx/*.py",
-    "w3stringsx/lib/*.py",
-    "w3stringsx/svc/*.py",
-    "w3stringsx/cli/*.py",
-]
-BLACKLIST = [
-    '*/__pycache__',
-    '*/__pycache__/*',
-    '*.log'
-]
-BOOTSTRAP_DIR = os.path.join(ROOT, 'bootstrap', 'cli')
+CLI_DIR = os.path.join(ROOT, 'packages', 'cli')
+CLI_ARTIFACT = os.path.join(CLI_DIR, 'dist', 'w3stringsx.exe')
+TARGET_DIR = os.path.join(ROOT, 'dist')
 TARGET_ZIP = os.path.join(TARGET_DIR, 'w3stringsx.zip')
 
 
@@ -27,27 +16,15 @@ if not os.path.isdir(TARGET_DIR):
     os.mkdir(TARGET_DIR)
     print('Created output directory ' + TARGET_DIR)
 
-def source_filter(p: Path):
-    is_on_whitelist = any(p.match(pat) for pat in WHITELIST)
-    is_on_blacklist = any(p.match(pat) for pat in BLACKLIST)
-    if is_on_whitelist and not is_on_blacklist:
-        print(p)
-        return True
-    return False
-
-zipapp.create_archive(
-    source=os.path.join(ROOT, 'src'),
-    main='w3stringsx.cli.__main__:main',
-    target=TARGET_ZIPAPP,
-    filter=source_filter
-)
-
-
+os.chdir(CLI_DIR)
+# make sure the packages are setup
+subprocess.run('uv sync', check=True, shell=True)
+# use pyinstaller to pack the project into standalone executable
+subprocess.run('uvx pyinstaller w3stringsx.spec', check=True, shell=True)
+# zip it up
 with zipfile.ZipFile(TARGET_ZIP, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=zlib.Z_DEFAULT_COMPRESSION) as zip:
-    zip.write(TARGET_ZIPAPP, os.path.basename(TARGET_ZIPAPP))
-    for bootstrap_file in os.listdir(BOOTSTRAP_DIR):
-        print(bootstrap_file)
-        zip.write(os.path.join(BOOTSTRAP_DIR, bootstrap_file), bootstrap_file)
-
+    zip.write(CLI_ARTIFACT, os.path.basename(CLI_ARTIFACT))
 
 print('w3stringsx CLI has been successfully packaged to ' + TARGET_ZIP)
+
+os.chdir(ORIG_CWD)

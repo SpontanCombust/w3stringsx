@@ -15,14 +15,10 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.11' 
-      - name: Create the CLI specification
-        working-directory: src
-        run: |
-          echo  '```' > "cli_specification.md"
-          python -m w3stringsx.cli -h >> "cli_specification.md"
-          echo  '```' >> "cli_specification.md"
-      - name: Move the spec to docs
-        run: mv src/cli_specification.md doc/cli_specification.md
+      - name: Install workspace dependencies
+        run: pip install -r requirements.txt
+      - name: Run python task
+        run: python tasks/update_docs.py
       - name: Check for changes in the project
         id: get_changes
         run: echo "changed=$(git status --porcelain | wc -l)" >> $GITHUB_OUTPUT

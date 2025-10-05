@@ -6,7 +6,7 @@ on:
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
     - name: Checkout
@@ -15,12 +15,13 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: '3.11' 
-    - name: Produce .pyz
-      run:
-        python tasks/zip_cli.py
+    - name: Install workspace dependencies
+      run: pip install -r requirements.txt
+    - name: Run python task
+      run: python tasks/zip_cli.py
     - name: Create draft release
       uses: ncipollo/release-action@v1
       with:
-        artifacts: "out/w3stringsx.pyz"
+        artifacts: "dist/w3stringsx_gui.zip"
         draft: true
         generateReleaseNotes: true

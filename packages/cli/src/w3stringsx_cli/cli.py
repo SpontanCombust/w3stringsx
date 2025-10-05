@@ -28,6 +28,7 @@ W3STRINGSX_VERSION = '2.0.0' #TODO replace with data taken from build system
 
 def make_cli() -> CLIArguments:
     parser = argparse.ArgumentParser(
+        prog='w3stringsx.exe',
         description=f'w3stringsx v{W3STRINGSX_VERSION}\n'
                     'https://github.com/SpontanCombust/w3stringsx\n\n'
                     'Script acting as an alternative CLI frontend for w3strings encoder '

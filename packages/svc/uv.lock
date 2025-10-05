@@ -1,0 +1,19 @@
+version = 1
+revision = 3
+requires-python = ">=3.11"
+
+[[package]]
+name = "w3stringsx-lib"
+version = "2.0.0"
+source = { directory = "../lib" }
+
+[[package]]
+name = "w3stringsx-svc"
+version = "2.0.0"
+source = { editable = "." }
+dependencies = [
+    { name = "w3stringsx-lib" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "w3stringsx-lib", directory = "../lib" }]

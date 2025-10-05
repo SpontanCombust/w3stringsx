@@ -3,7 +3,7 @@ import subprocess
 
 ROOT = os.path.realpath(os.path.dirname(os.path.dirname(__name__)))
 
-RESOURCES_DIR = os.path.join(ROOT, "src", "w3stringsx", "gui", "resources")
+RESOURCES_DIR = os.path.join(ROOT, "packages", "gui", "src", "w3stringsx_gui", "resources")
 
 
 with os.scandir(RESOURCES_DIR) as it:

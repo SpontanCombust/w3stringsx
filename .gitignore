@@ -1,4 +1,4 @@
-out/
+dist/
 
 **/__pycache__/
 **/dist

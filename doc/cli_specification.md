@@ -1,7 +1,7 @@
 ```
-usage: __main__.py [-h] [-o OUTPUT_DIR] [-l LANGS] [-k] [-s SEARCH]
-                   [-w WARN_LEVEL]
-                   input_path
+usage: w3stringsx.exe [-h] [-o OUTPUT_DIR] [-l LANGS] [-k] [-s SEARCH]
+                      [-w WARN_LEVEL]
+                      input_path
 
 w3stringsx v2.0.0
 https://github.com/SpontanCombust/w3stringsx
