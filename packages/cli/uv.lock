@@ -1,0 +1,34 @@
+version = 1
+revision = 3
+requires-python = ">=3.11"
+
+[[package]]
+name = "w3stringsx-cli"
+version = "2.0.0"
+source = { editable = "." }
+dependencies = [
+    { name = "w3stringsx-lib" },
+    { name = "w3stringsx-svc" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "w3stringsx-lib", directory = "../lib" },
+    { name = "w3stringsx-svc", directory = "../svc" },
+]
+
+[[package]]
+name = "w3stringsx-lib"
+version = "2.0.0"
+source = { directory = "../lib" }
+
+[[package]]
+name = "w3stringsx-svc"
+version = "2.0.0"
+source = { directory = "../svc" }
+dependencies = [
+    { name = "w3stringsx-lib" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "w3stringsx-lib", directory = "../lib" }]

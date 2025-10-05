@@ -1,0 +1,22 @@
+[project]
+name = "w3stringsx-gui"
+version = "2.0.0"
+description = "w3stringsx GUI application."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "w3stringsx-lib",
+    "w3stringsx-svc",
+    "pyside6>=6.9.2"
+]
+
+[tool.uv.sources]
+w3stringsx-lib = { path = "../lib" }
+w3stringsx-svc = { path = "../svc" }
+
+[build-system]
+requires = ["uv_build"]
+build-backend = "uv_build"
+
+[project.scripts]
+dev = "w3stringsx_gui.application:application"

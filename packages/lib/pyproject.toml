@@ -1,0 +1,11 @@
+[project]
+name = "w3stringsx-lib"
+version = "2.0.0"
+description = "Contains common w3stringsx utilities."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[build-system]
+requires = ["uv_build"]
+build-backend = "uv_build"

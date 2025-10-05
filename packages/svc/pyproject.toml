@@ -1,0 +1,16 @@
+[project]
+name = "w3stringsx-svc"
+version = "2.0.0"
+description = "Service layer for w3stringsx applications"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "w3stringsx-lib"
+]
+
+[tool.uv.sources]
+w3stringsx-lib = { path = "../lib" }
+
+[build-system]
+requires = ["uv_build"]
+build-backend = "uv_build"

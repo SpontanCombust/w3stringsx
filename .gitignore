@@ -1,4 +1,9 @@
 out/
 
 **/__pycache__/
+**/dist
 **/*.log
+packages/*/.venv
+packages/*/build
+packages/*/dist
+packages/*/src/*.egg-info
