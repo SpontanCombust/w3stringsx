@@ -1,5 +1,3 @@
-from typing import Any
-
 import flet as ft
 import flet.canvas as cv
 import flet_dropzone as ftd
@@ -8,7 +6,7 @@ from w3stringsx_gui.components import feature_button
 from w3stringsx_gui.routing import Router, Routes
 
 
-def home_view(router: Router, **kwargs: Any) -> ft.View:
+def home_view(router: Router, props: object) -> ft.View:
     assert router is not None
 
     return ft.View(

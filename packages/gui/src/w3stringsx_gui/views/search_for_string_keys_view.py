@@ -1,11 +1,9 @@
-from typing import Any
-
 import flet as ft
 
-from w3stringsx_gui.routing import Routes
+from w3stringsx_gui.routing import Router, Routes
 
 
-def find_string_keys_view(**kwargs: Any) -> ft.View:
+def find_string_keys_view(router: Router, props: object) -> ft.View:
     return ft.View(
         route=Routes.SEARCH_FOR_STRING_KEYS,
         controls=[
