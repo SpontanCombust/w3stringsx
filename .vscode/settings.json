@@ -3,6 +3,8 @@
     "python.analysis.diagnosticSeverityOverrides": {
         "reportUnknownArgumentType": "warning",
         "reportUnknownLambdaType": "warning",
-        "reportUnknownParameterType": "warning"
+        "reportUnknownParameterType": "warning",
+        "reportUnknownMemberType": "warning",
+        "reportPrivateImportUsage": "none" // because of flet 
     }
 }
