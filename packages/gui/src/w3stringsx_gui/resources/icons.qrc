@@ -1,7 +1,0 @@
-<RCC>
-    <qresource prefix="/">
-        <file>icons/file-lock-open.svg</file>
-        <file>icons/file-lock.svg</file>
-        <file>icons/file-find.svg</file>
-    </qresource>
-</RCC>
