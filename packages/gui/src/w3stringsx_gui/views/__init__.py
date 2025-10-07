@@ -1,1 +1,4 @@
-from w3stringsx_gui.views.home_screen import *
+from w3stringsx_gui.views.home_view import *
+from w3stringsx_gui.views.encode_strings_view import *
+from w3stringsx_gui.views.decode_strings_view import *
+from w3stringsx_gui.views.search_for_string_keys_view import *
