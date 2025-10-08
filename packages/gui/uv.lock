@@ -623,6 +623,8 @@ source = { virtual = "." }
 dependencies = [
     { name = "flet" },
     { name = "flet-dropzone" },
+    { name = "w3stringsx-lib" },
+    { name = "w3stringsx-svc" },
 ]
 
 [package.dev-dependencies]
@@ -634,10 +636,28 @@ dev = [
 requires-dist = [
     { name = "flet", specifier = "==0.28.3" },
     { name = "flet-dropzone", specifier = ">=0.2.0" },
+    { name = "w3stringsx-lib", editable = "../lib" },
+    { name = "w3stringsx-svc", editable = "../svc" },
 ]
 
 [package.metadata.requires-dev]
 dev = [{ name = "flet", extras = ["cli", "desktop"], specifier = "==0.28.3" }]
+
+[[package]]
+name = "w3stringsx-lib"
+version = "2.0.0"
+source = { editable = "../lib" }
+
+[[package]]
+name = "w3stringsx-svc"
+version = "2.0.0"
+source = { editable = "../svc" }
+dependencies = [
+    { name = "w3stringsx-lib" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "w3stringsx-lib", editable = "../lib" }]
 
 [[package]]
 name = "watchdog"

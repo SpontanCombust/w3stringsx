@@ -7,7 +7,13 @@ requires-python = ">=3.11"
 dependencies = [
   "flet==0.28.3",
   "flet-dropzone>=0.2.0",
+    "w3stringsx-lib",
+    "w3stringsx-svc"
 ]
+
+[tool.uv.sources]
+w3stringsx-lib = { path = "../lib", editable = true }
+w3stringsx-svc = { path = "../svc", editable = true }
 
 [tool.flet]
 # project display name that is used as an app title on Android and iOS home screens,

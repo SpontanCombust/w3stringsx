@@ -18,7 +18,7 @@ if not os.path.isdir(TARGET_DIR):
 
 os.chdir(CLI_DIR)
 # make sure the packages are setup
-subprocess.run('uv sync', check=True, shell=True)
+subprocess.run('uv sync --no-editable', check=True, shell=True)
 # use pyinstaller to pack the project into standalone executable
 subprocess.run('uvx pyinstaller w3stringsx.spec', check=True, shell=True)
 # zip it up
