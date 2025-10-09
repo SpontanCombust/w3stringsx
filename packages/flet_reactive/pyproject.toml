@@ -1,0 +1,27 @@
+[project]
+name = "flet-reactive"
+version = "1.0.0"
+description = "FletReactive control for Flet"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [
+    { name = "Flet contributors", email = "you@example.com" }
+]
+dependencies = [
+    "flet>=0.28.3",
+]
+
+[tool.setuptools.package-data]
+"flutter.flet_reactive" = ["**/*"]
+
+[tool.uv]
+dev-dependencies = [
+    "flet[all]==0.28.3",
+]
+
+[tool.poetry.group.dev.dependencies]
+flet = {extras = ["all"], version = "0.28.3"}
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
