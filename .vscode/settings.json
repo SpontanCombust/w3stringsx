@@ -4,7 +4,8 @@
         "reportUnknownArgumentType": "warning",
         "reportUnknownLambdaType": "warning",
         "reportUnknownParameterType": "warning",
-        "reportUnknownMemberType": "warning",
-        "reportPrivateImportUsage": "none" // because of flet 
+        "reportUnknownMemberType": "none",
+        "reportPrivateImportUsage": "none", // because of flet 
+        "reportMissingTypeStubs": "none"
     }
 }
