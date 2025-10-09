@@ -59,3 +59,14 @@ def init_logger(log_level: int, log_file_dir: str):
     logger.setLevel(log_level)
     logger.addHandler(stdio_handler)
     logger.addHandler(file_handler)
+
+def subscribe_to_logger(handler: logging.Handler, custom: bool = False):
+    logger = get_logger()
+    if not custom:
+        handler.setLevel(logger.level)
+        handler.setFormatter(logging.Formatter(_LOG_FORMAT))
+    logger.addHandler(handler)
+
+def unsubscribe_from_logger(handler: logging.Handler):
+    logger = get_logger()
+    logger.removeHandler(handler)
