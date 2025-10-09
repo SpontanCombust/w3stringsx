@@ -3,15 +3,17 @@ name = "w3stringsx-gui"
 version = "1.0.0"
 description = "w3stringsx GUI application."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
   "flet==0.28.3",
   "flet-dropzone>=0.2.0",
-    "w3stringsx-lib",
-    "w3stringsx-svc"
+  "flet-reactive>=1.0.0",
+  "w3stringsx-lib",
+  "w3stringsx-svc",
 ]
 
 [tool.uv.sources]
+flet-reactive = { path = "../flet_reactive", editable = true }
 w3stringsx-lib = { path = "../lib", editable = true }
 w3stringsx-svc = { path = "../svc", editable = true }
 
@@ -22,6 +24,11 @@ product = "w3stringsx GUI"
 
 [tool.flet.app]
 path = "src"
+
+[tool.flet.dev_packages]
+flet-reactive = "../flet_reactive"
+w3stringsx-lib = "../lib"
+w3stringsx-svc = "../svc"
 
 # fix random build erros
 [tool.flet.flutter.pubspec.dependency_overrides]
