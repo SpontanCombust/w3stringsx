@@ -1,9 +1,13 @@
+from __future__ import annotations
 import argparse
+from enum import Enum
 import logging
 import os
 
 from w3stringsx_lib.localization import ALL_LANGS
 from w3stringsx_lib.logging import get_logger, set_log_level
+from w3stringsx_svc.string_key_discovery_service import StringKeyDiscoveryService
+from w3stringsx_svc.w3strings_service import W3StringsService
 
 
 __all__ = [
@@ -113,3 +117,54 @@ def preprocess_cli_args(args: CLIArguments):
         log_level = logging.WARNING
     
     set_log_level(log_level)
+
+
+class InputPathType(Enum):
+    UNSUPPORTED         = 0
+    W3STRINGS_FILE      = 1
+    CSV_FILE            = 2
+    XML_FILE            = 3
+    WITCHERSCRIPT_FILE  = 4
+    DIRECTORY           = 5
+
+    @staticmethod
+    def from_path(path: str) -> InputPathType:
+        if os.path.isdir(path):
+            return InputPathType.DIRECTORY
+        else:
+            _, ext = os.path.splitext(path)
+            match ext:
+                case '.w3strings':
+                    return InputPathType.W3STRINGS_FILE
+                case '.csv':
+                    return InputPathType.CSV_FILE
+                case '.xml':
+                    return InputPathType.XML_FILE
+                case '.ws' | '.wss':
+                    return InputPathType.WITCHERSCRIPT_FILE
+                case _:
+                    return InputPathType.UNSUPPORTED
+                
+def cli_main(app_dir: str):
+    # if -h flag is set it will forcefully exit the function
+    args = make_cli()
+    preprocess_cli_args(args)
+
+    match InputPathType.from_path(args.input_path):
+        case InputPathType.W3STRINGS_FILE:
+            w3strings_svc = W3StringsService(app_dir)
+            w3strings_svc.decode_w3strings_to_csv(args.input_path, args.output_dir)
+        case InputPathType.CSV_FILE:
+            w3strings_svc = W3StringsService(app_dir)
+            w3strings_svc.encode_w3strings_from_csv(args.input_path, args.output_dir, args.langs, args.keep_csv)
+        case InputPathType.XML_FILE:
+            discovery_svc = StringKeyDiscoveryService()
+            discovery_svc.discover_str_keys_in_xml(args.input_path, args.output_dir, args.search)
+        case InputPathType.WITCHERSCRIPT_FILE:
+            discovery_svc = StringKeyDiscoveryService()
+            discovery_svc.discover_str_keys_in_witcherscript(args.input_path, args.output_dir, args.search)
+        case InputPathType.DIRECTORY:
+            discovery_svc = StringKeyDiscoveryService()
+            discovery_svc.discover_str_keys_in_directory(args.input_path, args.output_dir, args.search)
+        case _:
+            raise Exception(f'Unsupported file type: {os.path.basename(args.input_path)}')

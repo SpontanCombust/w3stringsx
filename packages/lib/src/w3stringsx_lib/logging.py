@@ -44,7 +44,7 @@ def get_logger():
 def get_log_file_path():
     return _log_file_path
 
-def init_logger(log_file_dir: str):
+def init_logger(log_file_dir: str) -> logging.Logger:
     stdio_handler = logging.StreamHandler()
     stdio_handler.setFormatter(_ColoredTerminalFormatter())
 
@@ -56,6 +56,8 @@ def init_logger(log_file_dir: str):
     logger = get_logger()
     logger.addHandler(stdio_handler)
     logger.addHandler(file_handler)
+
+    return logger
 
 def set_log_level(log_level: int):
     logger = get_logger()
