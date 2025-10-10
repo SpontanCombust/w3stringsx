@@ -1,6 +1,5 @@
 from __future__ import annotations
 from enum import Enum
-import logging
 import os
 import sys
 import traceback
@@ -42,24 +41,13 @@ class InputPathType(Enum):
                 
 
 def main():
-    # if -h flag is set it will forcefully exit the function
-    args = make_cli()
-
-    log_level = logging.INFO
-    if args.warn_level == 0:
-        # allowing only logs above CRITICAL level effectively should disable all logs
-        log_level = logging.CRITICAL + 1 
-    elif args.warn_level == 1:
-        log_level = logging.ERROR
-    elif args.warn_level == 2:
-        log_level = logging.WARNING
-
     # path outside of the .pyz archive
     W3STRINGSX_APP_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-
-    init_logger(log_level, W3STRINGSX_APP_DIR)
+    init_logger(W3STRINGSX_APP_DIR)
 
     try:
+        # if -h flag is set it will forcefully exit the function
+        args = make_cli()
         preprocess_cli_args(args)
 
         match InputPathType.from_path(args.input_path):

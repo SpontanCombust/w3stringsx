@@ -44,21 +44,24 @@ def get_logger():
 def get_log_file_path():
     return _log_file_path
 
-def init_logger(log_level: int, log_file_dir: str):
+def init_logger(log_file_dir: str):
     stdio_handler = logging.StreamHandler()
-    stdio_handler.setLevel(log_level)
     stdio_handler.setFormatter(_ColoredTerminalFormatter())
 
     global _log_file_path
     _log_file_path = os.path.join(log_file_dir or os.getcwd(), _LOG_FILE_NAME)
     file_handler = logging.FileHandler(_log_file_path)
-    file_handler.setLevel(log_level)
     file_handler.setFormatter(logging.Formatter(_LOG_FORMAT))
 
     logger = get_logger()
-    logger.setLevel(log_level)
     logger.addHandler(stdio_handler)
     logger.addHandler(file_handler)
+
+def set_log_level(log_level: int):
+    logger = get_logger()
+    logger.setLevel(log_level)
+    for handler in logger.handlers:
+        handler.setLevel(log_level)
 
 def subscribe_to_logger(handler: logging.Handler, custom: bool = False):
     logger = get_logger()

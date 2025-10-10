@@ -1,8 +1,9 @@
 import argparse
+import logging
 import os
 
 from w3stringsx_lib.localization import ALL_LANGS
-from w3stringsx_lib.logging import get_logger
+from w3stringsx_lib.logging import get_logger, set_log_level
 
 
 __all__ = [
@@ -101,3 +102,14 @@ def preprocess_cli_args(args: CLIArguments):
 
     if len(args.langs) == 0:
         args.langs = ALL_LANGS
+
+    log_level = logging.INFO
+    if args.warn_level == 0:
+        # allowing only logs above CRITICAL level effectively should disable all logs
+        log_level = logging.CRITICAL + 1 
+    elif args.warn_level == 1:
+        log_level = logging.ERROR
+    elif args.warn_level == 2:
+        log_level = logging.WARNING
+    
+    set_log_level(log_level)
