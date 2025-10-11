@@ -7,6 +7,6 @@ w3stringsx GUI application.
 Build the application for windows
 ```
 uv sync --no-editable
-uv run flet build windows
+uv run --no-editable flet build windows
 uv run flet run
 ```

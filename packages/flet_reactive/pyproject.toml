@@ -3,7 +3,7 @@ name = "flet-reactive"
 version = "1.0.0"
 description = "FletReactive control for Flet"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 authors = [
     { name = "Flet contributors", email = "you@example.com" }
 ]

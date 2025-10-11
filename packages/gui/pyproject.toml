@@ -3,7 +3,7 @@ name = "w3stringsx-gui"
 version = "1.0.0"
 description = "w3stringsx GUI application."
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 dependencies = [
   "flet==0.28.3",
   "flet-dropzone>=0.2.0",
@@ -20,7 +20,10 @@ w3stringsx-svc = { path = "../svc", editable = true }
 [tool.flet]
 # project display name that is used as an app title on Android and iOS home screens,
 # shown in window titles and about app dialogs on desktop.
+org = "w3stringsx"
 product = "w3stringsx GUI"
+company = "w3stringsx"
+copyright = "Copyright (C) 2025 by Przemysław Cedro"
 
 [tool.flet.app]
 path = "src"

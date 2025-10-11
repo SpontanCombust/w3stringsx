@@ -1,4 +1,8 @@
+from typing import TypeVar
+
 from flet_reactive.state import State
 
-def use_state[T](init_value: T) -> State[T]:
+
+T = TypeVar('T')
+def use_state(init_value: T) -> State[T]:
     return State(init_value)

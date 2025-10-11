@@ -1,6 +1,10 @@
+from typing import TypeVar, Generic
+
 from flet_reactive.state_observer import StateObserver
 
-class State[T]:
+
+T = TypeVar('T')
+class State(Generic[T]):
     def __init__(self, init_value: T) -> None:
         self.__value: T = init_value
         self.__observers: list[StateObserver[T]] = []
