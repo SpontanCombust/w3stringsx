@@ -1,0 +1,7 @@
+[project]
+name = "w3stringsx-ioc"
+version = "0.1.0"
+description = "IOC mechanisms for w3stringsx"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
