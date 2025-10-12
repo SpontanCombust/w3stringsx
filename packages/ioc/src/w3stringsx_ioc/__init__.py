@@ -127,8 +127,10 @@ class ServiceContainer(ServiceResolver):
                     else:
                         # otherwise the resolution can't be completed
                         raise ex
-            elif param.default is not param.empty:
-                # leave this parameter as is
+            # if this parameter can be supplied a default value
+            # or it is one of those optional *args and **kwargs parameters, leave it be and move on
+            elif param.default is not param.empty\
+              or param.kind in [param.VAR_POSITIONAL, param.VAR_KEYWORD]:
                 continue
             else:
                 raise Exception('Could not resolve an unannotated, non-default parameter: ' + param.name)            
