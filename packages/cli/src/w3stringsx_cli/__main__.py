@@ -2,16 +2,44 @@ import os
 import sys
 import traceback
 
-from w3stringsx_lib.logging import init_logger, get_log_file_path
+from w3stringsx_lib.logging import init_logger, get_logger, get_log_file_path
+from w3stringsx_ioc import ServiceContainer, di
+from w3stringsx_svc import (
+    Configuration,
+    StringKeyDiscoveryService,
+    W3StringsEncoderLocator, FromConfigW3stringsEncoderLocatorHandler, AppDirW3StringsEncoderLocatorHandler, PathEnvW3stringsEncoderLocatorHandler,
+    W3StringsEncoder,
+    W3StringsManagerService
+)
+from w3stringsx_cli.configuration import W3stringsxCliConfiguration
 from w3stringsx_cli.cli import cli_main
 
-def main():
-    # path outside of the .pyz archive
-    W3STRINGSX_APP_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-    logger = init_logger(W3STRINGSX_APP_DIR)
 
+def setup_services():
+    W3STRINGSX_APP_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+
+    init_logger(W3STRINGSX_APP_DIR)
+
+    container = ServiceContainer.builder()\
+        .abstract_singleton(Configuration, W3stringsxCliConfiguration)\
+        .singleton(W3StringsEncoder)\
+        .singleton(StringKeyDiscoveryService)\
+        .transitive_factory(W3StringsEncoderLocator, lambda resolver:
+            W3StringsEncoderLocator()
+            .with_handler(FromConfigW3stringsEncoderLocatorHandler(resolver.resolve(Configuration)))
+            .with_handler(AppDirW3StringsEncoderLocatorHandler(resolver.resolve(Configuration)))
+            .with_handler(PathEnvW3stringsEncoderLocatorHandler()))\
+        .singleton(W3StringsManagerService)\
+        .build()
+    
+    di.set_current(container)
+
+def main():
+    setup_services()
+
+    logger = get_logger()
     try:
-        cli_main(W3STRINGSX_APP_DIR)                
+        cli_main()                
     except Exception as e:
         logger.error(e)
         logger.error(traceback.format_exc())

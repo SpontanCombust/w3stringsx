@@ -6,11 +6,13 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "w3stringsx-lib",
+    "w3stringsx-ioc",
     "w3stringsx-svc"
 ]
 
 [tool.uv.sources]
 w3stringsx-lib = { path = "../lib", editable = true }
+w3stringsx-ioc = { path = "../ioc", editable = true }
 w3stringsx-svc = { path = "../svc", editable = true }
 
 [build-system]

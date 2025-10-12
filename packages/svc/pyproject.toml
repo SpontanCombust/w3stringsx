@@ -5,7 +5,6 @@ description = "Service layer for w3stringsx applications"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "kink>=0.8",
     "w3stringsx-lib",
 ]
 

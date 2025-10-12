@@ -7,15 +7,22 @@ name = "w3stringsx-cli"
 version = "2.0.0"
 source = { editable = "." }
 dependencies = [
+    { name = "w3stringsx-ioc" },
     { name = "w3stringsx-lib" },
     { name = "w3stringsx-svc" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "w3stringsx-ioc", editable = "../ioc" },
     { name = "w3stringsx-lib", editable = "../lib" },
     { name = "w3stringsx-svc", editable = "../svc" },
 ]
+
+[[package]]
+name = "w3stringsx-ioc"
+version = "0.1.0"
+source = { editable = "../ioc" }
 
 [[package]]
 name = "w3stringsx-lib"

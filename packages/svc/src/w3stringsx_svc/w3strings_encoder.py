@@ -6,6 +6,8 @@ import os
 import subprocess
 
 from w3stringsx_lib.logging import get_logger
+from w3stringsx_svc.w3strings_encoder_locator import W3StringsEncoderLocator
+
 
 __all__ = [
     "W3StringsEncoder"
@@ -15,31 +17,20 @@ __all__ = [
 logger = get_logger()
 
 
-class W3StringsEncoder:
-    exe_path: str
+class W3StringsEncoder:    
+    encoder_path: str
 
-    def __init__(self, app_dir: str):
-        # TODO cache encoder path
-        logger.info('Looking for w3strings encoder in w3stringsx\'s directory...')
-        self.exe_path = os.path.join(app_dir, 'w3strings.exe')
-        
-        if not os.path.exists(self.exe_path):
-            logger.info('w3strings encoder not found in w3stringsx\'s directory. Checking the PATH environment variable...')
-            # check PATH
-            for path in os.environ["PATH"].split(';'):
-                encoder_path = os.path.join(path, 'w3strings.exe')
-                if os.path.exists(encoder_path):
-                    self.exe_path = encoder_path
-                    break
+    def __init__(self, encoder_locator: W3StringsEncoderLocator):
+        encoder_path = encoder_locator.find()
 
-        if os.path.exists(self.exe_path):
-            logger.info(f'Found w3strings encoder: {self.exe_path}')
-        else:
+        if encoder_path is None:
             raise Exception('w3strings encoder couldn\'t be found')
+        
+        self.encoder_path = encoder_path
 
 
     def execute(self, cmd: str):
-        cmd = f'"{self.exe_path}" {cmd}'
+        cmd = f'"{self.encoder_path}" {cmd}'
 
         logger.warning('Executing command:')
         logger.warning(cmd)
@@ -93,5 +84,4 @@ class W3StringsEncoder:
             logger.error(line[8:])
         elif len(line) > 0:
             logger.info(line)
-
-
+    

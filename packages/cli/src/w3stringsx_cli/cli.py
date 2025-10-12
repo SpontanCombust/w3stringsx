@@ -6,8 +6,9 @@ import os
 
 from w3stringsx_lib.localization import ALL_LANGS
 from w3stringsx_lib.logging import get_logger, set_log_level
+from w3stringsx_ioc import di, Injected
 from w3stringsx_svc.string_key_discovery_service import StringKeyDiscoveryService
-from w3stringsx_svc.w3strings_service import W3StringsService
+from w3stringsx_svc.w3strings_manager_service import W3StringsManagerService
 
 
 __all__ = [
@@ -144,27 +145,37 @@ class InputPathType(Enum):
                     return InputPathType.WITCHERSCRIPT_FILE
                 case _:
                     return InputPathType.UNSUPPORTED
-                
-def cli_main(app_dir: str):
+           
+def cli_main():
     # if -h flag is set it will forcefully exit the function
     args = make_cli()
     preprocess_cli_args(args)
 
     match InputPathType.from_path(args.input_path):
         case InputPathType.W3STRINGS_FILE:
-            w3strings_svc = W3StringsService(app_dir)
-            w3strings_svc.decode_w3strings_to_csv(args.input_path, args.output_dir)
+            handle_w3strings(args)
         case InputPathType.CSV_FILE:
-            w3strings_svc = W3StringsService(app_dir)
-            w3strings_svc.encode_w3strings_from_csv(args.input_path, args.output_dir, args.langs, args.keep_csv)
+            handle_csv(args)
         case InputPathType.XML_FILE:
-            discovery_svc = StringKeyDiscoveryService()
-            discovery_svc.discover_str_keys_in_xml(args.input_path, args.output_dir, args.search)
+            handle_xml(args)
         case InputPathType.WITCHERSCRIPT_FILE:
-            discovery_svc = StringKeyDiscoveryService()
-            discovery_svc.discover_str_keys_in_witcherscript(args.input_path, args.output_dir, args.search)
+            handle_ws(args)
         case InputPathType.DIRECTORY:
-            discovery_svc = StringKeyDiscoveryService()
-            discovery_svc.discover_str_keys_in_directory(args.input_path, args.output_dir, args.search)
+            handle_dir(args)
         case _:
             raise Exception(f'Unsupported file type: {os.path.basename(args.input_path)}')
+
+def handle_w3strings(args: CLIArguments, w3strings_manager: Injected[W3StringsManagerService] = di.inject(W3StringsManagerService)):
+    w3strings_manager.resolve().decode_w3strings_to_csv(args.input_path, args.output_dir)
+
+def handle_csv(args: CLIArguments, w3strings_manager: Injected[W3StringsManagerService] = di.inject(W3StringsManagerService)):
+    w3strings_manager.resolve().encode_w3strings_from_csv(args.input_path, args.output_dir, args.langs, args.keep_csv)
+
+def handle_xml(args: CLIArguments, discovery: Injected[StringKeyDiscoveryService] = di.inject(StringKeyDiscoveryService)):
+    discovery.resolve().discover_str_keys_in_xml(args.input_path, args.output_dir, args.search)
+
+def handle_ws(args: CLIArguments, discovery: Injected[StringKeyDiscoveryService] = di.inject(StringKeyDiscoveryService)):
+    discovery.resolve().discover_str_keys_in_witcherscript(args.input_path, args.output_dir, args.search)
+
+def handle_dir(args: CLIArguments, discovery: Injected[StringKeyDiscoveryService] = di.inject(StringKeyDiscoveryService)):
+    discovery.resolve().discover_str_keys_in_directory(args.input_path, args.output_dir, args.search)
