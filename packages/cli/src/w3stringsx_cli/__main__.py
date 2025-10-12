@@ -16,12 +16,10 @@ from w3stringsx_cli.cli import cli_main
 
 
 def setup_services():
-    W3STRINGSX_APP_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-
-    init_logger(W3STRINGSX_APP_DIR)
+    config = W3stringsxCliConfiguration()
 
     container = ServiceContainer.builder()\
-        .abstract_singleton(Configuration, W3stringsxCliConfiguration)\
+        .abstract_singleton(Configuration, W3stringsxCliConfiguration, config)\
         .singleton(W3StringsEncoder)\
         .singleton(StringKeyDiscoveryService)\
         .transitive_factory(W3StringsEncoderLocator, lambda resolver:
@@ -33,6 +31,8 @@ def setup_services():
         .build()
     
     di.set_current(container)
+
+    init_logger(config.app_dir.get_required())
 
 def main():
     setup_services()
