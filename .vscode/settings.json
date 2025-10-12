@@ -1,11 +1,6 @@
 {
-    "python.analysis.typeCheckingMode": "strict",
-    "python.analysis.diagnosticSeverityOverrides": {
-        "reportUnknownArgumentType": "warning",
-        "reportUnknownLambdaType": "warning",
-        "reportUnknownParameterType": "warning",
-        "reportUnknownMemberType": "none",
-        "reportPrivateImportUsage": "none", // because of flet 
-        "reportMissingTypeStubs": "none"
-    }
+    "python.analysis.typeCheckingMode": "standard",
+    "python.analysis.exclude": [
+        "**/packages/*/build"
+    ]
 }
