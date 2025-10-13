@@ -1,9 +1,10 @@
 import logging
+import os
 
 import flet as ft
 
 from flet_reactive import use_state, Reactive
-from w3stringsx_lib.logging import subscribe_to_logger, unsubscribe_from_logger
+from w3stringsx_lib.logging import subscribe_to_logger, unsubscribe_from_logger, get_log_file_path
 
 
 MAX_LOG_LINES = 200
@@ -42,41 +43,53 @@ class LogsPanel(ft.Container):
             width=width,
             height=height,
             bgcolor=bgcolor,
-            content=ft.ListView(
-                horizontal=True,
-                expand=True,
+            content=ft.Stack(
                 controls=[
                     ft.ListView(
-                        ref=self.__vlist_view_ref,
-                        horizontal=False,
+                        horizontal=True,
                         expand=True,
-                        on_scroll_interval=0,
                         controls=[
-                            Reactive(
-                                [self.__logs_handler.logs],
-                                lambda: ft.TextField(
-                                    value=self.__logs_handler.logs.value,
-                                    hint_text='Logs go here...',
-                                    multiline=True,
-                                    keyboard_type=ft.KeyboardType.MULTILINE,
-                                    read_only=True,
-                                    dense=True,
-                                    expand=True,
-                                    min_lines=15,
-                                    max_lines=9999,
-                                    text_size=16,
-                                    text_style=ft.TextStyle(
-                                        font_family='Monospace',
-                                        color=color
-                                    ),
-                                    text_align=ft.TextAlign.START,
-                                ),
-                                on_after_build=lambda e: self.__vlist_view_ref.current.scroll_to(offset=-1)
-                            )
-                        ]
+                            ft.ListView(
+                                ref=self.__vlist_view_ref,
+                                horizontal=False,
+                                expand=True,
+                                on_scroll_interval=0,
+                                controls=[
+                                    Reactive(
+                                        [self.__logs_handler.logs],
+                                        lambda: ft.TextField(
+                                            value=self.__logs_handler.logs.value,
+                                            hint_text='Logs go here...',
+                                            multiline=True,
+                                            keyboard_type=ft.KeyboardType.MULTILINE,
+                                            read_only=True,
+                                            dense=True,
+                                            expand=True,
+                                            min_lines=15,
+                                            max_lines=9999,
+                                            text_size=16,
+                                            text_style=ft.TextStyle(
+                                                font_family='Monospace',
+                                                color=color
+                                            ),
+                                            text_align=ft.TextAlign.START,
+                                        ),
+                                        on_after_build=lambda e: self.__vlist_view_ref.current.scroll_to(offset=-1)
+                                    )
+                                ]
+                            ),
+                        ],
                     ),
-                ],
-            ) 
+                    ft.IconButton(
+                        icon=ft.Icons.FILE_OPEN,
+                        tooltip="Open logs file",
+                        icon_size=24,
+                        on_click=self.on_open_logs_file_button_click,
+                        right=8,
+                        top=8,
+                    )
+                ]
+            )
         )
 
     def did_mount(self):
@@ -89,3 +102,6 @@ class LogsPanel(ft.Container):
 
     def is_isolated(self) -> bool:
         return True
+    
+    def on_open_logs_file_button_click(self, ev: ft.ControlEvent):
+        os.startfile(get_log_file_path())
