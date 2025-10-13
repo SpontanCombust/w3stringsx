@@ -9,12 +9,14 @@ dependencies = [
   "flet-dropzone>=0.2.0",
   "flet-reactive>=1.0.0",
   "w3stringsx-lib",
+  "w3stringsx-ioc",
   "w3stringsx-svc",
 ]
 
 [tool.uv.sources]
 flet-reactive = { path = "../flet_reactive", editable = true }
 w3stringsx-lib = { path = "../lib", editable = true }
+w3stringsx-ioc = { path = "../ioc", editable = true }
 w3stringsx-svc = { path = "../svc", editable = true }
 
 [tool.flet]
@@ -31,6 +33,7 @@ path = "src"
 [tool.flet.dev_packages]
 flet-reactive = "../flet_reactive"
 w3stringsx-lib = "../lib"
+w3stringsx-ioc = "../ioc"
 w3stringsx-svc = "../svc"
 
 # fix random build erros
@@ -40,4 +43,8 @@ webview_flutter_android = "4.10.1"
 [dependency-groups]
 dev = [
     "flet[cli,desktop]==0.28.3",
+    "taskipy>=1.14.1",
 ]
+
+[tool.taskipy.tasks]
+dev = "flet run -d -r"
