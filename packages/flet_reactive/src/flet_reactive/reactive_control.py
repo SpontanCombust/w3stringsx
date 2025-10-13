@@ -10,6 +10,7 @@ class Reactive(ft.Control, StateObserver[Any]):
     def __init__(self, 
         states: list[State[Any]],
         content_builder: Callable[[], ft.Control],
+        on_after_build: Callable[[ft.Control], None] | None = None,
         # Control
         ref: ft.Ref[Self] | None = None, 
         expand: None | bool | int = None, 
@@ -29,6 +30,7 @@ class Reactive(ft.Control, StateObserver[Any]):
 
         self.__content_builder = content_builder
         self.__content = content_builder()
+        self.__on_after_build = on_after_build
 
     def is_isolated(self) -> bool:
         return True
@@ -51,6 +53,8 @@ class Reactive(ft.Control, StateObserver[Any]):
 
     def on_state_changed(self, old_state: Any, new_state: Any):
         self.__rebuild_content()
+        if self.__on_after_build is not None:
+            self.__on_after_build(self.__content)
         self.update()
 
 
