@@ -13,7 +13,8 @@ __all__ = [
 ]
 
 
-_LOG_FORMAT = "%(asctime)s [%(levelname)s] %(message)s (%(pathname)s:%(lineno)d)"
+_LOG_FORMAT = "%(asctime)s [%(levelname)s] %(message)s"
+_LOG_FORMAT_WITH_SRC = "%(asctime)s [%(levelname)s] %(message)s (%(pathname)s:%(lineno)d)"
 
 
 class _ColoredTerminalFormatter(logging.Formatter):
@@ -51,7 +52,7 @@ def init_logger(log_file_dir: str) -> logging.Logger:
     global _log_file_path
     _log_file_path = os.path.join(log_file_dir or os.getcwd(), _LOG_FILE_NAME)
     file_handler = logging.FileHandler(_log_file_path)
-    file_handler.setFormatter(logging.Formatter(_LOG_FORMAT))
+    file_handler.setFormatter(logging.Formatter(_LOG_FORMAT_WITH_SRC))
 
     logger = get_logger()
     logger.addHandler(stdio_handler)
