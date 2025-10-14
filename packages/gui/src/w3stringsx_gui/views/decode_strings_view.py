@@ -7,9 +7,9 @@ import flet as ft
 from w3stringsx_lib.logging import get_logger
 from w3stringsx_ioc import di, Injected
 from w3stringsx_svc import W3StringsManagerService
-from flet_reactive import Reactive, ReactiveBuilder, use_state
+from flet_reactive import Reactive, ReactiveBuilder, use_state, State
 from w3stringsx_gui.routing import Router, Routes
-from w3stringsx_gui.components import LogsPanel
+from w3stringsx_gui.components import LogsPanel, StatusMessage
 
 
 _logger = get_logger()
@@ -30,6 +30,7 @@ class DecodeStringsView(ft.View):
         self.__output_dir_path = use_state('')
         self.__w3strings_file_picker = ft.FilePicker(on_result=self.on_w3strings_files_picked)
         self.__output_dir_picker = ft.FilePicker(on_result=self.on_output_dir_picked)
+        self.__decode_status: State[bool | None] = use_state(None)
 
         if not isinstance(props, DecodeStringsViewProps):
             props = DecodeStringsViewProps(w3strings_paths=[])
@@ -130,7 +131,7 @@ class DecodeStringsView(ft.View):
                             ),
                         ),
                         ft.Row(
-                            height=10
+                            height=5
                         ),
                         ReactiveBuilder(
                             [self.__w3strings_file_paths, self.__output_dir_path],
@@ -148,6 +149,11 @@ class DecodeStringsView(ft.View):
                                 ],
                             ),
                         ),
+                        StatusMessage(
+                            self.__decode_status,
+                            success_msg="Files decoded successfully!",
+                            error_msg="Errors occured during decoding! Check the logs."
+                        )
                     ],
                 ),
                 LogsPanel(
@@ -212,6 +218,8 @@ class DecodeStringsView(ft.View):
         for input_path in self.__w3strings_file_paths.value:
             try:
                 self.__w3strings_manager.decode_w3strings_to_csv(input_path, self.__output_dir_path.value)
+                self.__decode_status.value = True
             except Exception as ex:
                 _logger.error(ex)
-                _logger.error(traceback.format_exc())
+                _logger.debug(traceback.format_exc())
+                self.__decode_status.value = False

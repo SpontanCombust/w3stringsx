@@ -1,3 +1,4 @@
+import asyncio
 from dataclasses import dataclass
 import os
 import traceback
@@ -9,9 +10,9 @@ from w3stringsx_lib.logging import get_logger
 from w3stringsx_lib.localization import ALL_LANGS
 from w3stringsx_ioc import di, Injected
 from w3stringsx_svc import W3StringsManagerService
-from flet_reactive import Reactive, ReactiveBuilder, State, use_state
+from flet_reactive import ReactiveBuilder, State, use_state
 from w3stringsx_gui.routing import Router, Routes
-from w3stringsx_gui.components import LogsPanel
+from w3stringsx_gui.components import LogsPanel, StatusMessage
 
 
 _logger = get_logger()
@@ -34,6 +35,7 @@ class EncodeStringsView(ft.View):
         self.__keep_output_csv = use_state(False)
         self.__csv_file_picker = ft.FilePicker(on_result=self.on_csv_file_picked)
         self.__output_dir_picker = ft.FilePicker(on_result=self.on_output_dir_picked)
+        self.__encode_status: State[bool | None] = use_state(None)
 
         if not isinstance(props, EncodeStringsViewProps):
             props = EncodeStringsViewProps(csv_path='')
@@ -134,7 +136,7 @@ class EncodeStringsView(ft.View):
                             ),
                         ),
                         ft.Row(
-                            height=10
+                            height=5
                         ),
                         ReactiveBuilder(
                             [self.__csv_file_path, self.__output_dir_path, self.__selected_langs],
@@ -152,7 +154,12 @@ class EncodeStringsView(ft.View):
                                     )
                                 ],
                             ),
-                        )
+                        ),
+                        StatusMessage(
+                            self.__encode_status,
+                            success_msg="File encoded successfully!",
+                            error_msg="Errors occured during encoding! Check the logs."
+                        ),
                     ]
                 ),
                 LogsPanel(
@@ -228,6 +235,9 @@ class EncodeStringsView(ft.View):
                 list(self.__selected_langs.value),
                 self.__keep_output_csv.value
             )
+            self.__encode_status.value = True
         except Exception as ex:
             _logger.error(ex)
-            _logger.error(traceback.format_exc())
+            _logger.debug(ex)
+            self.__encode_status.value = False
+            
