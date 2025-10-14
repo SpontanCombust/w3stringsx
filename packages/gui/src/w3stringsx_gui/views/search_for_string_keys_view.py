@@ -1,6 +1,7 @@
 import flet as ft
 
 from w3stringsx_gui.routing import Router, Routes
+from w3stringsx_gui.components import ThemeButton
 
 
 class SearchForStringKeysView(ft.View):
@@ -8,6 +9,6 @@ class SearchForStringKeysView(ft.View):
         super().__init__(
             route=Routes.SEARCH_FOR_STRING_KEYS,
             controls=[
-                ft.AppBar(title=ft.Text("STRING KEY SEARCH"))
+                ft.AppBar(title=ft.Text("STRING KEY SEARCH"), actions=[ThemeButton()])
             ]
         )

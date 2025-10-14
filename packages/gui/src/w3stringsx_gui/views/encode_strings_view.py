@@ -12,7 +12,7 @@ from w3stringsx_ioc import di, Injected
 from w3stringsx_svc import W3StringsManagerService
 from flet_reactive import ReactiveBuilder, State, use_state
 from w3stringsx_gui.routing import Router, Routes
-from w3stringsx_gui.components import LogsPanel, StatusMessage
+from w3stringsx_gui.components import LogsPanel, StatusMessage, ThemeButton
 
 
 _logger = get_logger()
@@ -45,7 +45,7 @@ class EncodeStringsView(ft.View):
         super().__init__(
             route=Routes.ENCODE_STRINGS,
             controls=[
-                ft.AppBar(title=ft.Text("ENCODING")),
+                ft.AppBar(title=ft.Text("ENCODING"), actions=[ThemeButton()]),
                 ft.Column(
                     expand=True,
                     controls=[

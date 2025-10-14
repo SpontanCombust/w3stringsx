@@ -2,7 +2,7 @@ import flet as ft
 import flet.canvas as cv
 import flet_dropzone as ftd
 
-from w3stringsx_gui.components import FeatureButton
+from w3stringsx_gui.components import FeatureButton, ThemeButton
 from w3stringsx_gui.routing import Router, Routes
 
 
@@ -13,7 +13,7 @@ class HomeView(ft.View):
         super().__init__(
             route=Routes.HOME,
             controls=[
-                ft.AppBar(title=ft.Text("HOME")),
+                ft.AppBar(title=ft.Text("HOME"), actions=[ThemeButton()]),
                 ft.Column(
                     controls=[
                         ft.Row(

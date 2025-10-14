@@ -7,9 +7,9 @@ import flet as ft
 from w3stringsx_lib.logging import get_logger
 from w3stringsx_ioc import di, Injected
 from w3stringsx_svc import W3StringsManagerService
-from flet_reactive import Reactive, ReactiveBuilder, use_state, State
+from flet_reactive import ReactiveBuilder, use_state, State
 from w3stringsx_gui.routing import Router, Routes
-from w3stringsx_gui.components import LogsPanel, StatusMessage
+from w3stringsx_gui.components import LogsPanel, StatusMessage, ThemeButton
 
 
 _logger = get_logger()
@@ -41,7 +41,7 @@ class DecodeStringsView(ft.View):
         super().__init__(
             route=Routes.DECODE_STRINGS,
             controls=[
-                ft.AppBar(title=ft.Text("DECODING")),
+                ft.AppBar(title=ft.Text("DECODING"), actions=[ThemeButton()]),
                 ft.Column(
                     expand=True,
                     controls=[
