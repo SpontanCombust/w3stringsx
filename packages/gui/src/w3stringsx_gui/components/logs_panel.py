@@ -33,8 +33,8 @@ class LogsPanel(ft.Container):
             self,
             width: ft.OptionalNumber = None,
             height: ft.OptionalNumber = None,
-            bgcolor: ft.ColorValue | None = None,
-            color: ft.ColorValue | None = None,
+            bgcolor: ft.ColorValue | None = ft.Colors.SECONDARY_CONTAINER,
+            color: ft.ColorValue | None = ft.Colors.ON_SECONDARY_CONTAINER,
     ):
         self.__vlist_view_ref = ft.Ref[ft.ListView]()
         self.__logs_handler = _StringLogHandler()
@@ -85,6 +85,7 @@ class LogsPanel(ft.Container):
                     ),
                     ft.IconButton(
                         icon=ft.Icons.FILE_OPEN,
+                        icon_color=color,
                         tooltip="Open logs file",
                         icon_size=24,
                         on_click=self.on_open_logs_file_button_click,

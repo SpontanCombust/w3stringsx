@@ -54,10 +54,10 @@ class DecodeStringsView(ft.View):
                                     ft.DataTable(
                                         expand=True,
                                         heading_row_color=ft.Colors.PRIMARY_CONTAINER,
-                                        data_row_color=ft.Colors.SECONDARY_CONTAINER,
-                                        vertical_lines=ft.border.BorderSide(1, ft.Colors.SECONDARY),
-                                        horizontal_lines=ft.border.BorderSide(1, ft.Colors.SECONDARY),
-                                        border=ft.border.all(1, ft.Colors.SECONDARY),
+                                        # data_row_color=ft.Colors.SECONDARY_CONTAINER,
+                                        vertical_lines=ft.border.BorderSide(1, ft.Colors.PRIMARY),
+                                        horizontal_lines=ft.border.BorderSide(1, ft.Colors.PRIMARY),
+                                        border=ft.border.all(1, ft.Colors.PRIMARY),
                                         columns=[
                                             ft.DataColumn(ft.Text(
                                                 value="File name",
@@ -74,11 +74,11 @@ class DecodeStringsView(ft.View):
                                                     cells=[
                                                         ft.DataCell(ft.Text(
                                                             value=os.path.basename(path),
-                                                            color=ft.Colors.ON_SECONDARY_CONTAINER,
+                                                            # color=ft.Colors.ON_SECONDARY_CONTAINER,
                                                         )),
                                                         ft.DataCell(ft.Text(
                                                             value=os.path.dirname(path),
-                                                            color=ft.Colors.ON_SECONDARY_CONTAINER,
+                                                            # color=ft.Colors.ON_SECONDARY_CONTAINER,
                                                         )),
                                                     ]
                                                 )
@@ -124,9 +124,9 @@ class DecodeStringsView(ft.View):
                                 label="Click to choose output directory",
                                 read_only=True,
                                 expand=True,
-                                bgcolor=ft.Colors.PRIMARY_CONTAINER,
-                                color=ft.Colors.PRIMARY,
-                                border_color=ft.Colors.SECONDARY,
+                                # bgcolor=ft.Colors.PRIMARY_CONTAINER,
+                                # color=ft.Colors.ON_PRIMARY_CONTAINER,
+                                border_color=ft.Colors.PRIMARY,
                                 on_click=self.on_output_dir_textfield_click,
                             ),
                         ),
@@ -157,9 +157,7 @@ class DecodeStringsView(ft.View):
                     ],
                 ),
                 LogsPanel(
-                    height=180,
-                    bgcolor=ft.Colors.SECONDARY_CONTAINER,
-                    color=ft.Colors.ON_SECONDARY_CONTAINER
+                    height=180
                 ),
             ]
         )

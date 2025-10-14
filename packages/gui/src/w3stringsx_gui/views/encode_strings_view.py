@@ -57,9 +57,9 @@ class EncodeStringsView(ft.View):
                                 label="Click to choose the CSV file",
                                 read_only=True,
                                 expand=True,
-                                bgcolor=ft.Colors.PRIMARY_CONTAINER,
-                                color=ft.Colors.PRIMARY,
-                                border_color=ft.Colors.SECONDARY,
+                                # bgcolor=ft.Colors.PRIMARY_CONTAINER,
+                                # color=ft.Colors.PRIMARY,
+                                border_color=ft.Colors.PRIMARY,
                                 on_click=self.on_csv_file_path_textfield_click,
                             )
                         ),
@@ -67,7 +67,7 @@ class EncodeStringsView(ft.View):
                             height=10
                         ),
                         ft.Container(
-                            border=ft.border.all(1, ft.Colors.SECONDARY),
+                            border=ft.border.all(1, ft.Colors.PRIMARY),
                             border_radius=5,
                             height=200,
                             padding=ft.padding.only(left=10, top=5, right=10, bottom=10),
@@ -79,9 +79,7 @@ class EncodeStringsView(ft.View):
                                         lambda: ft.GridView(
                                             expand=True,
                                             runs_count=9,
-                                            child_aspect_ratio=2.5,
-                                            spacing=10,
-                                            run_spacing=10,
+                                            child_aspect_ratio=3,
                                             controls=[
                                                 ft.Checkbox(
                                                     label=ft.Text(value=lang, weight=ft.FontWeight.BOLD),
@@ -121,9 +119,9 @@ class EncodeStringsView(ft.View):
                                 label="Click to choose output directory",
                                 read_only=True,
                                 expand=True,
-                                bgcolor=ft.Colors.PRIMARY_CONTAINER,
-                                color=ft.Colors.PRIMARY,
-                                border_color=ft.Colors.SECONDARY,
+                                # bgcolor=ft.Colors.PRIMARY_CONTAINER,
+                                # color=ft.Colors.PRIMARY,
+                                border_color=ft.Colors.PRIMARY,
                                 on_click=self.on_output_dir_textfield_click,
                             ),
                         ),
@@ -163,9 +161,7 @@ class EncodeStringsView(ft.View):
                     ]
                 ),
                 LogsPanel(
-                    height=180,
-                    bgcolor=ft.Colors.SECONDARY_CONTAINER,
-                    color=ft.Colors.ON_SECONDARY_CONTAINER
+                    height=180
                 ),
             ]
         )
