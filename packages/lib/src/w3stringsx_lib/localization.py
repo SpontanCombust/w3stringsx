@@ -51,6 +51,26 @@ ALL_LANGS_META_MAP: dict[str, str] = {
     'zh':   'zh',
 }
 
+ALL_LANGS_NAME_MAP: dict[str, str] = {
+    'ar':   'Arabic',
+    'br':   'Portuguese - Brazil',
+    'cn':   'Simplified Chinese',
+    'cz':   'Czech',
+    'de':   'German',
+    'en':   'English',
+    'es':   'Spanish - Spain',
+    'esmx': 'Spanish - Latin America',
+    'fr':   'French',
+    'hu':   'Hungarian',
+    'it':   'Italian',
+    'jp':   'Japanese',
+    'kr':   'Korean',
+    'pl':   'Polish',
+    'ru':   'Russian',
+    'tr':   'Turkish',
+    'zh':   'Traditional Chinese',
+}
+
 
 """
 An approximate number with a good amount of headspace.

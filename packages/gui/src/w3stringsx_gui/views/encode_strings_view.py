@@ -7,7 +7,7 @@ from typing import cast
 import flet as ft
 
 from w3stringsx_lib.logging import get_logger
-from w3stringsx_lib.localization import ALL_LANGS
+from w3stringsx_lib.localization import ALL_LANGS, ALL_LANGS_NAME_MAP
 from w3stringsx_ioc import di, Injected
 from w3stringsx_svc import W3StringsManagerService
 from flet_reactive import ReactiveBuilder, State, use_state
@@ -72,17 +72,19 @@ class EncodeStringsView(ft.View):
                             height=200,
                             padding=ft.padding.only(left=10, top=5, right=10, bottom=10),
                             content=ft.Column(
+                                scroll=ft.ScrollMode.ADAPTIVE,
                                 controls=[
                                     ft.Text(value="Select target languages:"),
                                     ReactiveBuilder(
                                         [self.__selected_langs],
                                         lambda: ft.GridView(
                                             expand=True,
-                                            runs_count=9,
-                                            child_aspect_ratio=3,
+                                            runs_count=6,
+                                            run_spacing=100,
+                                            child_aspect_ratio=5.5,
                                             controls=[
                                                 ft.Checkbox(
-                                                    label=ft.Text(value=lang, weight=ft.FontWeight.BOLD),
+                                                    label=ft.Text(value=f'{ALL_LANGS_NAME_MAP[lang]} ({lang})', weight=ft.FontWeight.BOLD),
                                                     value=(lang in self.__selected_langs.value),
                                                     # adding lang=lang is IMPORTANT!!!
                                                     # otherwise it captures the variable by reference and then all calls are made for the last langugae only
@@ -128,7 +130,7 @@ class EncodeStringsView(ft.View):
                         ReactiveBuilder(
                             [self.__keep_output_csv],
                             lambda: ft.Checkbox(
-                                label="Keep processed output CSV",
+                                label="Keep generated end-result CSV",
                                 value=self.__keep_output_csv.value,
                                 on_change=self.on_keep_output_csv_checkbox_change_change
                             ),
