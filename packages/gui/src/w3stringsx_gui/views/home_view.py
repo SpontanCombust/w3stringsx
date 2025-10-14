@@ -13,6 +13,7 @@ class HomeView(ft.View):
         super().__init__(
             route=Routes.HOME,
             controls=[
+                ft.AppBar(title=ft.Text("HOME")),
                 ft.Column(
                     controls=[
                         ft.Row(
@@ -75,7 +76,7 @@ class HomeView(ft.View):
                                 ),
                                 bgcolor=ft.Colors.PRIMARY_CONTAINER
                             ),
-                            on_dropped=lambda ev: print(ev.files),
+                            on_dropped=lambda ev: print(ev.files), #TODO auto-navigate based on file
                         )
                     ],
                     horizontal_alignment=ft.CrossAxisAlignment.CENTER,

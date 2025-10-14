@@ -7,10 +7,12 @@ import flet as ft
 class Router:
     def __init__(self, page: ft.Page, routes: list[ViewRoute]) -> None:
         self.__page: ft.Page = page
+        self.__page.views.clear() # prime the navigation stack
         self.__page.on_route_change = self.__on_route_change
         self.__page.on_view_pop = self.__on_view_pop
         self.__view_routes: list[ViewRoute] = routes
         self.__current_route_props: object = object()
+        self.__is_popping: bool = False # flag signallig if we're going back in the navigation stack
 
     def goto(self, route: str, props: object = object()):
         self.__current_route_props = props
@@ -22,22 +24,24 @@ class Router:
 
 
     def __on_route_change(self, ev: ft.RouteChangeEvent):
-        for vr in self.__view_routes:
-            if ev.route == vr.route:
-                props = self.__current_route_props
-                self.__current_route_props = object()
-                self.__page.views.append(
-                    vr.create_view(router=self, props=props)
-                )
-                break
+        if not self.__is_popping:
+            for vr in self.__view_routes:
+                if ev.route == vr.route:
+                    props = self.__current_route_props
+                    self.__current_route_props = object()
+                    self.__page.views.append(
+                        vr.create_view(router=self, props=props)
+                    )
+                    break
+        self.__is_popping = False
         self.__page.update()
 
     def __on_view_pop(self, ev: ft.ViewPopEvent):
         if len(self.__page.views) > 1:
+            self.__is_popping = True
             self.__page.views.pop()
             top_view = self.__page.views[-1]
-            self.__page.route = str(top_view.route)
-            self.__page.update()
+            self.__page.go(str(top_view.route))
 
 ViewFactory = Callable[[Router, object], ft.View]
 
