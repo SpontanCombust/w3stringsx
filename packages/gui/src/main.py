@@ -52,8 +52,8 @@ def main(page: ft.Page):
     setup_services()
 
     page.title = "w3stringsx GUI"
-    page.window.width = 1200
-    page.window.height = 800
+    page.window.width = 1400
+    page.window.height = 900
     router = Router(page, [ViewRoute(route, view_factory) for route, view_factory in ROUTE_MAP.items()])
     router.goto(Routes.HOME)
 
