@@ -7,7 +7,7 @@ import flet as ft
 from w3stringsx_lib.logging import get_logger
 from w3stringsx_ioc import di, Injected
 from w3stringsx_svc import W3StringsManagerService
-from flet_reactive import Reactive, use_state
+from flet_reactive import Reactive, ReactiveBuilder, use_state
 from w3stringsx_gui.routing import Router, Routes
 from w3stringsx_gui.components import LogsPanel
 
@@ -44,7 +44,7 @@ class DecodeStringsView(ft.View):
                 ft.Column(
                     expand=True,
                     controls=[
-                        Reactive(
+                        ReactiveBuilder(
                             [self.__w3strings_file_paths],
                             lambda: ft.ListView(
                                 auto_scroll=True,
@@ -115,7 +115,7 @@ class DecodeStringsView(ft.View):
                         ft.Row(
                             height=10
                         ),
-                        Reactive(
+                        ReactiveBuilder(
                             [self.__output_dir_path],
                             lambda: ft.TextField(
                                 icon=ft.Icons.FOLDER,
@@ -132,7 +132,7 @@ class DecodeStringsView(ft.View):
                         ft.Row(
                             height=10
                         ),
-                        Reactive(
+                        ReactiveBuilder(
                             [self.__w3strings_file_paths, self.__output_dir_path],
                             lambda: ft.Row(
                                 alignment=ft.MainAxisAlignment.CENTER,

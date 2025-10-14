@@ -9,7 +9,7 @@ from w3stringsx_lib.logging import get_logger
 from w3stringsx_lib.localization import ALL_LANGS
 from w3stringsx_ioc import di, Injected
 from w3stringsx_svc import W3StringsManagerService
-from flet_reactive import Reactive, State, use_state
+from flet_reactive import Reactive, ReactiveBuilder, State, use_state
 from w3stringsx_gui.routing import Router, Routes
 from w3stringsx_gui.components import LogsPanel
 
@@ -47,7 +47,7 @@ class EncodeStringsView(ft.View):
                 ft.Column(
                     expand=True,
                     controls=[
-                        Reactive(
+                        ReactiveBuilder(
                             [self.__csv_file_path],
                             lambda: ft.TextField(
                                 icon=ft.Icons.ATTACH_FILE,
@@ -72,7 +72,7 @@ class EncodeStringsView(ft.View):
                             content=ft.Column(
                                 controls=[
                                     ft.Text(value="Select target languages:"),
-                                    Reactive(
+                                    ReactiveBuilder(
                                         [self.__selected_langs],
                                         lambda: ft.GridView(
                                             expand=True,
@@ -111,7 +111,7 @@ class EncodeStringsView(ft.View):
                         ft.Row(
                             height=10
                         ),
-                        Reactive(
+                        ReactiveBuilder(
                             [self.__output_dir_path],
                             lambda: ft.TextField(
                                 icon=ft.Icons.FOLDER,
@@ -125,7 +125,7 @@ class EncodeStringsView(ft.View):
                                 on_click=self.on_output_dir_textfield_click,
                             ),
                         ),
-                        Reactive(
+                        ReactiveBuilder(
                             [self.__keep_output_csv],
                             lambda: ft.Checkbox(
                                 label="Keep processed output CSV",
@@ -136,7 +136,7 @@ class EncodeStringsView(ft.View):
                         ft.Row(
                             height=10
                         ),
-                        Reactive(
+                        ReactiveBuilder(
                             [self.__csv_file_path, self.__output_dir_path, self.__selected_langs],
                             lambda: ft.Row(
                                 alignment=ft.MainAxisAlignment.CENTER,

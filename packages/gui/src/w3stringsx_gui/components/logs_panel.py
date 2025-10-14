@@ -57,7 +57,7 @@ class LogsPanel(ft.Container):
                                 controls=[
                                     Reactive(
                                         [self.__logs_handler.logs],
-                                        lambda: ft.TextField(
+                                        ft.TextField(
                                             value=self.__logs_handler.logs.value,
                                             hint_text='Logs go here...',
                                             multiline=True,
@@ -74,8 +74,11 @@ class LogsPanel(ft.Container):
                                             ),
                                             text_align=ft.TextAlign.START,
                                         ),
-                                        on_after_build=lambda e: self.__vlist_view_ref.current.scroll_to(offset=-1)
-                                    )
+                                        on_change=lambda ctrl: (
+                                            setattr(ctrl, 'value', self.__logs_handler.logs.value),
+                                            self.__vlist_view_ref.current.scroll_to(offset=-1)
+                                        )
+                                    ),
                                 ]
                             ),
                         ],
