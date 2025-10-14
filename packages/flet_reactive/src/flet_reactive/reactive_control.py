@@ -10,8 +10,8 @@ C = TypeVar('C', bound=ft.Control)
 class Reactive(ft.Control, StateObserver[Any], Generic[C]):
     def __init__(self, 
         states: list[State[Any]],
-        content: C,
-        on_change: Callable[[C], Any],
+        content: C | None = None,
+        on_change: Callable[[C], Any] | None = None,
         # Control
         ref: ft.Ref[Self] | None = None, 
         expand: None | bool | int = None, 
@@ -29,7 +29,7 @@ class Reactive(ft.Control, StateObserver[Any], Generic[C]):
         for state in states:
             state.add_observer(self)
 
-        self.__content = content
+        self._content = content
         self.__on_change = on_change
 
     def is_isolated(self) -> bool:
@@ -45,14 +45,15 @@ class Reactive(ft.Control, StateObserver[Any], Generic[C]):
 
     def _get_children(self) -> List[ft.Control]:
         children: list[ft.Control] = []
-        if self.__content:
-            self.__content._set_attr_internal("n", "content")
-            children.append(self.__content)
+        if self._content:
+            self._content._set_attr_internal("n", "content")
+            children.append(self._content)
         return children
 
 
     def on_state_changed(self, old_state: Any, new_state: Any):
-        self.__on_change(self.__content)
+        if self.__on_change and self._content:
+            self.__on_change(self._content)
         self.update()
 
 
