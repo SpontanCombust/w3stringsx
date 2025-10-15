@@ -14,3 +14,7 @@ class W3stringsxGuiConfiguration(Configuration):
     @property
     def w3strings_encoder_path(self) -> ConfigurationValue[str]:
         return self.none() #TODO load from .ini
+    
+    @property
+    def theme_mode(self) -> ConfigurationValue[str]:
+        return self.none() #TODO load from .ini

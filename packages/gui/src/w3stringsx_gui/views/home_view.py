@@ -7,13 +7,14 @@ from w3stringsx_gui.routing import Router, Routes
 
 
 class HomeView(ft.View):
+    TITLE = "HOME"
+
     def __init__(self, router: Router, props: object):
         assert router is not None
 
         super().__init__(
             route=Routes.HOME,
             controls=[
-                ft.AppBar(title=ft.Text("HOME"), actions=[ThemeButton()]),
                 ft.Column(
                     controls=[
                         ft.Row(

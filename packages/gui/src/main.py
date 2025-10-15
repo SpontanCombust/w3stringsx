@@ -21,11 +21,11 @@ from w3stringsx_gui.views import (
 from w3stringsx_gui.configuration import W3stringsxGuiConfiguration
 
 
-ROUTE_MAP: dict[str, ViewFactory] = {
-    Routes.HOME: HomeView,
-    Routes.ENCODE_STRINGS: EncodeStringsView,
-    Routes.DECODE_STRINGS: DecodeStringsView,
-    Routes.SEARCH_FOR_STRING_KEYS: SearchForStringKeysView
+ROUTE_MAP: dict[str, tuple[ViewFactory, str]] = {
+    Routes.HOME: (HomeView, HomeView.TITLE),
+    Routes.ENCODE_STRINGS: (EncodeStringsView, EncodeStringsView.TITLE),
+    Routes.DECODE_STRINGS: (DecodeStringsView, DecodeStringsView.TITLE),
+    Routes.SEARCH_FOR_STRING_KEYS: (SearchForStringKeysView, SearchForStringKeysView.TITLE)
 }
 
 def setup_services():
@@ -55,7 +55,7 @@ def main(page: ft.Page):
     page.window.width = 1400
     page.window.height = 900
 
-    router = Router(page, [ViewRoute(route, view_factory) for route, view_factory in ROUTE_MAP.items()])
+    router = Router(page, [ViewRoute(route, view_factory, view_title) for route, (view_factory, view_title) in ROUTE_MAP.items()])
     router.goto(Routes.HOME)
 
 ft.app(main) # type: ignore

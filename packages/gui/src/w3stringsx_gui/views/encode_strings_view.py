@@ -23,6 +23,8 @@ class EncodeStringsViewProps:
     csv_path: str
 
 class EncodeStringsView(ft.View):
+    TITLE = "ENCODING"
+
     def __init__(self, 
         router: Router, props: object,
         w3strings_manager: Injected[W3StringsManagerService] = di.inject(W3StringsManagerService)
@@ -45,7 +47,6 @@ class EncodeStringsView(ft.View):
         super().__init__(
             route=Routes.ENCODE_STRINGS,
             controls=[
-                ft.AppBar(title=ft.Text("ENCODING"), actions=[ThemeButton()]),
                 ft.Column(
                     expand=True,
                     controls=[
@@ -93,6 +94,7 @@ class EncodeStringsView(ft.View):
                                             ] 
                                         )
                                     ),
+                                    ft.Row(), # small spacer
                                     ft.Row(
                                         controls=[
                                             ft.FilledButton(
@@ -236,6 +238,6 @@ class EncodeStringsView(ft.View):
             self.__encode_status.value = True
         except Exception as ex:
             _logger.error(ex)
-            _logger.debug(ex)
+            _logger.debug(traceback.format_exc())
             self.__encode_status.value = False
             

@@ -3,6 +3,8 @@ from typing import Callable
 
 import flet as ft
 
+from w3stringsx_gui.components import CommonAppBar
+
 
 class Router:
     def __init__(self, page: ft.Page, routes: list[ViewRoute]) -> None:
@@ -46,12 +48,15 @@ class Router:
 ViewFactory = Callable[[Router, object], ft.View]
 
 class ViewRoute:
-    def __init__(self, route: str, view_factory: ViewFactory) -> None:
+    def __init__(self, route: str, view_factory: ViewFactory, view_title: str) -> None:
         self.route: str = route
         self.view_factory: ViewFactory = view_factory
+        self.view_title: str = view_title
 
     def create_view(self, router: Router, props: object) -> ft.View:
-        return self.view_factory(router, props)
+        view = self.view_factory(router, props)
+        view.appbar = CommonAppBar(self.view_title)
+        return view
 
 
 class Routes:

@@ -20,6 +20,8 @@ class DecodeStringsViewProps:
     w3strings_paths: list[str]
 
 class DecodeStringsView(ft.View):
+    TITLE = "DECODING"
+
     def __init__(self, 
         router: Router, props: object, 
         w3strings_manager: Injected[W3StringsManagerService] = di.inject(W3StringsManagerService)
@@ -41,7 +43,6 @@ class DecodeStringsView(ft.View):
         super().__init__(
             route=Routes.DECODE_STRINGS,
             controls=[
-                ft.AppBar(title=ft.Text("DECODING"), actions=[ThemeButton()]),
                 ft.Column(
                     expand=True,
                     controls=[
