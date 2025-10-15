@@ -22,6 +22,7 @@ class FeatureButton(ft.ElevatedButton):
                         src=icon_src,
                         width=80,
                         height=80,
+                        color=color
                     ),
                     ft.Text(value=text, text_align=ft.TextAlign.CENTER, color=color)
                 ], 
