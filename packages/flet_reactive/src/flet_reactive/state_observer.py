@@ -1,10 +1,25 @@
-from abc import ABC, abstractmethod
-from typing import TypeVar, Generic
+from typing import Any, TypeVar, Protocol, Iterable, SupportsIndex, overload
 
 
-T = TypeVar('T')
-class StateObserver(ABC, Generic[T]):
-    @abstractmethod
-    def on_state_changed(self, old_state: T, new_state: T):
-        pass
+T = TypeVar('T', contravariant=True)
+
+
+class StateObserver(Protocol[T]):
+    def on_state_changed(self, old_state: T, new_state: T) -> None:
+        ...
+
+class ListStateObserver(Protocol[T]):
+    def on_set_state_item(self, key: SupportsIndex, value: T) -> None:
+        ...
+
+    def on_set_state_item_slice(self, key: slice, value: Iterable[T]) -> None:
+        ...
+
+    def on_del_state_item(self, key: SupportsIndex) -> None:
+        ...
+
+    def on_del_state_item_slice(self, key: slice) -> None:
+        ...
     
+    def on_insert_state_item(self, key: SupportsIndex, value: T) -> None:
+        ...
