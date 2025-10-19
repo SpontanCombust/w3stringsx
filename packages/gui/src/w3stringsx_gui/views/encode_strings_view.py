@@ -10,7 +10,7 @@ from w3stringsx_lib.logging import get_logger
 from w3stringsx_lib.localization import ALL_LANGS, ALL_LANGS_NAME_MAP
 from w3stringsx_ioc import di, Injected
 from w3stringsx_svc import W3StringsManagerService
-from flet_reactive import ReactiveBuilder, State, use_state
+import flet_reactive as ftr
 from w3stringsx_gui.routing import Router, Routes
 from w3stringsx_gui.components import LogsPanel, StatusMessage, ThemeButton
 
@@ -31,13 +31,13 @@ class EncodeStringsView(ft.View):
     ):
         self.__w3strings_manager = w3strings_manager.resolve()
 
-        self.__csv_file_path = use_state('')
-        self.__selected_langs = use_state(set(ALL_LANGS))
-        self.__output_dir_path = use_state('')
-        self.__keep_output_csv = use_state(False)
+        self.__csv_file_path = ftr.State[str | None]('')
+        self.__lang_selection = { lang: ftr.State[bool | None](True) for lang in ALL_LANGS }
+        self.__output_dir_path = ftr.State[str | None]('')
+        self.__keep_output_csv = ftr.State[bool | None](False)
         self.__csv_file_picker = ft.FilePicker(on_result=self.on_csv_file_picked)
         self.__output_dir_picker = ft.FilePicker(on_result=self.on_output_dir_picked)
-        self.__encode_status: State[bool | None] = use_state(None)
+        self.__encode_status = ftr.State[bool | None](None)
 
         if not isinstance(props, EncodeStringsViewProps):
             props = EncodeStringsViewProps(csv_path='')
@@ -50,19 +50,15 @@ class EncodeStringsView(ft.View):
                 ft.Column(
                     expand=True,
                     controls=[
-                        ReactiveBuilder(
-                            [self.__csv_file_path],
-                            lambda: ft.TextField(
-                                icon=ft.Icons.ATTACH_FILE,
-                                value=self.__csv_file_path.value,
-                                label="Click to choose the CSV file",
-                                read_only=True,
-                                expand=True,
-                                # bgcolor=ft.Colors.PRIMARY_CONTAINER,
-                                # color=ft.Colors.PRIMARY,
-                                border_color=ft.Colors.PRIMARY,
-                                on_click=self.on_csv_file_path_textfield_click,
-                            )
+                        ftr.ReactiveTextField(
+                            icon=ft.Icons.ATTACH_FILE,
+                            value=self.__csv_file_path,
+                            label="Click to choose the CSV file",
+                            read_only=True,
+                            # bgcolor=ft.Colors.PRIMARY_CONTAINER,
+                            # color=ft.Colors.PRIMARY,
+                            border_color=ft.Colors.PRIMARY,
+                            on_click=self.on_csv_file_path_textfield_click,
                         ),
                         ft.Row(
                             height=10
@@ -76,23 +72,17 @@ class EncodeStringsView(ft.View):
                                 scroll=ft.ScrollMode.ADAPTIVE,
                                 controls=[
                                     ft.Text(value="Select target languages:"),
-                                    ReactiveBuilder(
-                                        [self.__selected_langs],
-                                        lambda: ft.GridView(
-                                            expand=True,
-                                            runs_count=6,
-                                            run_spacing=100,
-                                            child_aspect_ratio=5.5,
-                                            controls=[
-                                                ft.Checkbox(
-                                                    label=ft.Text(value=f'{ALL_LANGS_NAME_MAP[lang]} ({lang})', weight=ft.FontWeight.BOLD),
-                                                    value=(lang in self.__selected_langs.value),
-                                                    # adding lang=lang is IMPORTANT!!!
-                                                    # otherwise it captures the variable by reference and then all calls are made for the last langugae only
-                                                    on_change=lambda ev, lang=lang: self.on_selectable_lang_checkbox_change(ev, lang)
-                                                ) for lang in ALL_LANGS
-                                            ] 
-                                        )
+                                    ft.GridView(
+                                        expand=True,
+                                        runs_count=6,
+                                        run_spacing=100,
+                                        child_aspect_ratio=5.5,
+                                        controls=[
+                                            ftr.ReactiveCheckbox(
+                                                label=ft.Text(value=f'{ALL_LANGS_NAME_MAP[lang]} ({lang})', weight=ft.FontWeight.BOLD),
+                                                value=self.__lang_selection[lang]
+                                            ) for lang in ALL_LANGS
+                                        ] 
                                     ),
                                     ft.Row(), # small spacer
                                     ft.Row(
@@ -115,47 +105,39 @@ class EncodeStringsView(ft.View):
                         ft.Row(
                             height=10
                         ),
-                        ReactiveBuilder(
-                            [self.__output_dir_path],
-                            lambda: ft.TextField(
-                                icon=ft.Icons.FOLDER,
-                                value=self.__output_dir_path.value,
-                                label="Click to choose output directory",
-                                read_only=True,
-                                expand=True,
-                                # bgcolor=ft.Colors.PRIMARY_CONTAINER,
-                                # color=ft.Colors.PRIMARY,
-                                border_color=ft.Colors.PRIMARY,
-                                on_click=self.on_output_dir_textfield_click,
-                            ),
+                        ftr.ReactiveTextField(
+                            icon=ft.Icons.FOLDER,
+                            value=self.__output_dir_path,
+                            label="Click to choose output directory",
+                            read_only=True,
+                            # bgcolor=ft.Colors.PRIMARY_CONTAINER,
+                            # color=ft.Colors.PRIMARY,
+                            border_color=ft.Colors.PRIMARY,
+                            on_click=self.on_output_dir_textfield_click,
                         ),
-                        ReactiveBuilder(
-                            [self.__keep_output_csv],
-                            lambda: ft.Checkbox(
-                                label="Keep generated end-result CSV",
-                                value=self.__keep_output_csv.value,
-                                on_change=self.on_keep_output_csv_checkbox_change_change
-                            ),
+                        ftr.ReactiveCheckbox(
+                            label="Keep generated end-result CSV",
+                            value=self.__keep_output_csv,
                         ),
                         ft.Row(
                             height=5
                         ),
-                        ReactiveBuilder(
-                            [self.__csv_file_path, self.__output_dir_path, self.__selected_langs],
-                            lambda: ft.Row(
-                                alignment=ft.MainAxisAlignment.CENTER,
-                                controls=[
-                                    ft.FilledButton(
-                                        icon=ft.Icons.LOCK_OUTLINE,
-                                        text='ENCODE',
-                                        width=300,
-                                        on_click=self.on_encode_button_click,
-                                        disabled=self.__csv_file_path.value == ''
-                                              or self.__output_dir_path.value == ''
-                                              or len(self.__selected_langs.value) == 0
+                        ft.Row(
+                            alignment=ft.MainAxisAlignment.CENTER,
+                            controls=[
+                                ftr.ReactiveFilledButton(
+                                    icon=ft.Icons.LOCK_OUTLINE,
+                                    text='ENCODE',
+                                    width=300,
+                                    on_click=self.on_encode_button_click,
+                                    disabled=ftr.CompoundState(
+                                        [self.__csv_file_path, self.__output_dir_path, *self.__lang_selection.values()],
+                                        lambda: not self.__csv_file_path.value
+                                             or not self.__output_dir_path.value
+                                             or all([not selection.value for selection in self.__lang_selection.values()])
                                     )
-                                ],
-                            ),
+                                )
+                            ],
                         ),
                         StatusMessage(
                             self.__encode_status,
@@ -201,19 +183,13 @@ class EncodeStringsView(ft.View):
             if self.__output_dir_path.value == '':
                 self.__output_dir_path.value = os.path.dirname(csv_path)
 
-    def on_selectable_lang_checkbox_change(self, ev: ft.ControlEvent, lang: str):
-        checked = ev.data == 'true'
-        if checked:
-            new_set = self.__selected_langs.value.union([lang])
-        else:
-            new_set = self.__selected_langs.value.difference([lang])
-        self.__selected_langs.value = new_set
-
     def on_select_all_langs_button_click(self, ev: ft.ControlEvent):
-        self.__selected_langs.value = set(ALL_LANGS)
+        for _, selection in self.__lang_selection.items():
+            selection.value = True
 
     def on_deselect_all_langs_button_click(self, ev: ft.ControlEvent):
-        self.__selected_langs.value = set()
+        for _, selection in self.__lang_selection.items():
+            selection.value = False
 
     def on_output_dir_textfield_click(self, ev: ft.ControlEvent):
         self.__output_dir_picker.get_directory_path(
@@ -228,12 +204,16 @@ class EncodeStringsView(ft.View):
         self.__keep_output_csv.value = cast(ft.Checkbox, ev.control).value or False
 
     def on_encode_button_click(self, ev: ft.ControlEvent):
+        if self.__csv_file_path.value is None\
+            or self.__output_dir_path.value is None:
+            return
+        
         try:
             self.__w3strings_manager.encode_w3strings_from_csv(
                 self.__csv_file_path.value, 
                 self.__output_dir_path.value,
-                list(self.__selected_langs.value),
-                self.__keep_output_csv.value
+                [lang for lang, selection in self.__lang_selection.items() if selection.value == True],
+                self.__keep_output_csv.value or False
             )
             self.__encode_status.value = True
         except Exception as ex:

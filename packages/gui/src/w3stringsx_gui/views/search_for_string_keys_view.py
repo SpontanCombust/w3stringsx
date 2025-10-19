@@ -4,7 +4,7 @@ import traceback
 
 import flet as ft
 
-from flet_reactive import ReactiveBuilder, use_state, State, Reactive
+import flet_reactive as ftr
 from w3stringsx_lib.logging import get_logger
 from w3stringsx_ioc import Injected
 from w3stringsx_svc import StringKeyDiscoveryService
@@ -28,13 +28,13 @@ class SearchForStringKeysView(ft.View):
     ):
         self.__string_key_discovery = string_key_discovery.resolve()
 
-        self.__search_paths = use_state(list[str]())
-        self.__output_dir_path = use_state('')
-        self.__search_regex = use_state('')
+        self.__search_paths = ftr.State(list[str]())
+        self.__output_dir_path = ftr.State[str | None]('')
+        self.__search_regex = ftr.State[str | None]('')
         self.__search_file_picker = ft.FilePicker(on_result=self.on_search_files_picked)
         self.__search_dir_picker = ft.FilePicker(on_result=self.on_search_dir_picked)
         self.__output_dir_picker = ft.FilePicker(on_result=self.on_output_dir_picked)
-        self.__search_status: State[bool | None] = use_state(None)
+        self.__search_status = ftr.State[bool | None](None)
 
         if not isinstance(props, SearchForStringKeysViewProps):
             props = SearchForStringKeysViewProps(search_paths=[])
@@ -48,7 +48,7 @@ class SearchForStringKeysView(ft.View):
                 ft.Column(
                     expand=True,
                     controls=[
-                        ReactiveBuilder(
+                        ftr.ReactiveBuilder(
                             [self.__search_paths],
                             lambda: ft.ListView(
                                 auto_scroll=True,
@@ -123,50 +123,44 @@ class SearchForStringKeysView(ft.View):
                             height=5
                         ),
                         ft.Container(
-                            ft.TextField(
+                            ftr.ReactiveTextField(
                                 icon=ft.Icons.MANAGE_SEARCH,
-                                value=self.__search_regex.value,
+                                value=self.__search_regex,
                                 label="Common string key pattern",
                                 hint_text='E.g. prefix "my_mod_". Supports regex.',
-                                expand=True,
-                                border_color=ft.Colors.PRIMARY,
-                                on_change=self.on_search_regex_textfield_change,
+                                border_color=ft.Colors.PRIMARY
                             ),
                         ),
                         ft.Row(
                             height=5
                         ),
-                        ReactiveBuilder(
-                            [self.__output_dir_path],
-                            lambda: ft.TextField(
-                                icon=ft.Icons.FOLDER,
-                                value=self.__output_dir_path.value,
-                                label="Click to choose output directory",
-                                read_only=True,
-                                expand=True,
-                                border_color=ft.Colors.PRIMARY,
-                                on_click=self.on_output_dir_textfield_click,
-                            ),
+                        ftr.ReactiveTextField(
+                            icon=ft.Icons.FOLDER,
+                            value=self.__output_dir_path,
+                            label="Click to choose output directory",
+                            read_only=True,
+                            border_color=ft.Colors.PRIMARY,
+                            on_click=self.on_output_dir_textfield_click,
                         ),
                         ft.Row(
                             height=5
                         ),
-                        ReactiveBuilder(
-                            [self.__search_paths, self.__search_regex, self.__output_dir_path],
-                            lambda: ft.Row(
-                                alignment=ft.MainAxisAlignment.CENTER,
-                                controls=[
-                                    ft.FilledButton(
-                                        icon=ft.Icons.SEARCH,
-                                        text='SEARCH',
-                                        width=300,
-                                        on_click=self.on_search_button_click,
-                                        disabled=len(self.__search_paths.value) == 0
-                                              or self.__search_regex.value == ''
-                                              or self.__output_dir_path.value == ''
+                        ft.Row(
+                            alignment=ft.MainAxisAlignment.CENTER,
+                            controls=[
+                                ftr.ReactiveFilledButton(
+                                    icon=ft.Icons.SEARCH,
+                                    text='SEARCH',
+                                    width=300,
+                                    on_click=self.on_search_button_click,
+                                    disabled=ftr.CompoundState(
+                                        [self.__search_paths, self.__search_regex, self.__output_dir_path],
+                                        lambda: len(self.__search_paths.value) == 0
+                                             or not self.__search_regex.value
+                                             or not self.__output_dir_path.value
                                     )
-                                ],
-                            ),
+                                )
+                            ],
                         ),
                         StatusMessage(
                             self.__search_status,
@@ -232,10 +226,6 @@ class SearchForStringKeysView(ft.View):
         self.__search_paths.value = []
 
 
-    def on_search_regex_textfield_change(self, ev: ft.ControlEvent):
-        self.__search_regex.value = str(ev.data)
-
-
     def on_output_dir_textfield_click(self, ev: ft.ControlEvent):
         self.__output_dir_picker.get_directory_path(
             initial_directory=self.__output_dir_path.value
@@ -247,6 +237,10 @@ class SearchForStringKeysView(ft.View):
 
 
     def on_search_button_click(self, ev: ft.ControlEvent):
+        if self.__output_dir_path.value is None\
+        or self.__search_regex.value is None:
+            return
+        
         for input_path in self.__search_paths.value:
             try:
                 if os.path.isdir(input_path):

@@ -2,7 +2,7 @@ import flet as ft
 import flet.canvas as cv
 import flet_dropzone as ftd
 
-from w3stringsx_gui.components import FeatureButton, ThemeButton
+from w3stringsx_gui.components import FeatureButton
 from w3stringsx_gui.routing import Router, Routes
 
 

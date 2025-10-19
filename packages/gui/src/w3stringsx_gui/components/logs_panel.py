@@ -3,7 +3,7 @@ import os
 
 import flet as ft
 
-from flet_reactive import use_state, Reactive
+import flet_reactive as ftr
 from w3stringsx_lib.logging import subscribe_to_logger, unsubscribe_from_logger, get_log_file_path
 
 
@@ -12,11 +12,11 @@ MAX_LOG_LINES = 200
 class _StringLogHandler(logging.Handler):
     def __init__(self) -> None:
         super().__init__()
-        self.logs = use_state('')
+        self.logs = ftr.State[str | None]('')
         self.line_count = 0
 
     def emit(self, record: logging.LogRecord) -> None:
-        self.logs.value += '\n' + self.format(record)
+        self.logs.value = (self.logs.value or '') + '\n' + self.format(record)
         self.line_count += 1
 
         # trim to half the expected max size when exceeded
@@ -38,6 +38,9 @@ class LogsPanel(ft.Container):
     ):
         self.__vlist_view_ref = ft.Ref[ft.ListView]()
         self.__logs_handler = _StringLogHandler()
+        self.__vlist_scroll_effect = ftr.Effect(self.__logs_handler.logs, lambda *args: 
+            self.__vlist_view_ref.current.scroll_to(offset=-1)
+        )
         
         super().__init__(
             width=width,
@@ -55,30 +58,23 @@ class LogsPanel(ft.Container):
                                 expand=True,
                                 on_scroll_interval=0,
                                 controls=[
-                                    Reactive(
-                                        [self.__logs_handler.logs],
-                                        ft.TextField(
-                                            value=self.__logs_handler.logs.value,
-                                            hint_text='Logs go here...',
-                                            multiline=True,
-                                            keyboard_type=ft.KeyboardType.MULTILINE,
-                                            read_only=True,
-                                            dense=True,
-                                            expand=True,
-                                            min_lines=15,
-                                            max_lines=9999,
-                                            text_size=16,
-                                            text_style=ft.TextStyle(
-                                                font_family='Monospace',
-                                                color=color
-                                            ),
-                                            text_align=ft.TextAlign.START,
+                                    ftr.ReactiveTextField(
+                                        value=self.__logs_handler.logs,
+                                        hint_text='Logs go here...',
+                                        multiline=True,
+                                        keyboard_type=ft.KeyboardType.MULTILINE,
+                                        read_only=True,
+                                        dense=True,
+                                        expand=True,
+                                        min_lines=15,
+                                        max_lines=9999,
+                                        text_size=16,
+                                        text_style=ft.TextStyle(
+                                            font_family='Monospace',
+                                            color=color
                                         ),
-                                        on_change=lambda ctrl: (
-                                            setattr(ctrl, 'value', self.__logs_handler.logs.value),
-                                            self.__vlist_view_ref.current.scroll_to(offset=-1)
-                                        )
-                                    ),
+                                        text_align=ft.TextAlign.START,
+                                    )
                                 ]
                             ),
                         ],

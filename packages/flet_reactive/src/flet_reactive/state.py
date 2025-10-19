@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any, Iterable, Iterator, SupportsIndex, TypeVar, Generic, Callable, MutableSequence, overload
+from typing import Any, Iterator, SupportsIndex, TypeVar, Generic, Callable, MutableSequence, overload, final
 
 from flet_reactive.state_observer import StateObserver, ListStateObserver
 
@@ -9,31 +9,35 @@ T = TypeVar('T', bound=object)
 
 class State(Generic[T]):
     def __init__(self, init_value: T) -> None:
-        self.__value: T = init_value
-        self.__observers: list[StateObserver[T]] = []
+        self._value: T = init_value
+        self._observers: list[StateObserver[T]] = []
+
+    def __repr__(self) -> str:
+        return f'<State value={self._value}>'
 
     @property
     def value(self) -> T:
-        return self.__value
+        return self._value
     
     @value.setter
     def value(self, val: T):
-        old_val = self.__value
+        old_val = self._value
         if old_val != val:
-            self.__value = val
-            self.__notify(old_val, val)
+            self._value = val
+            self._notify(old_val, val)
 
     def add_observer(self, observer: StateObserver[T]):
-        self.__observers.append(observer)
+        self._observers.append(observer)
 
     def remove_observer(self, observer: StateObserver[T]):
-        self.__observers.remove(observer)
+        self._observers.remove(observer)
 
-    def __notify(self, old_value: T, new_value: T):
-        for observer in self.__observers:
+    def _notify(self, old_value: T, new_value: T):
+        for observer in self._observers:
             observer.on_state_changed(old_state=old_value, new_state=new_value)
 
-class ListState(Generic[T], MutableSequence[T]):
+@final
+class ListState(MutableSequence[T]):
     def __init__(self, init_value: list[T]) -> None:
         self.__list: list[T] = init_value.copy()
         self.__observers: list[ListStateObserver[T]] = []
@@ -105,3 +109,23 @@ class ListState(Generic[T], MutableSequence[T]):
     def __notify(self, handler: Callable[[ListStateObserver[T]], None]):
         for observer in self.__observers:
             handler(observer)
+
+
+class CompoundState(State[T], StateObserver[Any]):
+    def __init__(self, dependencies: list[State[Any]], resolver: Callable[[], T]) -> None:
+        super().__init__(resolver())
+
+        self._dependencies = dependencies
+        for dep in dependencies:
+            dep.add_observer(self)
+
+        self._resolver = resolver
+
+    def on_state_changed(self, old_state: Any, new_state: Any) -> None:
+        old_compound = self._value
+        self._value = self._resolver()
+        self._notify(old_compound, self._value)
+
+    def __del__(self):
+        for dep in self._dependencies:
+            dep.remove_observer(self)

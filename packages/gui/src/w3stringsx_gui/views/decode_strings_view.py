@@ -7,9 +7,9 @@ import flet as ft
 from w3stringsx_lib.logging import get_logger
 from w3stringsx_ioc import di, Injected
 from w3stringsx_svc import W3StringsManagerService
-from flet_reactive import ReactiveBuilder, use_state, State
+import flet_reactive as ftr
 from w3stringsx_gui.routing import Router, Routes
-from w3stringsx_gui.components import LogsPanel, StatusMessage, ThemeButton
+from w3stringsx_gui.components import LogsPanel, StatusMessage
 
 
 _logger = get_logger()
@@ -28,11 +28,11 @@ class DecodeStringsView(ft.View):
     ):
         self.__w3strings_manager = w3strings_manager.resolve()
 
-        self.__w3strings_file_paths = use_state(list[str]())
-        self.__output_dir_path = use_state('')
+        self.__w3strings_file_paths = ftr.State[list[str]]([])
+        self.__output_dir_path = ftr.State[str | None]('')
         self.__w3strings_file_picker = ft.FilePicker(on_result=self.on_w3strings_files_picked)
         self.__output_dir_picker = ft.FilePicker(on_result=self.on_output_dir_picked)
-        self.__decode_status: State[bool | None] = use_state(None)
+        self.__decode_status = ftr.State[bool | None](None)
 
         if not isinstance(props, DecodeStringsViewProps):
             props = DecodeStringsViewProps(w3strings_paths=[])
@@ -46,7 +46,7 @@ class DecodeStringsView(ft.View):
                 ft.Column(
                     expand=True,
                     controls=[
-                        ReactiveBuilder(
+                        ftr.ReactiveBuilder(
                             [self.__w3strings_file_paths],
                             lambda: ft.ListView(
                                 auto_scroll=True,
@@ -117,38 +117,34 @@ class DecodeStringsView(ft.View):
                         ft.Row(
                             height=10
                         ),
-                        ReactiveBuilder(
-                            [self.__output_dir_path],
-                            lambda: ft.TextField(
-                                icon=ft.Icons.FOLDER,
-                                value=self.__output_dir_path.value,
-                                label="Click to choose output directory",
-                                read_only=True,
-                                expand=True,
-                                # bgcolor=ft.Colors.PRIMARY_CONTAINER,
-                                # color=ft.Colors.ON_PRIMARY_CONTAINER,
-                                border_color=ft.Colors.PRIMARY,
-                                on_click=self.on_output_dir_textfield_click,
-                            ),
+                        ftr.ReactiveTextField(
+                            icon=ft.Icons.FOLDER,
+                            value=self.__output_dir_path,
+                            label="Click to choose output directory",
+                            read_only=True,
+                            # bgcolor=ft.Colors.PRIMARY_CONTAINER,
+                            # color=ft.Colors.ON_PRIMARY_CONTAINER,
+                            border_color=ft.Colors.PRIMARY,
+                            on_click=self.on_output_dir_textfield_click,
                         ),
                         ft.Row(
                             height=5
                         ),
-                        ReactiveBuilder(
-                            [self.__w3strings_file_paths, self.__output_dir_path],
-                            lambda: ft.Row(
-                                alignment=ft.MainAxisAlignment.CENTER,
-                                controls=[
-                                    ft.FilledButton(
-                                        icon=ft.Icons.LOCK_OPEN,
-                                        text='DECODE',
-                                        width=300,
-                                        on_click=self.on_decode_button_click,
-                                        disabled=len(self.__w3strings_file_paths.value) == 0 
-                                              or self.__output_dir_path.value == ''
-                                    )
-                                ],
-                            ),
+                        ft.Row(
+                            alignment=ft.MainAxisAlignment.CENTER,
+                            controls=[
+                                ftr.ReactiveFilledButton(
+                                    icon=ft.Icons.LOCK_OPEN,
+                                    text='DECODE',
+                                    width=300,
+                                    on_click=self.on_decode_button_click,
+                                    disabled=ftr.CompoundState(
+                                        [self.__w3strings_file_paths, self.__output_dir_path],
+                                        lambda: len(self.__w3strings_file_paths.value) == 0 
+                                             or not self.__output_dir_path.value
+                                    )        
+                                )
+                            ],
                         ),
                         StatusMessage(
                             self.__decode_status,
@@ -214,9 +210,15 @@ class DecodeStringsView(ft.View):
             self.__output_dir_path.value = ev.path
 
     def on_decode_button_click(self, ev: ft.ControlEvent):
+        if self.__output_dir_path.value is None:
+            return
+
         for input_path in self.__w3strings_file_paths.value:
             try:
-                self.__w3strings_manager.decode_w3strings_to_csv(input_path, self.__output_dir_path.value)
+                self.__w3strings_manager.decode_w3strings_to_csv(
+                    input_path, 
+                    self.__output_dir_path.value
+                )
                 self.__decode_status.value = True
             except Exception as ex:
                 _logger.error(ex)

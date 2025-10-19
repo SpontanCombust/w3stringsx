@@ -1,4 +1,4 @@
-from typing import Any, TypeVar, Protocol, Iterable, SupportsIndex, overload
+from typing import TypeVar, Protocol, Iterable, SupportsIndex
 
 
 T = TypeVar('T', contravariant=True)
