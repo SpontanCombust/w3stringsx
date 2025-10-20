@@ -802,3 +802,101 @@ class ReactiveDataTable(ft.DataTable, _ReactiveControlWrapper, Generic[_T]):
     def will_unmount(self):
         super().will_unmount()
         self._drop_prop_bindings()
+
+
+
+class ReactiveColumn(ft.Column, _ReactiveControlWrapper, Generic[_T]):
+    def __init__(self,
+        controls: Sequence[ft.Control] | None = None,
+        controls_data: ListState[_T] | None = None,
+        controls_mapper: Callable[[_T], ft.Control] | None = None,
+        alignment: ft.MainAxisAlignment | None = None,
+        horizontal_alignment: ft.CrossAxisAlignment | None = None,
+        spacing: int | float | None = None,
+        tight: bool | None = None,
+        wrap: bool | None = None,
+        run_spacing: int | float | None = None,
+        run_alignment: ft.MainAxisAlignment | None = None,
+        ref: ft.Ref | None = None,
+        key: str | None = None,
+        width: int | float | None = None,
+        height: int | float | None = None,
+        left: int | float | None = None,
+        top: int | float | None = None,
+        right: int | float | None = None,
+        bottom: int | float | None = None,
+        expand: None | bool | int = None,
+        expand_loose: bool | None = None,
+        col: Dict[str, int | float] | int | float | None = None,
+        opacity: int | float | None = None,
+        rotate: int | float | ft.Rotate | None = None,
+        scale: int | float | ft.Scale | None = None,
+        offset: ft.Offset | None = None,
+        aspect_ratio: int | float | None = None,
+        animate_opacity: bool | int | ft.Animation | None = None,
+        animate_size: bool | int | ft.Animation | None = None,
+        animate_position: bool | int | ft.Animation | None = None,
+        animate_rotation: bool | int | ft.Animation | None = None,
+        animate_scale: bool | int | ft.Animation | None = None,
+        animate_offset: bool | int | ft.Animation | None = None,
+        on_animation_end: Callable[[ft.ControlEvent], Any] | None = None,
+        visible: bool | None = None,
+        disabled: bool | None = None,
+        data: Any = None,
+        rtl: bool | None = None,
+        scroll: ft.ScrollMode | None = None,
+        auto_scroll: bool | None = None,
+        on_scroll_interval: int | float | None = None, 
+        on_scroll: Callable[[ft.OnScrollEvent], None] | None = None,
+        adaptive: bool | None = None
+    ):
+        super().__init__(
+            controls,
+            alignment,
+            horizontal_alignment,
+            spacing,
+            tight,
+            wrap,
+            run_spacing,
+            run_alignment,
+            ref,
+            key,
+            width,
+            height,
+            left,
+            top,
+            right,
+            bottom,
+            expand,
+            expand_loose,
+            col,
+            opacity,
+            rotate,
+            scale,
+            offset,
+            aspect_ratio,
+            animate_opacity,
+            animate_size,
+            animate_position,
+            animate_rotation,
+            animate_scale,
+            animate_offset,
+            on_animation_end,
+            visible,
+            disabled,
+            data,
+            rtl,
+            scroll,
+            auto_scroll,
+            on_scroll_interval,
+            on_scroll,
+            adaptive
+        )
+
+        if controls_data is not None and controls_mapper is not None:
+                self.controls = []
+                self._new_stateful_ctrl_seq_prop_binding(controls_data, controls_mapper, self, self.controls)
+
+    def will_unmount(self):
+        super().will_unmount()
+        self._drop_prop_bindings()

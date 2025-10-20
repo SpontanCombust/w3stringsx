@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import logging
 import os
 
@@ -9,43 +10,50 @@ from w3stringsx_lib.logging import subscribe_to_logger, unsubscribe_from_logger,
 
 MAX_LOG_LINES = 200
 
+@dataclass
+class FormattedLogRecord:
+    msg: str
+    level: int
+
+    def color(self) -> ft.ColorValue | None:
+        if self.level >= logging.ERROR:
+            return ft.Colors.RED
+        elif self.level >= logging.WARNING:
+            return ft.Colors.AMBER
+        else:
+            return None
+
 class _StringLogHandler(logging.Handler):
     def __init__(self) -> None:
         super().__init__()
-        self.logs = ftr.State[str | None]('')
-        self.line_count = 0
+        self.logs = ftr.ListState[FormattedLogRecord]([])
 
     def emit(self, record: logging.LogRecord) -> None:
-        self.logs.value = (self.logs.value or '') + '\n' + self.format(record)
-        self.line_count += 1
+        self.logs.append(FormattedLogRecord(
+            msg=self.format(record),
+            level=record.levelno
+        ))
 
         # trim to half the expected max size when exceeded
-        if self.line_count > MAX_LOG_LINES:
-            line_idx = 0
-            char_idx = 0
-            while line_idx < MAX_LOG_LINES // 2:
-                char_idx = self.logs.value.index('\n', char_idx)
-                line_idx += 1
-            self.logs.value = self.logs.value[char_idx+1:]
+        if len(self.logs) > MAX_LOG_LINES:
+            del self.logs[:MAX_LOG_LINES // 2]
 
 class LogsPanel(ft.Container):
     def __init__(
             self,
             width: ft.OptionalNumber = None,
-            height: ft.OptionalNumber = None,
-            bgcolor: ft.ColorValue | None = ft.Colors.SECONDARY_CONTAINER,
-            color: ft.ColorValue | None = ft.Colors.ON_SECONDARY_CONTAINER,
+            height: ft.OptionalNumber = None
     ):
         self.__vlist_view_ref = ft.Ref[ft.ListView]()
         self.__logs_handler = _StringLogHandler()
-        self.__vlist_scroll_effect = ftr.Effect(self.__logs_handler.logs, lambda *args: 
+        self.__vlist_scroll_effect = ftr.ListEffect(self.__logs_handler.logs, lambda: 
             self.__vlist_view_ref.current.scroll_to(offset=-1)
         )
         
         super().__init__(
             width=width,
             height=height,
-            bgcolor=bgcolor,
+            bgcolor=ft.Colors.SURFACE,
             content=ft.Stack(
                 controls=[
                     ft.ListView(
@@ -58,30 +66,29 @@ class LogsPanel(ft.Container):
                                 expand=True,
                                 on_scroll_interval=0,
                                 controls=[
-                                    ftr.ReactiveTextField(
-                                        value=self.__logs_handler.logs,
-                                        hint_text='Logs go here...',
-                                        multiline=True,
-                                        keyboard_type=ft.KeyboardType.MULTILINE,
-                                        read_only=True,
-                                        dense=True,
-                                        expand=True,
-                                        min_lines=15,
-                                        max_lines=9999,
-                                        text_size=16,
-                                        text_style=ft.TextStyle(
-                                            font_family='Monospace',
-                                            color=color
-                                        ),
-                                        text_align=ft.TextAlign.START,
-                                    )
+                                    ft.SelectionArea(
+                                        ftr.ReactiveColumn(
+                                            expand=True,
+                                            spacing=0,
+                                            controls_data=self.__logs_handler.logs,
+                                            controls_mapper=lambda record: ft.Text(
+                                                value=record.msg,
+                                                size=16,
+                                                style=ft.TextStyle(
+                                                    font_family='Monospace',
+                                                    color=record.color() or ft.Colors.ON_SURFACE
+                                                ),
+                                                text_align=ft.TextAlign.START,
+                                            ),
+                                        )
+                                    ),
                                 ]
                             ),
                         ],
                     ),
                     ft.IconButton(
                         icon=ft.Icons.FILE_OPEN,
-                        icon_color=color,
+                        icon_color=ft.Colors.ON_SURFACE,
                         tooltip="Open logs file",
                         icon_size=24,
                         on_click=self.on_open_logs_file_button_click,
