@@ -19,12 +19,15 @@ class State(Generic[T]):
     def value(self) -> T:
         return self._value
     
-    @value.setter
-    def value(self, val: T):
+    def set_value(self, val: T):
         old_val = self._value
         if old_val != val:
             self._value = val
             self._notify(old_val, val)
+
+    @value.setter
+    def value(self, val: T):
+        self.set_value(val)
 
     def add_observer(self, observer: StateObserver[T]):
         self._observers.append(observer)

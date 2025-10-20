@@ -147,7 +147,7 @@ class EncodeStringsView(ft.View):
                     ]
                 ),
                 LogsPanel(
-                    height=180
+                    height=300
                 ),
             ]
         )

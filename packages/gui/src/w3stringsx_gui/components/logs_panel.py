@@ -38,12 +38,19 @@ class _StringLogHandler(logging.Handler):
         if len(self.logs) > MAX_LOG_LINES:
             del self.logs[:MAX_LOG_LINES // 2]
 
-class LogsPanel(ft.Container):
+class LogsPanel(ftr.ReactiveContainer):
     def __init__(
             self,
             width: ft.OptionalNumber = None,
             height: ft.OptionalNumber = None
     ):
+        self.__expanded_height = height or 300
+        self.__expanded = ftr.State[bool | None](False)
+        self.__current_height = ftr.CompoundState[int | float | None](
+            [self.__expanded],
+            lambda: height if self.__expanded.value else 35
+        )
+
         self.__vlist_view_ref = ft.Ref[ft.ListView]()
         self.__logs_handler = _StringLogHandler()
         self.__vlist_scroll_effect = ftr.ListEffect(self.__logs_handler.logs, lambda: 
@@ -52,48 +59,78 @@ class LogsPanel(ft.Container):
         
         super().__init__(
             width=width,
-            height=height,
+            height=self.__current_height,
             bgcolor=ft.Colors.SURFACE,
-            content=ft.Stack(
+            border=ft.border.all(1, ft.Colors.SECONDARY),
+            content=ft.Column(
+                spacing=0,
                 controls=[
-                    ft.ListView(
-                        horizontal=True,
-                        expand=True,
+                    ftr.Conditional(
+                        states=[self.__expanded],
+                        condition=lambda: self.__expanded.value or False,
+                        true_content=ft.Row(
+                            controls=[
+                                ft.TextButton(
+                                    icon=ft.Icons.ARROW_DROP_DOWN,
+                                    text="Click to hide logs",
+                                    on_click=lambda ev: self.__expanded.set_value(False),
+                                    expand=True
+                                )
+                            ]
+                        ),
+                        false_content=ft.Row(
+                            controls=[
+                                ft.TextButton(
+                                    icon=ft.Icons.ARROW_DROP_UP,
+                                    text="Click to show logs",
+                                    on_click=lambda ev: self.__expanded.set_value(True),
+                                    expand=True
+                                )
+                            ]
+                        )
+                    ),
+                    ftr.ReactiveStack(
+                        height=self.__expanded_height - 40,
+                        clip_behavior=ft.ClipBehavior.HARD_EDGE,
+                        visible=self.__expanded,
                         controls=[
                             ft.ListView(
-                                ref=self.__vlist_view_ref,
-                                horizontal=False,
-                                expand=True,
-                                on_scroll_interval=0,
+                                horizontal=True,
+                                padding=10,
                                 controls=[
-                                    ft.SelectionArea(
-                                        ftr.ReactiveColumn(
-                                            expand=True,
-                                            spacing=0,
-                                            controls_data=self.__logs_handler.logs,
-                                            controls_mapper=lambda record: ft.Text(
-                                                value=record.msg,
-                                                size=16,
-                                                style=ft.TextStyle(
-                                                    font_family='Monospace',
-                                                    color=record.color() or ft.Colors.ON_SURFACE
-                                                ),
-                                                text_align=ft.TextAlign.START,
+                                    ft.ListView(
+                                        ref=self.__vlist_view_ref,
+                                        horizontal=False,
+                                        on_scroll_interval=0,
+                                        controls=[
+                                            ft.SelectionArea(
+                                                ftr.ReactiveColumn(
+                                                    spacing=0,
+                                                    controls_data=self.__logs_handler.logs,
+                                                    controls_mapper=lambda record: ft.Text(
+                                                        value=record.msg,
+                                                        size=16,
+                                                        style=ft.TextStyle(
+                                                            font_family='Monospace',
+                                                            color=record.color() or ft.Colors.ON_SURFACE
+                                                        ),
+                                                        text_align=ft.TextAlign.START,
+                                                    ),
+                                                )
                                             ),
-                                        )
+                                        ]
                                     ),
-                                ]
+                                ],
                             ),
-                        ],
-                    ),
-                    ft.IconButton(
-                        icon=ft.Icons.FILE_OPEN,
-                        icon_color=ft.Colors.ON_SURFACE,
-                        tooltip="Open logs file",
-                        icon_size=24,
-                        on_click=self.on_open_logs_file_button_click,
-                        right=8,
-                        top=8,
+                            ft.IconButton(
+                                icon=ft.Icons.FILE_OPEN,
+                                icon_color=ft.Colors.ON_SURFACE,
+                                tooltip="Open logs file",
+                                icon_size=24,
+                                on_click=self.on_open_logs_file_button_click,
+                                right=8
+                            )
+                        ]
                     )
                 ]
             )
