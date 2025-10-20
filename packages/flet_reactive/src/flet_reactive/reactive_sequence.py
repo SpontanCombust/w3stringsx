@@ -25,7 +25,7 @@ class ReactiveSequence(Generic[T, C], ListStateObserver[T], Sequence[C]):
 
 
     def __del__(self):
-        self.__state.remove_observer(self)
+        self.release_observed_states()
 
     #+++ Sequence +++
     def __contains__(self, value: object) -> bool:
@@ -65,6 +65,10 @@ class ReactiveSequence(Generic[T, C], ListStateObserver[T], Sequence[C]):
     
     def on_insert_state_item(self, key: SupportsIndex, value: T) -> None:
         self._controls.insert(key, self.__control_mapper(value))
+
+    def release_observed_states(self) -> None:
+        self.__state.remove_observer(self)
+
     #--- ListStateObserver ---
 
     

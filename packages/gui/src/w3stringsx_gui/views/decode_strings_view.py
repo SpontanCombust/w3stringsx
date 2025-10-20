@@ -28,7 +28,7 @@ class DecodeStringsView(ft.View):
     ):
         self.__w3strings_manager = w3strings_manager.resolve()
 
-        self.__w3strings_file_paths = ftr.State[list[str]]([])
+        self.__w3strings_file_paths = ftr.ListState[str]([])
         self.__output_dir_path = ftr.State[str | None]('')
         self.__w3strings_file_picker = ft.FilePicker(on_result=self.on_w3strings_files_picked)
         self.__output_dir_picker = ft.FilePicker(on_result=self.on_output_dir_picked)
@@ -37,7 +37,7 @@ class DecodeStringsView(ft.View):
         if not isinstance(props, DecodeStringsViewProps):
             props = DecodeStringsViewProps(w3strings_paths=[])
         
-        self.__w3strings_file_paths.value.extend(props.w3strings_paths)
+        self.__w3strings_file_paths.extend(props.w3strings_paths)
         VISIBLE_W3STRINGS_PATHS_ROWS = 5
         
         super().__init__(
@@ -46,59 +46,43 @@ class DecodeStringsView(ft.View):
                 ft.Column(
                     expand=True,
                     controls=[
-                        ftr.ReactiveBuilder(
-                            [self.__w3strings_file_paths],
-                            lambda: ft.ListView(
-                                auto_scroll=True,
-                                height=300,
-                                controls=[
-                                    ft.DataTable(
-                                        expand=True,
-                                        heading_row_color=ft.Colors.PRIMARY_CONTAINER,
-                                        # data_row_color=ft.Colors.SECONDARY_CONTAINER,
-                                        vertical_lines=ft.border.BorderSide(1, ft.Colors.PRIMARY),
-                                        horizontal_lines=ft.border.BorderSide(1, ft.Colors.PRIMARY),
-                                        border=ft.border.all(1, ft.Colors.PRIMARY),
-                                        columns=[
-                                            ft.DataColumn(ft.Text(
-                                                value="File name",
-                                                color=ft.Colors.ON_PRIMARY_CONTAINER,
-                                            )),
-                                            ft.DataColumn(ft.Text(
-                                                value="File directory",
-                                                color=ft.Colors.ON_PRIMARY_CONTAINER,
-                                            )),
-                                        ],
-                                        rows=[
-                                            *[
-                                                ft.DataRow(
-                                                    cells=[
-                                                        ft.DataCell(ft.Text(
-                                                            value=os.path.basename(path),
-                                                            # color=ft.Colors.ON_SECONDARY_CONTAINER,
-                                                        )),
-                                                        ft.DataCell(ft.Text(
-                                                            value=os.path.dirname(path),
-                                                            # color=ft.Colors.ON_SECONDARY_CONTAINER,
-                                                        )),
-                                                    ]
+                        ft.ListView(
+                            auto_scroll=True,
+                            height=300,
+                            controls=[
+                                ftr.ReactiveDataTable(
+                                    expand=True,
+                                    heading_row_color=ft.Colors.PRIMARY_CONTAINER,
+                                    heading_text_style=ft.TextStyle(color=ft.Colors.ON_PRIMARY_CONTAINER),
+                                    vertical_lines=ft.border.BorderSide(1, ft.Colors.PRIMARY),
+                                    horizontal_lines=ft.border.BorderSide(1, ft.Colors.PRIMARY),
+                                    border=ft.border.all(1, ft.Colors.PRIMARY),
+                                    columns=[
+                                        ft.DataColumn(
+                                            label=ft.Text("File name")
+                                        ),
+                                        ft.DataColumn(
+                                            label=ft.Text("File directory")
+                                        ),
+                                    ],
+                                    rows_data=self.__w3strings_file_paths,
+                                    rows_mapper=lambda path: ft.DataRow(
+                                        cells=[
+                                            ft.DataCell(
+                                                content=ft.Text(
+                                                    value=os.path.basename(path)
                                                 )
-                                                for path in self.__w3strings_file_paths.value
-                                            ]
-                                            +
-                                            # add placeholders so all rows are visible
-                                            [
-                                                ft.DataRow(
-                                                    cells=[
-                                                        ft.DataCell(ft.Text(), placeholder=True),
-                                                        ft.DataCell(ft.Text(), placeholder=True),
-                                                    ]
-                                                ) for _ in range(VISIBLE_W3STRINGS_PATHS_ROWS - len(self.__w3strings_file_paths.value))
-                                            ]
-                                        ],
+                                            ),
+                                            ft.DataCell(
+                                                content=ft.Text(
+                                                    value=os.path.dirname(path)
+                                                )
+                                            ),
+                                        ]
                                     ),
-                                ],
-                            ),
+                                    placeholder_rows_count=VISIBLE_W3STRINGS_PATHS_ROWS
+                                ),
+                            ],
                         ),
                         ft.Row(
                             controls=[
@@ -140,7 +124,7 @@ class DecodeStringsView(ft.View):
                                     on_click=self.on_decode_button_click,
                                     disabled=ftr.CompoundState(
                                         [self.__w3strings_file_paths, self.__output_dir_path],
-                                        lambda: len(self.__w3strings_file_paths.value) == 0 
+                                        lambda: len(self.__w3strings_file_paths) == 0 
                                              or not self.__output_dir_path.value
                                     )        
                                 )
@@ -173,8 +157,8 @@ class DecodeStringsView(ft.View):
             self.page.overlay.remove(self.__output_dir_picker)
 
     def on_pick_w3strings_file_button_click(self, ev: ft.ControlEvent):
-        if len(self.__w3strings_file_paths.value) > 0:
-            last_w3strings_file_path = self.__w3strings_file_paths.value[-1]
+        if len(self.__w3strings_file_paths) > 0:
+            last_w3strings_file_path = self.__w3strings_file_paths[-1]
         else:
             last_w3strings_file_path = ''
         self.__w3strings_file_picker.pick_files(
@@ -185,20 +169,18 @@ class DecodeStringsView(ft.View):
         )
 
     def on_clear_w3strings_files_button_click(self, ev: ft.ControlEvent):
-        self.__w3strings_file_paths.value = []
+        self.__w3strings_file_paths.clear()
 
     def on_w3strings_files_picked(self, ev: ft.FilePickerResultEvent):
         if ev.files is not None:
-            new_paths = self.__w3strings_file_paths.value.copy()
             for f in ev.files:
                 # filter duplicates, but preserve order
-                if f.path not in new_paths:
-                    new_paths.append(f.path)
-            self.__w3strings_file_paths.value = new_paths
+                if f.path not in self.__w3strings_file_paths:
+                    self.__w3strings_file_paths.append(f.path)
 
             # set default output path when picking the first file
-            if self.__output_dir_path.value == '' and len(new_paths) == 1:
-                self.__output_dir_path.value = os.path.dirname(new_paths[0])
+            if self.__output_dir_path.value == '' and len(self.__w3strings_file_paths) == 1:
+                self.__output_dir_path.value = os.path.dirname(self.__w3strings_file_paths[0])
 
     def on_output_dir_textfield_click(self, ev: ft.ControlEvent):
         self.__output_dir_picker.get_directory_path(
@@ -213,7 +195,7 @@ class DecodeStringsView(ft.View):
         if self.__output_dir_path.value is None:
             return
 
-        for input_path in self.__w3strings_file_paths.value:
+        for input_path in self.__w3strings_file_paths:
             try:
                 self.__w3strings_manager.decode_w3strings_to_csv(
                     input_path, 

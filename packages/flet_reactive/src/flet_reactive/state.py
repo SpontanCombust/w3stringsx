@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any, Iterator, SupportsIndex, TypeVar, Generic, Callable, MutableSequence, overload, final
+from typing import Any, Iterable, Iterator, SupportsIndex, TypeVar, Generic, Callable, MutableSequence, overload, final
 
 from flet_reactive.state_observer import StateObserver, ListStateObserver
 
@@ -42,6 +42,9 @@ class ListState(MutableSequence[T]):
         self.__list: list[T] = init_value.copy()
         self.__observers: list[ListStateObserver[T]] = []
 
+    def __repr__(self) -> str:
+        return f'<ListState list={self.__list}>'
+    
     # +++ MutableSequence +++
     def __contains__(self, value: object) -> bool:
         return self.__list.__contains__(value)
@@ -75,10 +78,10 @@ class ListState(MutableSequence[T]):
             old_val = self.__list[key]
             if old_val != value:
                 self.__list.__setitem__(key, value)
-                self.__notify(lambda obsv: obsv.on_set_state_item(key, value))
+                self._notify(lambda obsv: obsv.on_set_state_item(key, value))
         elif isinstance(key, slice):
             self.__list.__setitem__(key, value)
-            self.__notify(lambda obsv: obsv.on_set_state_item_slice(key, value))
+            self._notify(lambda obsv: obsv.on_set_state_item_slice(key, value))
     
     @overload
     def __delitem__(self, key: SupportsIndex) -> None:
@@ -89,14 +92,14 @@ class ListState(MutableSequence[T]):
     def __delitem__(self, key):
         if isinstance(key, SupportsIndex):
             self.__list.__delitem__(key)
-            self.__notify(lambda obsv: obsv.on_del_state_item(key))
+            self._notify(lambda obsv: obsv.on_del_state_item(key))
         elif isinstance(key, slice):
             self.__list.__delitem__(key)
-            self.__notify(lambda obsv: obsv.on_del_state_item_slice(key))
+            self._notify(lambda obsv: obsv.on_del_state_item_slice(key))
 
     def insert(self, index: int, value: T):
         self.__list.insert(index, value)
-        self.__notify(lambda obsv: obsv.on_insert_state_item(index, value))
+        self._notify(lambda obsv: obsv.on_insert_state_item(index, value))
     # --- MutableSequence ---
 
 
@@ -106,13 +109,13 @@ class ListState(MutableSequence[T]):
     def remove_observer(self, observer: ListStateObserver[T]):
         self.__observers.remove(observer)
 
-    def __notify(self, handler: Callable[[ListStateObserver[T]], None]):
+    def _notify(self, handler: Callable[[ListStateObserver[T]], None]):
         for observer in self.__observers:
             handler(observer)
 
 
-class CompoundState(State[T], StateObserver[Any]):
-    def __init__(self, dependencies: list[State[Any]], resolver: Callable[[], T]) -> None:
+class CompoundState(State[T], StateObserver[Any], ListStateObserver[Any]):
+    def __init__(self, dependencies: list[State[Any] | ListState[Any]], resolver: Callable[[], T]) -> None:
         super().__init__(resolver())
 
         self._dependencies = dependencies
@@ -122,10 +125,35 @@ class CompoundState(State[T], StateObserver[Any]):
         self._resolver = resolver
 
     def on_state_changed(self, old_state: Any, new_state: Any) -> None:
+        self._sync_and_notify()
+
+    def on_set_state_item(self, key: SupportsIndex, value: T) -> None:
+        self._sync_and_notify()
+
+    def on_set_state_item_slice(self, key: slice[Any, Any, Any], value: Iterable[T]) -> None:
+        self._sync_and_notify()
+
+    def on_del_state_item(self, key: SupportsIndex) -> None:
+        self._sync_and_notify()
+
+    def on_del_state_item_slice(self, key: slice[Any, Any, Any]) -> None:
+        self._sync_and_notify()
+
+    def on_insert_state_item(self, key: SupportsIndex, value: T) -> None:
+        self._sync_and_notify()
+
+    def release_observed_states(self) -> None:
+        for dep in self._dependencies:
+            dep.remove_observer(self)
+
+
+    def _sync_and_notify(self):
         old_compound = self._value
         self._value = self._resolver()
         self._notify(old_compound, self._value)
 
     def __del__(self):
-        for dep in self._dependencies:
-            dep.remove_observer(self)
+        self.release_observed_states()
+
+
+

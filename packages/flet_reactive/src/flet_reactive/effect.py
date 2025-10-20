@@ -16,5 +16,6 @@ class Effect(StateObserver[_T]):
     def on_state_changed(self, old_state: _T, new_state: _T) -> None:
         self._handler(new_state, old_state)
 
-    def __del__(self):
+    def release_observed_states(self) -> None:
         self._state.remove_observer(self)
+

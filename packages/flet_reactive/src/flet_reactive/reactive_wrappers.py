@@ -1,13 +1,16 @@
-from typing import Dict, Callable, Any, TypeVar, final, List
+from typing import Dict, Callable, Any, Iterable, MutableSequence, SupportsIndex, TypeVar, final, List, Sequence, Generic
 
 import flet as ft
 from flet.core.text_style import StrutStyle
+from flet.core.gradients import Gradient
 
-from flet_reactive.state import State
-from flet_reactive.state_observer import StateObserver
+from flet_reactive.state import State, ListState
+from flet_reactive.state_observer import StateObserver, ListStateObserver
+from flet_reactive.reactive_sequence import ReactiveSequence
 
 
 _T = TypeVar('_T')
+_C = TypeVar('_C', bound=ft.Control)
 
 def _unwrap_value(v: _T | State[_T]) -> _T:
     if isinstance(v, State):
@@ -17,10 +20,10 @@ def _unwrap_value(v: _T | State[_T]) -> _T:
 
 @final
 class _StatefulPropertyBinding(StateObserver[_T]):
-    def __init__(self, state: State[_T], ctrl: ft.Control, prop: str) -> None:
+    def __init__(self, state: State[_T], target_ctrl: ft.Control, target_prop_name: str) -> None:
         self.state = state
-        self.target_ctrl = ctrl
-        self.target_prop = prop
+        self.target_ctrl = target_ctrl
+        self.target_prop = target_prop_name
 
         self.state.add_observer(self)
 
@@ -31,24 +34,153 @@ class _StatefulPropertyBinding(StateObserver[_T]):
     def sync_state(self) -> None:
         self.state.value = getattr(self.target_ctrl, self.target_prop)
 
-    def drop(self):
+    def release_observed_states(self) -> None:
         self.state.remove_observer(self)
+
+class _StatefulCtrlSequencePropertyBinding(Generic[_T, _C], ListStateObserver[_T]):
+    def __init__(self, 
+        state: ListState[_T], 
+        state_ctrl_mapper: Callable[[_T], _C], 
+        target_ctrl: ft.Control, 
+        target_ctrl_seq: MutableSequence[_C]
+    ) -> None:
+        self.state = state
+        self.state_ctrl_mapper = state_ctrl_mapper
+        self.target_ctrl = target_ctrl
+        self.target_ctrl_seq = target_ctrl_seq
+
+        self.state.add_observer(self)
+
+    def on_set_state_item(self, key: SupportsIndex, value: _T) -> None:
+        self.target_ctrl_seq.__setitem__(int(key), self.state_ctrl_mapper(value))
+        self.target_ctrl.update()
+
+    def on_set_state_item_slice(self, key: slice, value: Iterable[_T]) -> None:
+        self.target_ctrl_seq.__setitem__(key, [self.state_ctrl_mapper(value) for value in value])
+        self.target_ctrl.update()
+
+    def on_del_state_item(self, key: SupportsIndex) -> None:
+        self.target_ctrl_seq.__delitem__(int(key))
+        self.target_ctrl.update()
+
+    def on_del_state_item_slice(self, key: slice) -> None:
+        self.target_ctrl_seq.__delitem__(key)
+        self.target_ctrl.update()
+
+    def on_insert_state_item(self, key: SupportsIndex, value: _T) -> None:
+        self.target_ctrl_seq.insert(int(key), self.state_ctrl_mapper(value))
+        self.target_ctrl.update()
+
+    def release_observed_states(self) -> None:
+        self.state.remove_observer(self)
+
+class _StatefulDataRowsPropertyBinding(_StatefulCtrlSequencePropertyBinding[_T, ft.DataRow]):
+    def __init__(self, 
+        state: ListState[_T], 
+        state_ctrl_mapper: Callable[[_T], ft.DataRow], 
+        target_ctrl: ft.Control, 
+        target_ctrl_seq: MutableSequence[ft.DataRow],
+        column_count: int,
+        placeholder_count: int
+    ) -> None:
+        super().__init__(state, state_ctrl_mapper, target_ctrl, target_ctrl_seq)
+        self.column_count = column_count
+        self.placeholder_count = placeholder_count
+        self.placeholder_ctrl_factory = lambda: ft.DataRow(
+            cells=[
+                ft.DataCell(ft.Text(), placeholder=True)
+                for i in range(column_count)
+            ],
+            data='placeholder'
+        )
+
+        # fill placeholders
+        for i in range(placeholder_count):
+            self.target_ctrl_seq.append(self.placeholder_ctrl_factory())
+
+
+    def on_set_state_item(self, key: SupportsIndex, value: _T) -> None:
+        self.target_ctrl_seq.__setitem__(int(key), self.state_ctrl_mapper(value))
+        self.target_ctrl.update()
+
+    def on_set_state_item_slice(self, key: slice, value: Iterable[_T]) -> None:
+        self.target_ctrl_seq.__setitem__(key, [self.state_ctrl_mapper(value) for value in value])
+        self.target_ctrl.update()
+
+    def on_del_state_item(self, key: SupportsIndex) -> None:
+        seq_idx = int(key)
+        seq_idx = seq_idx if seq_idx >= 0 else len(self.state) + 1 + seq_idx
+        # within the controls sequence there is more elements than in the data/state list
+        # due to said sequence being filled with placeholders to a certain threshold
+        # if a deleted index in the data list falls below that threshold
+        # corresponding control has tp be replaced with a placeholder instead of being outright removed
+        # if it goes beyond the threshold, it can be simply removed 
+        if seq_idx < self.placeholder_count:
+            self.target_ctrl_seq.__setitem__(seq_idx, self.placeholder_ctrl_factory())
+        else:
+            self.target_ctrl_seq.__delitem__(seq_idx)
+        self.target_ctrl.update()
+
+    def on_del_state_item_slice(self, key: slice) -> None:
+        raise NotImplementedError()
+        # idx_range = range(key.start, key.stop, key.step)
+        # for idx in idx_range:
+        #     idx = idx if idx >= 0 else len(self.state) + idx_range.count() - idx
+        #     if idx < self.placeholder_count:
+        #         self.target_ctrl_seq.__setitem__(idx, copy(self.placeholder_ctrl))
+        #     else:
+        #         self.target_ctrl_seq.__delitem__(int(idx))
+        # self.target_ctrl.update()
+
+    def on_insert_state_item(self, key: SupportsIndex, value: _T) -> None:
+        seq_idx = int(key)
+        seq_idx = seq_idx if seq_idx >= 0 else len(self.state) + seq_idx
+        mapped = self.state_ctrl_mapper(value)
+        if seq_idx < self.placeholder_count and self.target_ctrl_seq[seq_idx].data == 'placeholder':
+            self.target_ctrl_seq.__setitem__(seq_idx, mapped)
+        else:
+            self.target_ctrl_seq.insert(seq_idx, mapped)
+        self.target_ctrl.update()
+
 
 class _ReactiveControlWrapper:
     def __init__(self) -> None:
-        self.__prop_bindings = list[_StatefulPropertyBinding[Any]]()
+        self.__prop_bindings = list[_StatefulPropertyBinding | _StatefulCtrlSequencePropertyBinding | _StatefulDataRowsPropertyBinding]()
 
-    def _new_stateful_prop_binding(self, state: State[_T], target_ctrl: ft.Control, target_prop: str) -> _StatefulPropertyBinding:
-        binding = _StatefulPropertyBinding(state, target_ctrl, target_prop)
+    def _new_stateful_prop_binding(self, 
+        state: State[_T], 
+        target_ctrl: ft.Control, 
+        target_prop_name: str
+    ) -> _StatefulPropertyBinding:
+        binding = _StatefulPropertyBinding(state, target_ctrl, target_prop_name)
+        self.__prop_bindings.append(binding)
+        return binding
+    
+    def _new_stateful_ctrl_seq_prop_binding(self, 
+        state: ListState[_T], 
+        state_ctrl_mapper: Callable[[_T], _C], 
+        target_ctrl: ft.Control, 
+        target_ctrl_seq: MutableSequence[_C]
+    ) -> _StatefulCtrlSequencePropertyBinding:
+        binding = _StatefulCtrlSequencePropertyBinding(state, state_ctrl_mapper, target_ctrl, target_ctrl_seq)
+        self.__prop_bindings.append(binding)
+        return binding
+    
+    def _new_stateful_data_rows_prop_binding(self, 
+        state: ListState[_T], 
+        state_ctrl_mapper: Callable[[_T], ft.DataRow], 
+        target_ctrl: ft.Control, 
+        target_ctrl_seq: MutableSequence[ft.DataRow],
+        column_count: int,
+        placeholder_count: int
+    ) -> _StatefulDataRowsPropertyBinding:
+        binding = _StatefulDataRowsPropertyBinding(state, state_ctrl_mapper, target_ctrl, target_ctrl_seq, column_count, placeholder_count)
         self.__prop_bindings.append(binding)
         return binding
 
-    def _set_state(self, state: State[_T], value: _T):
-        state.value = value
-
     def _drop_prop_bindings(self):
         for pso in self.__prop_bindings:
-            pso.drop()
+            pso.release_observed_states()
 
 
 """
@@ -164,13 +296,13 @@ class ReactiveCheckbox(ft.Checkbox, _ReactiveControlWrapper):
         )
 
         if isinstance(value, State):
-            self.__state_value = value
-            binding = self._new_stateful_prop_binding(self.__state_value, self, 'value')
+            binding = self._new_stateful_prop_binding(value, self, 'value')
             self._add_event_handler('change', lambda ev: binding.sync_state())
 
     def will_unmount(self):
         super().will_unmount()
         self._drop_prop_bindings()
+
 
 
 class ReactiveTextField(ft.TextField, _ReactiveControlWrapper):
@@ -424,9 +556,11 @@ class ReactiveTextField(ft.TextField, _ReactiveControlWrapper):
         )
 
         if isinstance(value, State):
-            self.__state_value = value
-            binding = self._new_stateful_prop_binding(self.__state_value, self, 'value')
-            self._add_event_handler('change', lambda ev: binding.sync_state())
+            binding = self._new_stateful_prop_binding(value, self, 'value')
+            self.on_change = lambda ev: (
+                on_change(ev) if on_change else None,
+                binding.sync_state()
+            )
 
     def will_unmount(self):
         super().will_unmount()
@@ -534,6 +668,136 @@ class ReactiveFilledButton(ft.FilledButton, _ReactiveControlWrapper):
         if isinstance(disabled, State):
             self.__state_disabled = disabled
             binding = self._new_stateful_prop_binding(self.__state_disabled, self, 'disabled')
+
+    def will_unmount(self):
+        super().will_unmount()
+        self._drop_prop_bindings()
+
+
+
+class ReactiveDataTable(ft.DataTable, _ReactiveControlWrapper, Generic[_T]):
+    def __init__(self, 
+        columns: List[ft.DataColumn],
+        rows_data: ListState[_T] | None = None,
+        rows_mapper: Callable[[_T], ft.DataRow] | None = None,
+        placeholder_rows_count: int | None = None,
+        rows: List[ft.DataRow] | None = None,
+        sort_ascending: bool | None = None,
+        show_checkbox_column: bool | None = None,
+        sort_column_index: int | None = None,
+        show_bottom_border: bool | None = None,
+        border: ft.Border | None = None,
+        border_radius: int | float | ft.BorderRadius | None = None,
+        horizontal_lines: ft.BorderSide | None = None,
+        vertical_lines: ft.BorderSide | None = None,
+        checkbox_horizontal_margin: int | float | None = None,
+        column_spacing: int | float | None = None,
+        data_row_color: None | str | ft.Colors | ft.CupertinoColors | Dict[ft.ControlState, str | ft.Colors | ft.CupertinoColors] = None,
+        data_row_min_height: int | float | None = None,
+        data_row_max_height: int | float | None = None,
+        data_text_style: ft.TextStyle | None = None,
+        bgcolor: str | ft.Colors | ft.CupertinoColors | None = None,
+        gradient: Gradient | None = None,
+        divider_thickness: int | float | None = None,
+        heading_row_color: None | str | ft.Colors | ft.CupertinoColors | Dict[ft.ControlState, str | ft.Colors | ft.CupertinoColors] = None,
+        heading_row_height: int | float | None = None,
+        heading_text_style: ft.TextStyle | None = None,
+        horizontal_margin: int | float | None = None,
+        clip_behavior: ft.ClipBehavior | None = None,
+        on_select_all: Callable[[ft.ControlEvent], Any] | None = None,
+        ref: ft.Ref | None = None,
+        key: str | None = None,
+        width: int | float | None = None,
+        height: int | float | None = None,
+        left: int | float | None = None,
+        top: int | float | None = None,
+        right: int | float | None = None,
+        bottom: int | float | None = None,
+        expand: None | bool | int = None,
+        expand_loose: bool | None = None,
+        col: Dict[str, int | float] | int | float | None = None,
+        opacity: int | float | None = None,
+        rotate: int | float | ft.Rotate | None = None,
+        scale: int | float | ft.Scale | None = None,
+        offset: ft.Offset | None = None,
+        aspect_ratio: int | float | None = None,
+        animate_opacity: bool | int | ft.Animation | None = None,
+        animate_size: bool | int | ft.Animation | None = None,
+        animate_position: bool | int | ft.Animation | None = None,
+        animate_rotation: bool | int | ft.Animation | None = None,
+        animate_scale: bool | int | ft.Animation | None = None,
+        animate_offset: bool | int | ft.Animation | None = None,
+        on_animation_end: Callable[[ft.ControlEvent], Any] | None = None,
+        tooltip: str | ft.Tooltip | None = None,
+        badge: str | ft.Badge | None = None,
+        visible: bool | None = None,
+        disabled: bool | None = None,
+        data: Any = None
+    ):
+        super().__init__(
+            columns,
+            rows,
+            sort_ascending,
+            show_checkbox_column,
+            sort_column_index,
+            show_bottom_border,
+            border,
+            border_radius,
+            horizontal_lines,
+            vertical_lines,
+            checkbox_horizontal_margin,
+            column_spacing,
+            data_row_color,
+            data_row_min_height,
+            data_row_max_height,
+            data_text_style,
+            bgcolor,
+            gradient,
+            divider_thickness,
+            heading_row_color,
+            heading_row_height,
+            heading_text_style,
+            horizontal_margin,
+            clip_behavior,
+            on_select_all,
+            ref,
+            key,
+            width,
+            height,
+            left,
+            top,
+            right,
+            bottom,
+            expand,
+            expand_loose,
+            col,
+            opacity,
+            rotate,
+            scale,
+            offset,
+            aspect_ratio,
+            animate_opacity,
+            animate_size,
+            animate_position,
+            animate_rotation,
+            animate_scale,
+            animate_offset,
+            on_animation_end,
+            tooltip,
+            badge,
+            visible,
+            disabled,
+            data
+        )
+        
+        if rows_data is not None and rows_mapper is not None:
+            self.rows = []
+
+            if placeholder_rows_count is not None and placeholder_rows_count > 0:
+                column_count = len(columns)
+                self._new_stateful_data_rows_prop_binding(rows_data, rows_mapper, self, self.rows, column_count, placeholder_rows_count)
+            else:
+                self._new_stateful_ctrl_seq_prop_binding(rows_data, rows_mapper, self, self.rows)
 
     def will_unmount(self):
         super().will_unmount()

@@ -28,7 +28,7 @@ class SearchForStringKeysView(ft.View):
     ):
         self.__string_key_discovery = string_key_discovery.resolve()
 
-        self.__search_paths = ftr.State(list[str]())
+        self.__search_paths = ftr.ListState[str]([])
         self.__output_dir_path = ftr.State[str | None]('')
         self.__search_regex = ftr.State[str | None]('')
         self.__search_file_picker = ft.FilePicker(on_result=self.on_search_files_picked)
@@ -39,7 +39,7 @@ class SearchForStringKeysView(ft.View):
         if not isinstance(props, SearchForStringKeysViewProps):
             props = SearchForStringKeysViewProps(search_paths=[])
         
-        self.__search_paths.value.extend(props.search_paths)
+        self.__search_paths.extend(props.search_paths)
         VISIBLE_SEARCH_PATHS_ROWS = 5
 
         super().__init__(
@@ -48,56 +48,47 @@ class SearchForStringKeysView(ft.View):
                 ft.Column(
                     expand=True,
                     controls=[
-                        ftr.ReactiveBuilder(
-                            [self.__search_paths],
-                            lambda: ft.ListView(
-                                auto_scroll=True,
-                                height=300,
-                                controls=[
-                                    ft.DataTable(
-                                        expand=True,
-                                        heading_row_color=ft.Colors.PRIMARY_CONTAINER,
-                                        vertical_lines=ft.border.BorderSide(1, ft.Colors.PRIMARY),
-                                        horizontal_lines=ft.border.BorderSide(1, ft.Colors.PRIMARY),
-                                        border=ft.border.all(1, ft.Colors.PRIMARY),
-                                        columns=[
-                                            ft.DataColumn(ft.Text(
-                                                value="File or directory name",
-                                                color=ft.Colors.ON_PRIMARY_CONTAINER,
-                                            )),
-                                            ft.DataColumn(ft.Text(
+                        ft.ListView(
+                            auto_scroll=True,
+                            height=300,
+                            controls=[
+                                ftr.ReactiveDataTable(
+                                    expand=True,
+                                    heading_row_color=ft.Colors.PRIMARY_CONTAINER,
+                                    heading_text_style=ft.TextStyle(color=ft.Colors.ON_PRIMARY_CONTAINER),
+                                    vertical_lines=ft.border.BorderSide(1, ft.Colors.PRIMARY),
+                                    horizontal_lines=ft.border.BorderSide(1, ft.Colors.PRIMARY),
+                                    border=ft.border.all(1, ft.Colors.PRIMARY),
+                                    columns=[
+                                        ft.DataColumn(
+                                            label=ft.Text(
+                                                value="File or directory name"
+                                            )
+                                        ),
+                                        ft.DataColumn(
+                                            label=ft.Text(
                                                 value="Parent directory",
-                                                color=ft.Colors.ON_PRIMARY_CONTAINER,
-                                            )),
-                                        ],
-                                        rows=[
-                                            *[
-                                                ft.DataRow(
-                                                    cells=[
-                                                        ft.DataCell(ft.Text(
-                                                            value=os.path.basename(path),
-                                                        )),
-                                                        ft.DataCell(ft.Text(
-                                                            value=os.path.dirname(path),
-                                                        )),
-                                                    ]
+                                            )
+                                        ),
+                                    ],
+                                    rows_data=self.__search_paths,
+                                    rows_mapper=lambda path: ft.DataRow(
+                                        cells=[
+                                            ft.DataCell(
+                                                content=ft.Text(
+                                                    value=os.path.basename(path)
                                                 )
-                                                for path in self.__search_paths.value
-                                            ]
-                                            +
-                                            # add placeholders so all rows are visible
-                                            [
-                                                ft.DataRow(
-                                                    cells=[
-                                                        ft.DataCell(ft.Text(), placeholder=True),
-                                                        ft.DataCell(ft.Text(), placeholder=True),
-                                                    ]
-                                                ) for _ in range(VISIBLE_SEARCH_PATHS_ROWS - len(self.__search_paths.value))
-                                            ]
-                                        ],
+                                            ),
+                                            ft.DataCell(
+                                                content=ft.Text(
+                                                    value=os.path.dirname(path)
+                                                )
+                                            ),
+                                        ]
                                     ),
-                                ],
-                            ),
+                                    placeholder_rows_count=VISIBLE_SEARCH_PATHS_ROWS
+                                ),
+                            ],
                         ),
                         ft.Text(value="Supported search targets: WitcherScript, user config XML, bundle XML, directory"),
                         ft.Row(
@@ -122,14 +113,12 @@ class SearchForStringKeysView(ft.View):
                         ft.Row(
                             height=5
                         ),
-                        ft.Container(
-                            ftr.ReactiveTextField(
-                                icon=ft.Icons.MANAGE_SEARCH,
-                                value=self.__search_regex,
-                                label="Common string key pattern",
-                                hint_text='E.g. prefix "my_mod_". Supports regex.',
-                                border_color=ft.Colors.PRIMARY
-                            ),
+                        ftr.ReactiveTextField(
+                            icon=ft.Icons.MANAGE_SEARCH,
+                            value=self.__search_regex,
+                            label="Common string key pattern",
+                            hint_text='E.g. prefix "my_mod_". Supports regex.',
+                            border_color=ft.Colors.PRIMARY
                         ),
                         ft.Row(
                             height=5
@@ -155,7 +144,7 @@ class SearchForStringKeysView(ft.View):
                                     on_click=self.on_search_button_click,
                                     disabled=ftr.CompoundState(
                                         [self.__search_paths, self.__search_regex, self.__output_dir_path],
-                                        lambda: len(self.__search_paths.value) == 0
+                                        lambda: len(self.__search_paths) == 0
                                              or not self.__search_regex.value
                                              or not self.__output_dir_path.value
                                     )
@@ -200,30 +189,28 @@ class SearchForStringKeysView(ft.View):
 
     def on_search_files_picked(self, ev: ft.FilePickerResultEvent):
         if ev.files is not None:
-            paths = self.__search_paths.value.copy()
             for f in ev.files:
                 # filter duplicates, but preserve order
-                if f.path not in paths:
-                    paths.append(f.path)
-            self.__search_paths.value = paths
+                if f.path not in self.__search_paths:
+                    self.__search_paths.append(f.path)
 
             # set default output path when picking the first file
-            if self.__output_dir_path.value == '' and len(paths) == 1:
-                self.__output_dir_path.value = os.path.dirname(paths[0])
+            if self.__output_dir_path.value == '' and len(self.__search_paths) == 1:
+                self.__output_dir_path.value = os.path.dirname(self.__search_paths[0])
 
     def on_pick_search_dir_button_click(self, ev: ft.ControlEvent):
         self.__search_dir_picker.get_directory_path()
 
     def on_search_dir_picked(self, ev: ft.FilePickerResultEvent):
-        if ev.path is not None and ev.path not in self.__search_paths.value:
-            self.__search_paths.value = self.__search_paths.value + [ev.path]
+        if ev.path is not None and ev.path not in self.__search_paths:
+            self.__search_paths.append(ev.path)
 
             # set default output path when picking the first file
             if self.__output_dir_path.value == '':
                 self.__output_dir_path.value = os.path.dirname(ev.path)
 
     def on_clear_search_paths_button_click(self, ev: ft.ControlEvent):
-        self.__search_paths.value = []
+        self.__search_paths.clear()
 
 
     def on_output_dir_textfield_click(self, ev: ft.ControlEvent):
@@ -241,7 +228,7 @@ class SearchForStringKeysView(ft.View):
         or self.__search_regex.value is None:
             return
         
-        for input_path in self.__search_paths.value:
+        for input_path in self.__search_paths:
             try:
                 if os.path.isdir(input_path):
                     self.__string_key_discovery.discover_str_keys_in_directory(input_path, self.__output_dir_path.value, self.__search_regex.value)

@@ -37,8 +37,7 @@ class Reactive(ft.Control, StateObserver[Any], Generic[C]):
 
     def will_unmount(self):
         super().will_unmount()
-        for state in self.__states:
-            state.remove_observer(self)
+        self.release_observed_states()
 
     def _get_control_name(self) -> str:
         return 'flet_reactive'
@@ -55,6 +54,11 @@ class Reactive(ft.Control, StateObserver[Any], Generic[C]):
         if self.__on_change and self._content:
             self.__on_change(self._content)
         self.update()
+
+    def release_observed_states(self) -> None:
+        for state in self.__states:
+            state.remove_observer(self)
+
 
 
 C = TypeVar('C', bound=ft.Control)
@@ -89,8 +93,7 @@ class ReactiveBuilder(ft.Control, StateObserver[Any], Generic[C]):
 
     def will_unmount(self):
         super().will_unmount()
-        for state in self.__states:
-            state.remove_observer(self)
+        self.release_observed_states()
 
     def _get_control_name(self) -> str:
         return 'flet_reactive'
@@ -108,6 +111,10 @@ class ReactiveBuilder(ft.Control, StateObserver[Any], Generic[C]):
         if self.__on_after_build is not None:
             self.__on_after_build(self.__content)
         self.update()
+
+    def release_observed_states(self) -> None:
+        for state in self.__states:
+            state.remove_observer(self)
 
 
     def __rebuild_content(self):

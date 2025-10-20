@@ -98,6 +98,7 @@ class LogsPanel(ft.Container):
 
     def will_unmount(self):
         super().will_unmount()
+        self.__vlist_scroll_effect.release_observed_states()
         unsubscribe_from_logger(self.__logs_handler)
 
     def is_isolated(self) -> bool:
