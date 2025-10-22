@@ -10,8 +10,11 @@ _T = TypeVar('_T')
 class Effect(StateObserver[_T]):
     def __init__(self, state: State[_T], handler: Callable[[], None]) -> None:
         self._state = state
-        state.add_observer(self)
         self._handler = handler
+        self.setup_observed_states()
+
+    def setup_observed_states(self) -> None:
+        self._state.add_observer(self)
 
     def on_state_changed(self, old_state: _T, new_state: _T) -> None:
         self._handler()
@@ -23,8 +26,11 @@ class Effect(StateObserver[_T]):
 class ListEffect(ListStateObserver[_T]):
     def __init__(self, state: ListState[_T], handler: Callable[[], None]) -> None:
         self._state = state
-        state.add_observer(self)
         self._handler = handler
+        self.setup_observed_states()
+
+    def setup_observed_states(self) -> None:
+        self._state.add_observer(self)
 
     def release_observed_states(self) -> None:
         self._state.remove_observer(self)

@@ -5,6 +5,9 @@ T = TypeVar('T', contravariant=True)
 
 
 class StateObserver(Protocol[T]):
+    def setup_observed_states(self) -> None:
+        ...
+
     def on_state_changed(self, old_state: T, new_state: T) -> None:
         ...
 
@@ -12,6 +15,9 @@ class StateObserver(Protocol[T]):
         ...
 
 class ListStateObserver(Protocol[T]):
+    def setup_observed_states(self) -> None:
+        ...
+        
     def on_set_state_item(self, key: SupportsIndex, value: T) -> None:
         ...
 

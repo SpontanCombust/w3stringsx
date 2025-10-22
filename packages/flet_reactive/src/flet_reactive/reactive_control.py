@@ -26,14 +26,15 @@ class Reactive(ft.Control, StateObserver[Any], Generic[C]):
     ) -> None:
         super().__init__(ref, expand, expand_loose, col, opacity, tooltip, badge, visible, disabled, data, rtl)
         self.__states = states
-        for state in states:
-            state.add_observer(self)
-
         self._content = content
         self.__on_change = on_change
 
     def is_isolated(self) -> bool:
         return True
+
+    def did_mount(self):
+        super().did_mount()
+        self.setup_observed_states()
 
     def will_unmount(self):
         super().will_unmount()
@@ -50,6 +51,10 @@ class Reactive(ft.Control, StateObserver[Any], Generic[C]):
         return children
 
 
+    def setup_observed_states(self) -> None:
+        for state in self.__states:
+            state.add_observer(self)
+    
     def on_state_changed(self, old_state: Any, new_state: Any):
         if self.__on_change and self._content:
             self.__on_change(self._content)
@@ -81,9 +86,6 @@ class ReactiveBuilder(ft.Control, StateObserver[Any], Generic[C]):
     ) -> None:
         super().__init__(ref, expand, expand_loose, col, opacity, tooltip, badge, visible, disabled, data, rtl)
         self.__states = states
-        for state in states:
-            state.add_observer(self)
-
         self.__content_builder = content_builder
         self.__content = content_builder()
         self.__on_after_build = on_after_build
@@ -91,6 +93,10 @@ class ReactiveBuilder(ft.Control, StateObserver[Any], Generic[C]):
     def is_isolated(self) -> bool:
         return True
 
+    def did_mount(self):
+        super().did_mount()
+        self.setup_observed_states()
+        
     def will_unmount(self):
         super().will_unmount()
         self.release_observed_states()
@@ -105,6 +111,10 @@ class ReactiveBuilder(ft.Control, StateObserver[Any], Generic[C]):
             children.append(self.__content)
         return children
 
+
+    def setup_observed_states(self) -> None:
+        for state in self.__states:
+            state.add_observer(self)
 
     def on_state_changed(self, old_state: Any, new_state: Any):
         self.__rebuild_content()

@@ -19,9 +19,10 @@ class ReactiveSequence(Generic[T, C], ListStateObserver[T], Sequence[C]):
         self.__control_mapper = control_mapper
         self._controls = list[C]()
 
-        state.add_observer(self)
         for el in self.__state:
             self._controls.append(self.__control_mapper(el))
+
+        self.setup_observed_states()
 
 
     def __del__(self):
@@ -51,6 +52,9 @@ class ReactiveSequence(Generic[T, C], ListStateObserver[T], Sequence[C]):
     #--- Sequence ---
 
     #+++ ListStateObserver +++
+    def setup_observed_states(self) -> None:
+        self.__state.add_observer(self)
+    
     def on_set_state_item(self, key: SupportsIndex, value: T) -> None:
         self._controls.__setitem__(key, self.__control_mapper(value))
 

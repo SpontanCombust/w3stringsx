@@ -122,10 +122,12 @@ class CompoundState(State[T], StateObserver[Any], ListStateObserver[Any]):
         super().__init__(resolver())
 
         self._dependencies = dependencies
-        for dep in dependencies:
-            dep.add_observer(self)
-
         self._resolver = resolver
+        self.setup_observed_states()
+
+    def setup_observed_states(self) -> None:
+        for dep in self._dependencies:
+            dep.add_observer(self)
 
     def on_state_changed(self, old_state: Any, new_state: Any) -> None:
         self._sync_and_notify()

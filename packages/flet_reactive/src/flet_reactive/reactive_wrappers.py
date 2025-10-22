@@ -25,7 +25,11 @@ class _StatefulPropertyBinding(StateObserver[_T]):
         self.target_ctrl = target_ctrl
         self.target_prop = target_prop_name
 
+    def setup_observed_states(self):
         self.state.add_observer(self)
+
+    def release_observed_states(self) -> None:
+        self.state.remove_observer(self)
 
     def on_state_changed(self, old_state: _T, new_state: _T) -> None:
         setattr(self.target_ctrl, self.target_prop, new_state)
@@ -34,8 +38,6 @@ class _StatefulPropertyBinding(StateObserver[_T]):
     def sync_state(self) -> None:
         self.state.value = getattr(self.target_ctrl, self.target_prop)
 
-    def release_observed_states(self) -> None:
-        self.state.remove_observer(self)
 
 class _StatefulCtrlSequencePropertyBinding(Generic[_T, _C], ListStateObserver[_T]):
     def __init__(self, 
@@ -49,7 +51,14 @@ class _StatefulCtrlSequencePropertyBinding(Generic[_T, _C], ListStateObserver[_T
         self.target_ctrl = target_ctrl
         self.target_ctrl_seq = target_ctrl_seq
 
+        for i in range(len(state)):
+            target_ctrl_seq.insert(i, state_ctrl_mapper(state[i]))
+
+    def setup_observed_states(self):
         self.state.add_observer(self)
+
+    def release_observed_states(self) -> None:
+        self.state.remove_observer(self)
 
     def on_set_state_item(self, key: SupportsIndex, value: _T) -> None:
         self.target_ctrl_seq.__setitem__(int(key), self.state_ctrl_mapper(value))
@@ -70,9 +79,6 @@ class _StatefulCtrlSequencePropertyBinding(Generic[_T, _C], ListStateObserver[_T
     def on_insert_state_item(self, key: SupportsIndex, value: _T) -> None:
         self.target_ctrl_seq.insert(int(key), self.state_ctrl_mapper(value))
         self.target_ctrl.update()
-
-    def release_observed_states(self) -> None:
-        self.state.remove_observer(self)
 
 class _StatefulDataRowsPropertyBinding(_StatefulCtrlSequencePropertyBinding[_T, ft.DataRow]):
     def __init__(self, 
@@ -95,8 +101,9 @@ class _StatefulDataRowsPropertyBinding(_StatefulCtrlSequencePropertyBinding[_T, 
         )
 
         # fill placeholders
-        for i in range(placeholder_count):
-            self.target_ctrl_seq.append(self.placeholder_ctrl_factory())
+        if placeholder_count > len(state):
+            for i in range(placeholder_count - len(state)):
+                target_ctrl_seq.append(self.placeholder_ctrl_factory())
 
 
     def on_set_state_item(self, key: SupportsIndex, value: _T) -> None:
@@ -177,6 +184,10 @@ class _ReactiveControlWrapper:
         binding = _StatefulDataRowsPropertyBinding(state, state_ctrl_mapper, target_ctrl, target_ctrl_seq, column_count, placeholder_count)
         self.__prop_bindings.append(binding)
         return binding
+
+    def _init_prop_bindings(self):
+        for pso in self.__prop_bindings:
+            pso.setup_observed_states()
 
     def _drop_prop_bindings(self):
         for pso in self.__prop_bindings:
@@ -298,6 +309,10 @@ class ReactiveCheckbox(ft.Checkbox, _ReactiveControlWrapper):
         if isinstance(value, State):
             binding = self._new_stateful_prop_binding(value, self, 'value')
             self._add_event_handler('change', lambda ev: binding.sync_state())
+
+    def did_mount(self):
+        super().did_mount()
+        self._init_prop_bindings()
 
     def will_unmount(self):
         super().will_unmount()
@@ -562,6 +577,10 @@ class ReactiveTextField(ft.TextField, _ReactiveControlWrapper):
                 binding.sync_state()
             )
 
+    def did_mount(self):
+        super().did_mount()
+        self._init_prop_bindings()
+
     def will_unmount(self):
         super().will_unmount()
         self._drop_prop_bindings()
@@ -666,8 +685,11 @@ class ReactiveFilledButton(ft.FilledButton, _ReactiveControlWrapper):
         )
 
         if isinstance(disabled, State):
-            self.__state_disabled = disabled
-            binding = self._new_stateful_prop_binding(self.__state_disabled, self, 'disabled')
+            self._new_stateful_prop_binding(disabled, self, 'disabled')
+
+    def did_mount(self):
+        super().did_mount()
+        self._init_prop_bindings()
 
     def will_unmount(self):
         super().will_unmount()
@@ -799,6 +821,10 @@ class ReactiveDataTable(ft.DataTable, _ReactiveControlWrapper, Generic[_T]):
             else:
                 self._new_stateful_ctrl_seq_prop_binding(rows_data, rows_mapper, self, self.rows)
 
+    def did_mount(self):
+        super().did_mount()
+        self._init_prop_bindings()
+
     def will_unmount(self):
         super().will_unmount()
         self._drop_prop_bindings()
@@ -898,6 +924,10 @@ class ReactiveColumn(ft.Column, _ReactiveControlWrapper, Generic[_T]):
             self._new_stateful_ctrl_seq_prop_binding(controls_data, controls_mapper, self, self.controls)
         if isinstance(height, State):
             self._new_stateful_prop_binding(height, self, 'height')
+
+    def did_mount(self):
+        super().did_mount()
+        self._init_prop_bindings()
 
     def will_unmount(self):
         super().will_unmount()
@@ -1032,6 +1062,10 @@ class ReactiveContainer(ft.Container, _ReactiveControlWrapper):
         if isinstance(height, State):
             self._new_stateful_prop_binding(height, self, 'height')
 
+    def did_mount(self):
+        super().did_mount()
+        self._init_prop_bindings()
+
     def will_unmount(self):
         super().will_unmount()
         self._drop_prop_bindings()
@@ -1108,6 +1142,10 @@ class ReactiveStack(ft.Stack, _ReactiveControlWrapper):
 
         if isinstance(visible, State):
             self._new_stateful_prop_binding(visible, self, 'visible')
+
+    def did_mount(self):
+        super().did_mount()
+        self._init_prop_bindings()
 
     def will_unmount(self):
         super().will_unmount()
