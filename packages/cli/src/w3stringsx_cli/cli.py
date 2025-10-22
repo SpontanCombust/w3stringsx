@@ -6,6 +6,7 @@ import os
 
 from w3stringsx_lib.localization import ALL_LANGS
 from w3stringsx_lib.logging import get_logger, set_log_level
+from w3stringsx_lib.file_type_relay import FileTypeRelay
 from w3stringsx_ioc import di, Injected
 from w3stringsx_svc.string_key_discovery_service import StringKeyDiscoveryService
 from w3stringsx_svc.w3strings_manager_service import W3StringsManagerService
@@ -119,51 +120,20 @@ def preprocess_cli_args(args: CLIArguments):
     
     set_log_level(log_level)
 
-
-class InputPathType(Enum):
-    UNSUPPORTED         = 0
-    W3STRINGS_FILE      = 1
-    CSV_FILE            = 2
-    XML_FILE            = 3
-    WITCHERSCRIPT_FILE  = 4
-    DIRECTORY           = 5
-
-    @staticmethod
-    def from_path(path: str) -> InputPathType:
-        if os.path.isdir(path):
-            return InputPathType.DIRECTORY
-        else:
-            _, ext = os.path.splitext(path)
-            match ext:
-                case '.w3strings':
-                    return InputPathType.W3STRINGS_FILE
-                case '.csv':
-                    return InputPathType.CSV_FILE
-                case '.xml':
-                    return InputPathType.XML_FILE
-                case '.ws' | '.wss':
-                    return InputPathType.WITCHERSCRIPT_FILE
-                case _:
-                    return InputPathType.UNSUPPORTED
-           
+ 
 def cli_main():
     # if -h flag is set it will forcefully exit the function
     args = make_cli()
     preprocess_cli_args(args)
 
-    match InputPathType.from_path(args.input_path):
-        case InputPathType.W3STRINGS_FILE:
-            handle_w3strings(args)
-        case InputPathType.CSV_FILE:
-            handle_csv(args)
-        case InputPathType.XML_FILE:
-            handle_xml(args)
-        case InputPathType.WITCHERSCRIPT_FILE:
-            handle_ws(args)
-        case InputPathType.DIRECTORY:
-            handle_dir(args)
-        case _:
-            raise Exception(f'Unsupported file type: {os.path.basename(args.input_path)}')
+    relay = FileTypeRelay()\
+        .register_file_handler(['w3strings'], handle_w3strings)\
+        .register_file_handler(['csv'], handle_csv)\
+        .register_file_handler(['xml'], handle_xml)\
+        .register_file_handler(['ws', 'wss'], handle_ws)\
+        .register_dir_handler(handle_dir)
+
+    relay.relay_for_path(args.input_path, args)
 
 def handle_w3strings(args: CLIArguments, w3strings_manager: Injected[W3StringsManagerService] = di.inject(W3StringsManagerService)):
     w3strings_manager.resolve().decode_w3strings_to_csv(args.input_path, args.output_dir)
