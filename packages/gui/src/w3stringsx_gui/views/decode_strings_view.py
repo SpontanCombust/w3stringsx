@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+import dataclasses
 import os
 import traceback
 
@@ -15,12 +15,14 @@ from w3stringsx_gui.components import LogsPanel, StatusMessage
 _logger = get_logger()
 
 
-@dataclass
+@dataclasses.dataclass
 class DecodeStringsViewProps:
-    w3strings_paths: list[str]
+    w3strings_paths: list[str] = dataclasses.field(default_factory=list)
 
 class DecodeStringsView(ft.View):
     TITLE = "DECODING"
+    PROPS_TYPE = DecodeStringsViewProps
+    ALLOWED_EXTS = ['w3strings']
 
     def __init__(self, 
         router: Router, props: object, 
@@ -163,7 +165,7 @@ class DecodeStringsView(ft.View):
             last_w3strings_file_path = ''
         self.__w3strings_file_picker.pick_files(
             allow_multiple=True,
-            allowed_extensions=['w3strings'],
+            allowed_extensions=self.ALLOWED_EXTS,
             file_type=ft.FilePickerFileType.CUSTOM,
             initial_directory=os.path.dirname(last_w3strings_file_path)
         )

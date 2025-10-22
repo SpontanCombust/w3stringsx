@@ -1,5 +1,4 @@
-import asyncio
-from dataclasses import dataclass
+import dataclasses
 import os
 import traceback
 from typing import cast
@@ -18,12 +17,14 @@ from w3stringsx_gui.components import LogsPanel, StatusMessage, ThemeButton
 _logger = get_logger()
 
 
-@dataclass
+@dataclasses.dataclass
 class EncodeStringsViewProps:
-    csv_path: str
+    csv_path: str | None = None
 
 class EncodeStringsView(ft.View):
     TITLE = "ENCODING"
+    PROPS_TYPE = EncodeStringsViewProps
+    ALLOWED_EXTS = ['csv']
 
     def __init__(self, 
         router: Router, props: object,
@@ -169,7 +170,7 @@ class EncodeStringsView(ft.View):
     def on_csv_file_path_textfield_click(self, ev: ft.ControlEvent):
         self.__csv_file_picker.pick_files(
             allow_multiple=False,
-            allowed_extensions=['csv'],
+            allowed_extensions=self.ALLOWED_EXTS,
             file_type=ft.FilePickerFileType.CUSTOM,
             initial_directory=os.path.dirname(self.__csv_file_path.value) if self.__csv_file_path.value else None
         )

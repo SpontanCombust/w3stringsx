@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+import dataclasses
 import os
 import traceback
 
@@ -15,12 +15,14 @@ from w3stringsx_gui.components import StatusMessage, LogsPanel
 _logger = get_logger()
 
 
-@dataclass
+@dataclasses.dataclass
 class SearchForStringKeysViewProps:
-    search_paths: list[str]
+    search_paths: list[str] = dataclasses.field(default_factory=list)
     
 class SearchForStringKeysView(ft.View):
     TITLE = "STRING KEY SEARCH"
+    PROPS_TYPE = SearchForStringKeysViewProps
+    ALLOWED_EXTS = ['xml', 'ws', 'wss']
 
     def __init__(self, 
         router: Router, props: object,
@@ -183,7 +185,7 @@ class SearchForStringKeysView(ft.View):
     def on_pick_search_file_button_click(self, ev: ft.ControlEvent):
         self.__search_file_picker.pick_files(
             allow_multiple=True,
-            allowed_extensions=['xml', 'ws', 'wss'],
+            allowed_extensions=self.ALLOWED_EXTS,
             file_type=ft.FilePickerFileType.CUSTOM,
         )
 

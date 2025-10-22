@@ -30,4 +30,4 @@ class FileTypeRelay:
                 handler = self.__file_handlers[ext.strip('.')]
                 return handler(*args)
             except KeyError:
-                raise Exception('File type "%s" does not have a registered handler' % ext)
+                raise Exception(f'File type "{ext}" does not have a registered handler')
