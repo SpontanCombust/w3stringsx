@@ -1,6 +1,6 @@
 from __future__ import annotations
 import argparse
-from enum import Enum
+import importlib.metadata
 import logging
 import os
 
@@ -31,7 +31,7 @@ class CLIArguments:
     warn_level: int
 
 
-W3STRINGSX_VERSION = '2.0.0' #TODO replace with data taken from build system
+W3STRINGSX_VERSION = importlib.metadata.version('w3stringsx-cli')
 
 def make_cli() -> CLIArguments:
     parser = argparse.ArgumentParser(
