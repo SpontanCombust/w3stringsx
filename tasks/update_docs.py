@@ -11,9 +11,9 @@ CLI_SPEC_PATH = os.path.join(DOC_DIR, "cli_specification.md")
 
 os.chdir(CLI_DIR)
 # make sure the packages are setup
-subprocess.run('uv sync --no-editable', check=True, shell=True)
+subprocess.run('uv sync --locked --no-editable', check=True, shell=True)
 # get the spec by envoking the "help" command on CLI
-spec = subprocess.run('uv run dev -h', check=True, shell=True, capture_output=True, text=True)
+spec = subprocess.run('uv run --no-sync task dev -h', check=True, shell=True, capture_output=True, text=True)
 
 os.chdir(DOC_DIR)
 # write spec into a Markdown file in docs
