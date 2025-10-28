@@ -19,5 +19,10 @@ w3stringsx-svc = { path = "../svc", editable = true }
 requires = ["uv_build>=0.8.23,<0.9.0"]
 build-backend = "uv_build"
 
-[project.scripts]
-dev = "w3stringsx_cli.__main__:main"
+[dependency-groups]
+dev = [
+    "taskipy>=1.14.1",
+]
+
+[tool.taskipy.tasks]
+dev = "python -m w3stringsx_cli.__main__"
