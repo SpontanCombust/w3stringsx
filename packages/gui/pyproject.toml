@@ -48,3 +48,4 @@ dev = [
 
 [tool.taskipy.tasks]
 dev = "flet run -d -r"
+build = "flet build"

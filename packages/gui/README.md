@@ -3,10 +3,21 @@
 w3stringsx GUI application.
 
 
-## Usage
-Build the application for windows
+## Development
+
+- Initialize project
+```sh
+pip install uv
+uv sync --frozen
 ```
-uv sync --no-editable
-uv run --no-editable flet build windows
-uv run flet run
+
+- Run the app (on Windows)
+```sh
+uv run task build windows # required only when doing this for the first time
+uv run task dev
+```
+
+- Build the app (for Windows), artifacts get saved to *build/windows* directory
+```sh
+uv run --no-sync --no-editable task build windows
 ```

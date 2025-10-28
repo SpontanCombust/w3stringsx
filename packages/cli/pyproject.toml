@@ -21,8 +21,10 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "pyinstaller>=6.16.0",
     "taskipy>=1.14.1",
 ]
 
 [tool.taskipy.tasks]
 dev = "python -m w3stringsx_cli.__main__"
+build = "pyinstaller w3stringsx.spec"

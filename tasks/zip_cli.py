@@ -18,9 +18,9 @@ if not os.path.isdir(TARGET_DIR):
 
 os.chdir(CLI_DIR)
 # make sure the packages are setup
-subprocess.run('uv sync --no-editable', check=True, shell=True)
+subprocess.run('uv sync --locked', check=True, shell=True)
 # use pyinstaller to pack the project into standalone executable
-subprocess.run('uvx pyinstaller w3stringsx.spec', check=True, shell=True)
+subprocess.run('uv run --no-sync --no-editable task build', check=True, shell=True)
 # zip it up
 with zipfile.ZipFile(TARGET_ZIP, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=zlib.Z_DEFAULT_COMPRESSION) as zip:
     zip.write(CLI_ARTIFACT, os.path.basename(CLI_ARTIFACT))
