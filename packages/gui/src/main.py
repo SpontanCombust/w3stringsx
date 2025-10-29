@@ -12,13 +12,16 @@ from w3stringsx_svc import (
     W3StringsManagerService
 )
 from w3stringsx_gui.routing import ViewFactory, Routes, Router, ViewRoute
+from w3stringsx_gui.services import (
+    PageProvider,
+    W3stringsxGuiConfiguration
+)
 from w3stringsx_gui.views import (
     HomeView, 
     EncodeStringsView, 
     DecodeStringsView, 
     SearchForStringKeysView
 )
-from w3stringsx_gui.configuration import W3stringsxGuiConfiguration
 
 
 ROUTE_MAP: dict[str, tuple[ViewFactory, str]] = {
@@ -28,11 +31,12 @@ ROUTE_MAP: dict[str, tuple[ViewFactory, str]] = {
     Routes.SEARCH_FOR_STRING_KEYS: (SearchForStringKeysView, SearchForStringKeysView.TITLE)
 }
 
-def setup_services():
-    config = W3stringsxGuiConfiguration()
+def setup_services(page: ft.Page):
+    page_provider = PageProvider()
+    config = W3stringsxGuiConfiguration(page_provider)
 
     container = ServiceContainer.builder()\
-        .abstract_singleton(Configuration, W3stringsxGuiConfiguration, config)\
+        .abstract_singleton(Configuration, W3stringsxGuiConfiguration)\
         .singleton(W3StringsEncoder)\
         .singleton(StringKeyDiscoveryService)\
         .transitive_factory(W3StringsEncoderLocator, lambda resolver:
@@ -45,11 +49,12 @@ def setup_services():
     
     di.set_current(container)
 
+    page_provider.acquire(page)
     init_logger(config.app_dir.get_required())
     set_log_level(logging.INFO)
 
 def main(page: ft.Page):
-    setup_services()
+    setup_services(page)
 
     page.title = "w3stringsx GUI"
     page.window.width = 1400

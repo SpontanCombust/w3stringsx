@@ -30,4 +30,8 @@ class Configuration(Protocol):
     @property
     def w3strings_encoder_path(self) -> ConfigurationValue[str]:
         return self.none()
+    
+    @w3strings_encoder_path.setter
+    def w3strings_encoder_path(self, val: str):
+        ...
 

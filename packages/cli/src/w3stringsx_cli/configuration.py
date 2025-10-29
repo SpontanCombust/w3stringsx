@@ -13,4 +13,4 @@ class W3stringsxCliConfiguration(Configuration):
 
     @property
     def w3strings_encoder_path(self) -> ConfigurationValue[str]:
-        return self.none() #TODO load from .ini
+        return self.none()
