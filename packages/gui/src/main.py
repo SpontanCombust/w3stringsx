@@ -1,9 +1,10 @@
 import logging
+from typing import Type
 
 import flet as ft
 
 from w3stringsx_lib.logging import init_logger, set_log_level
-from w3stringsx_ioc import ServiceContainer, di
+from w3stringsx_ioc import di
 from w3stringsx_svc import (
     Configuration,
     StringKeyDiscoveryService,
@@ -11,7 +12,7 @@ from w3stringsx_svc import (
     W3StringsEncoder,
     W3StringsManagerService
 )
-from w3stringsx_gui.routing import ViewFactory, Routes, Router, ViewRoute
+from w3stringsx_gui.routing import Routes, Router, ViewRoute
 from w3stringsx_gui.services import (
     PageProvider,
     W3stringsxGuiConfiguration
@@ -24,7 +25,7 @@ from w3stringsx_gui.views import (
 )
 
 
-ROUTE_MAP: dict[str, tuple[ViewFactory, str]] = {
+ROUTE_MAP: dict[str, tuple[Type[ft.View], str]] = {
     Routes.HOME: (HomeView, HomeView.TITLE),
     Routes.ENCODE_STRINGS: (EncodeStringsView, EncodeStringsView.TITLE),
     Routes.DECODE_STRINGS: (DecodeStringsView, DecodeStringsView.TITLE),
@@ -35,7 +36,7 @@ def setup_services(page: ft.Page):
     page_provider = PageProvider()
     config = W3stringsxGuiConfiguration(page_provider)
 
-    container = ServiceContainer.builder()\
+    container = di.container_builder()\
         .singleton(PageProvider, page_provider)\
         .abstract_singleton(Configuration, W3stringsxGuiConfiguration, config)\
         .singleton(W3StringsEncoder)\
@@ -48,7 +49,7 @@ def setup_services(page: ft.Page):
         .singleton(W3StringsManagerService)\
         .build()
     
-    di.set_current(container)
+    di.push_container(container)
 
     page_provider.acquire(page)
     init_logger(config.app_dir.get_required())

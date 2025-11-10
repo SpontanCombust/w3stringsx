@@ -19,8 +19,7 @@ logger = get_logger()
 class HomeView(ft.View):
     TITLE = "HOME"
 
-    def __init__(self, router: Router, props: object):
-        assert router is not None
+    def __init__(self, router: Router):
         self.router = router
 
         super().__init__(

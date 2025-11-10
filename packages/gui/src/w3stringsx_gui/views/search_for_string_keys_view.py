@@ -6,9 +6,8 @@ import flet as ft
 
 import flet_reactive as ftr
 from w3stringsx_lib.logging import get_logger
-from w3stringsx_ioc import Injected
 from w3stringsx_svc import StringKeyDiscoveryService
-from w3stringsx_gui.routing import Router, Routes
+from w3stringsx_gui.routing import Routes
 from w3stringsx_gui.components import StatusMessage, LogsPanel
 
 
@@ -25,10 +24,10 @@ class SearchForStringKeysView(ft.View):
     ALLOWED_EXTS = ['xml', 'ws', 'wss']
 
     def __init__(self, 
-        router: Router, props: object,
-        string_key_discovery = Injected(StringKeyDiscoveryService)
+        string_key_discovery: StringKeyDiscoveryService,
+        props: SearchForStringKeysViewProps = SearchForStringKeysViewProps(search_paths=[]),
     ):
-        self.__string_key_discovery = string_key_discovery.resolve()
+        self.__string_key_discovery = string_key_discovery
 
         self.__search_paths = ftr.ListState[str]([])
         self.__output_dir_path = ftr.State[str | None]('')

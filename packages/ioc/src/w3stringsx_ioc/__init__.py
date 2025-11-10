@@ -27,6 +27,9 @@ class ServiceResolver(Protocol):
 
 
 class _ServiceProvider(Protocol):
+    def needs_injections(self) -> bool:
+        raise NotImplementedError()
+
     def provide(self, **kwargs: Any) -> object:
         raise NotImplementedError()
     
@@ -43,6 +46,9 @@ class _ObjectServiceProvider(_ServiceProvider, Generic[T]):
     
     def impl_type(self) -> Type[Any]:
         return self._impl_type
+
+    def needs_injections(self) -> bool:
+        return False
     
 class _CallableServiceProvider(_ServiceProvider, Generic[T]):
     def __init__(self, cls: Type[T], callable: Callable[..., T]) -> None:
@@ -54,6 +60,9 @@ class _CallableServiceProvider(_ServiceProvider, Generic[T]):
     
     def impl_type(self) -> Type[Any]:
         return self._impl_type
+
+    def needs_injections(self) -> bool:
+        return True
 
 class _MemoizedCallableServiceProvider(_CallableServiceProvider[T]):
     def __init__(self, cls: Type[T], callable: Callable[..., T]) -> None:
@@ -92,8 +101,11 @@ class ServiceContainer(ServiceResolver):
         provider = self.__providers.get(cls)
         if provider is None:
             raise Exception('Service %s.%s is not registered' % (cls.__module__, cls.__name__))
-        injections = self.__resolve_dependencies(provider.impl_type())
-        obj = provider.provide(**injections)
+        if provider.needs_injections():
+            injections = self.__resolve_dependencies(provider.impl_type())
+            obj = provider.provide(**injections)
+        else:
+            obj = provider.provide()
         return cast(T, obj)
     
     def inject(self, cls: Type[T]) -> Injected[T]:
@@ -200,6 +212,7 @@ class ServiceContainerBuilder:
 class DependencyInjection(ServiceResolver):
     def __init__(self) -> None:
         self.container: ServiceContainer = ServiceContainer()
+        self.__container_stack: list[ServiceContainer] = []
 
     def resolve(self, cls: type[T]) -> T:
         return self.container.resolve(cls)
@@ -207,8 +220,20 @@ class DependencyInjection(ServiceResolver):
     def inject(self, cls: Type[T]) -> Injected[T]:
         return Injected(lambda: self.resolve(cls))
     
-    def set_current(self, container: ServiceContainer):
-        self.container = container
+    def container_builder(self) -> ServiceContainerBuilder:
+        return ServiceContainerBuilder()
+    
+    def push_container(self, container: ServiceContainer):
+        self.__container_stack.append(container)
+        self.__rebuild_container()
 
+    def pop_container(self):
+        self.__container_stack.pop()
+        self.__rebuild_container()
+
+    def __rebuild_container(self):
+        self.container = ServiceContainer()
+        for container in self.__container_stack:
+            self.container.override(container)
 
 di = DependencyInjection()

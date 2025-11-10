@@ -7,11 +7,10 @@ import flet as ft
 
 from w3stringsx_lib.logging import get_logger
 from w3stringsx_lib.localization import ALL_LANGS, ALL_LANGS_NAME_MAP
-from w3stringsx_ioc import di, Injected
 from w3stringsx_svc import W3StringsManagerService
 import flet_reactive as ftr
-from w3stringsx_gui.routing import Router, Routes
-from w3stringsx_gui.components import LogsPanel, StatusMessage, ThemeButton
+from w3stringsx_gui.routing import Routes
+from w3stringsx_gui.components import LogsPanel, StatusMessage
 
 
 _logger = get_logger()
@@ -27,10 +26,10 @@ class EncodeStringsView(ft.View):
     ALLOWED_EXTS = ['csv']
 
     def __init__(self, 
-        router: Router, props: object,
-        w3strings_manager: Injected[W3StringsManagerService] = di.inject(W3StringsManagerService)
+        w3strings_manager: W3StringsManagerService,
+        props: EncodeStringsViewProps = EncodeStringsViewProps(csv_path=''),
     ):
-        self.__w3strings_manager = w3strings_manager.resolve()
+        self.__w3strings_manager = w3strings_manager
 
         self.__csv_file_path = ftr.State[str | None]('')
         self.__lang_selection = { lang: ftr.State[bool | None](True) for lang in ALL_LANGS }
@@ -39,9 +38,6 @@ class EncodeStringsView(ft.View):
         self.__csv_file_picker = ft.FilePicker(on_result=self.on_csv_file_picked)
         self.__output_dir_picker = ft.FilePicker(on_result=self.on_output_dir_picked)
         self.__encode_status = ftr.State[bool | None](None)
-
-        if not isinstance(props, EncodeStringsViewProps):
-            props = EncodeStringsViewProps(csv_path='')
 
         self.__csv_file_path.value = props.csv_path
 

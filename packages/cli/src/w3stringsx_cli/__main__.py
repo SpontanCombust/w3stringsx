@@ -3,7 +3,7 @@ import sys
 import traceback
 
 from w3stringsx_lib.logging import init_logger, get_logger, get_log_file_path
-from w3stringsx_ioc import ServiceContainer, di
+from w3stringsx_ioc import di
 from w3stringsx_svc import (
     Configuration,
     StringKeyDiscoveryService,
@@ -18,7 +18,7 @@ from w3stringsx_cli.cli import cli_main
 def setup_services():
     config = W3stringsxCliConfiguration()
 
-    container = ServiceContainer.builder()\
+    container = di.container_builder()\
         .abstract_singleton(Configuration, W3stringsxCliConfiguration, config)\
         .singleton(W3StringsEncoder)\
         .singleton(StringKeyDiscoveryService)\
@@ -30,7 +30,7 @@ def setup_services():
         .singleton(W3StringsManagerService)\
         .build()
     
-    di.set_current(container)
+    di.push_container(container)
 
     init_logger(config.app_dir.get_required())
 

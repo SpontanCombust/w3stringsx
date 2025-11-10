@@ -5,10 +5,9 @@ import traceback
 import flet as ft
 
 from w3stringsx_lib.logging import get_logger
-from w3stringsx_ioc import di, Injected
 from w3stringsx_svc import W3StringsManagerService
 import flet_reactive as ftr
-from w3stringsx_gui.routing import Router, Routes
+from w3stringsx_gui.routing import Routes
 from w3stringsx_gui.components import LogsPanel, StatusMessage
 
 
@@ -25,10 +24,10 @@ class DecodeStringsView(ft.View):
     ALLOWED_EXTS = ['w3strings']
 
     def __init__(self, 
-        router: Router, props: object, 
-        w3strings_manager: Injected[W3StringsManagerService] = di.inject(W3StringsManagerService)
+        w3strings_manager: W3StringsManagerService,
+        props: DecodeStringsViewProps = DecodeStringsViewProps(w3strings_paths=[])
     ):
-        self.__w3strings_manager = w3strings_manager.resolve()
+        self.__w3strings_manager = w3strings_manager
 
         self.__w3strings_file_paths = ftr.ListState[str]([])
         self.__output_dir_path = ftr.State[str | None]('')
@@ -36,9 +35,6 @@ class DecodeStringsView(ft.View):
         self.__output_dir_picker = ft.FilePicker(on_result=self.on_output_dir_picked)
         self.__decode_status = ftr.State[bool | None](None)
 
-        if not isinstance(props, DecodeStringsViewProps):
-            props = DecodeStringsViewProps(w3strings_paths=[])
-        
         self.__w3strings_file_paths.extend(props.w3strings_paths)
         VISIBLE_W3STRINGS_PATHS_ROWS = 5
         
