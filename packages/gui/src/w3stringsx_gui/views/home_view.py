@@ -6,6 +6,7 @@ import flet_dropzone.flet_dropzone as ftd
 
 from w3stringsx_lib.file_type_relay import FileTypeRelay
 from w3stringsx_lib.logging import get_logger
+from w3stringsx_gui.views.view_base import ViewBase
 from w3stringsx_gui.components import FeatureButton
 from w3stringsx_gui.routing import Router, Routes
 from w3stringsx_gui.views.encode_strings_view import EncodeStringsView
@@ -16,7 +17,7 @@ from w3stringsx_gui.views.search_for_string_keys_view import SearchForStringKeys
 logger = get_logger()
 
 
-class HomeView(ft.View):
+class HomeView(ViewBase):
     TITLE = "HOME"
 
     def __init__(self, router: Router):

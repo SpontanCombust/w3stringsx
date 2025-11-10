@@ -7,6 +7,7 @@ import flet as ft
 from w3stringsx_lib.logging import get_logger
 from w3stringsx_svc import W3StringsManagerService
 import flet_reactive as ftr
+from w3stringsx_gui.views.view_base import ViewBase
 from w3stringsx_gui.routing import Routes
 from w3stringsx_gui.components import LogsPanel, StatusMessage
 
@@ -18,7 +19,7 @@ _logger = get_logger()
 class DecodeStringsViewProps:
     w3strings_paths: list[str] = dataclasses.field(default_factory=list)
 
-class DecodeStringsView(ft.View):
+class DecodeStringsView(ViewBase):
     TITLE = "DECODING"
     PROPS_TYPE = DecodeStringsViewProps
     ALLOWED_EXTS = ['w3strings']
@@ -147,6 +148,7 @@ class DecodeStringsView(ft.View):
         if (self.page):
             self.page.overlay.remove(self.__w3strings_file_picker)
             self.page.overlay.remove(self.__output_dir_picker)
+
 
     def on_pick_w3strings_file_button_click(self, ev: ft.ControlEvent):
         if len(self.__w3strings_file_paths) > 0:

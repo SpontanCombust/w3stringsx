@@ -6,6 +6,7 @@ import flet as ft
 
 from w3stringsx_ioc import di
 from w3stringsx_lib.logging import get_logger
+from w3stringsx_gui.views.view_base import ViewBase
 from w3stringsx_gui.components import CommonAppBar
 
 
@@ -67,17 +68,16 @@ class Router:
             top_view = self.__page.views[-1]
             self.__page.go(str(top_view.route))
 
-_V = TypeVar('_V', bound=ft.View)
+_V = TypeVar('_V', bound=ViewBase)
 
 class ViewRoute:
-    def __init__(self, route: str, view_cls: Type[_V], view_title: str) -> None:
+    def __init__(self, route: str, view_cls: Type[_V]) -> None:
         self.route: str = route
         self.view_cls = view_cls
-        self.view_title: str = view_title
 
     def create_view(self) -> ft.View:
         view = di.resolve(self.view_cls)
-        view.appbar = CommonAppBar(self.view_title)
+        view.appbar = CommonAppBar(view.TITLE)
         view.padding = ft.padding.symmetric(10, 30)
         return view
 

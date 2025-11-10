@@ -9,6 +9,7 @@ from w3stringsx_lib.logging import get_logger
 from w3stringsx_lib.localization import ALL_LANGS, ALL_LANGS_NAME_MAP
 from w3stringsx_svc import W3StringsManagerService
 import flet_reactive as ftr
+from w3stringsx_gui.views.view_base import ViewBase
 from w3stringsx_gui.routing import Routes
 from w3stringsx_gui.components import LogsPanel, StatusMessage
 
@@ -20,7 +21,7 @@ _logger = get_logger()
 class EncodeStringsViewProps:
     csv_path: str | None = None
 
-class EncodeStringsView(ft.View):
+class EncodeStringsView(ViewBase):
     TITLE = "ENCODING"
     PROPS_TYPE = EncodeStringsViewProps
     ALLOWED_EXTS = ['csv']

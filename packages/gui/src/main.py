@@ -13,6 +13,7 @@ from w3stringsx_svc import (
     W3StringsEncoder,
     W3StringsManagerService
 )
+from w3stringsx_gui.views.view_base import ViewBase
 from w3stringsx_gui.routing import Routes, Router, ViewRoute
 from w3stringsx_gui.services import (
     PageProvider,
@@ -27,12 +28,12 @@ from w3stringsx_gui.views import (
 )
 
 
-ROUTE_MAP: dict[str, tuple[Type[ft.View], str]] = {
-    Routes.HOME: (HomeView, HomeView.TITLE),
-    Routes.SETTINGS: (SettingsView, SettingsView.TITLE),
-    Routes.ENCODE_STRINGS: (EncodeStringsView, EncodeStringsView.TITLE),
-    Routes.DECODE_STRINGS: (DecodeStringsView, DecodeStringsView.TITLE),
-    Routes.SEARCH_FOR_STRING_KEYS: (SearchForStringKeysView, SearchForStringKeysView.TITLE),
+ROUTE_MAP: dict[str, Type[ViewBase]] = {
+    Routes.HOME: HomeView,
+    Routes.SETTINGS: SettingsView,
+    Routes.ENCODE_STRINGS: EncodeStringsView,
+    Routes.DECODE_STRINGS: DecodeStringsView,
+    Routes.SEARCH_FOR_STRING_KEYS: SearchForStringKeysView,
 }
 
 def setup_services(page: ft.Page):
@@ -130,7 +131,7 @@ def main(page: ft.Page):
         )
     )
 
-    router = Router(page, [ViewRoute(route, view_factory, view_title) for route, (view_factory, view_title) in ROUTE_MAP.items()])
+    router = Router(page, [ViewRoute(route, view_factory) for route, view_factory in ROUTE_MAP.items()])
     router.goto(Routes.HOME)
 
 # common 

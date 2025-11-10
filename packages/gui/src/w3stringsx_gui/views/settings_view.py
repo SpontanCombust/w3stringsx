@@ -4,11 +4,12 @@ import flet as ft
 
 import flet_reactive as ftr
 from w3stringsx_svc import Configuration
+from w3stringsx_gui.views.view_base import ViewBase
 from w3stringsx_gui.services import W3stringsxGuiConfiguration
 from w3stringsx_gui.routing import Routes
 
 
-class SettingsView(ft.View):
+class SettingsView(ViewBase):
     TITLE = "SETTINGS"
 
     def __init__(self,

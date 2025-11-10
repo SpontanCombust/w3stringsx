@@ -7,6 +7,7 @@ import flet as ft
 import flet_reactive as ftr
 from w3stringsx_lib.logging import get_logger
 from w3stringsx_svc import StringKeyDiscoveryService
+from w3stringsx_gui.views.view_base import ViewBase
 from w3stringsx_gui.routing import Routes
 from w3stringsx_gui.components import StatusMessage, LogsPanel
 
@@ -18,7 +19,7 @@ _logger = get_logger()
 class SearchForStringKeysViewProps:
     search_paths: list[str] = dataclasses.field(default_factory=list)
     
-class SearchForStringKeysView(ft.View):
+class SearchForStringKeysView(ViewBase):
     TITLE = "STRING KEY SEARCH"
     PROPS_TYPE = SearchForStringKeysViewProps
     ALLOWED_EXTS = ['xml', 'ws', 'wss']
