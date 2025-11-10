@@ -123,7 +123,7 @@ class Tests(unittest.TestCase):
             output_preload_path = os.path.join(output_preload_dir, os.listdir(output_preload_dir)[0])
             shutil.copy(output_preload_path, output_dir)
         
-        cmd = f'uv run dev "{input_path}" -o "{output_path}" {extra_args}'
+        cmd = f'uv run task dev "{input_path}" -o "{output_path}" {extra_args}'
         try:
             subprocess.run(cmd, cwd=f'{root_dir}/packages/cli', shell=True, check=True, stdout=(None if see_output else subprocess.DEVNULL), stderr=(None if see_output else subprocess.DEVNULL))
         except:
