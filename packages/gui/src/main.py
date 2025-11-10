@@ -36,7 +36,8 @@ def setup_services(page: ft.Page):
     config = W3stringsxGuiConfiguration(page_provider)
 
     container = ServiceContainer.builder()\
-        .abstract_singleton(Configuration, W3stringsxGuiConfiguration)\
+        .singleton(PageProvider, page_provider)\
+        .abstract_singleton(Configuration, W3stringsxGuiConfiguration, config)\
         .singleton(W3StringsEncoder)\
         .singleton(StringKeyDiscoveryService)\
         .transitive_factory(W3StringsEncoderLocator, lambda resolver:
