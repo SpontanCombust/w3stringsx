@@ -9,6 +9,7 @@ authors = [
 ]
 dependencies = [
     "flet>=0.28.3",
+    "flet-datatable2>=0.1.0",
 ]
 
 [tool.setuptools.package-data]

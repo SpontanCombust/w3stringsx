@@ -4,7 +4,7 @@ from flet_reactive.effect import Effect, ListEffect
 from flet_reactive.reactive_control import Reactive, ReactiveBuilder
 from flet_reactive.reactive_sequence import ReactiveSequence
 from flet_reactive.conditional_control import Conditional
-from flet_reactive.reactive_wrappers import ReactiveCheckbox, ReactiveTextField, ReactiveFilledButton, ReactiveDataTable, ReactiveColumn, ReactiveContainer, ReactiveStack
+from flet_reactive.reactive_wrappers import ReactiveCheckbox, ReactiveTextField, ReactiveFilledButton, ReactiveDataTable, ReactiveDataRow, ReactiveDataColumn, ReactiveColumn, ReactiveContainer, ReactiveStack
 
 __all__ = [
     "State", "ListState", "CompoundState",
@@ -13,5 +13,5 @@ __all__ = [
     "Reactive", "ReactiveBuilder",
     "ReactiveSequence",
     "Conditional",
-    "ReactiveCheckbox", "ReactiveTextField", "ReactiveFilledButton", "ReactiveDataTable", "ReactiveColumn", "ReactiveContainer", "ReactiveStack"
+    "ReactiveCheckbox", "ReactiveTextField", "ReactiveFilledButton", "ReactiveDataTable", "ReactiveDataRow", "ReactiveDataColumn", "ReactiveColumn", "ReactiveContainer", "ReactiveStack"
 ]

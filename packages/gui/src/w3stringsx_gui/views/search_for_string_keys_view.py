@@ -50,47 +50,41 @@ class SearchForStringKeysView(ft.View):
                 ft.Column(
                     expand=True,
                     controls=[
-                        ft.ListView(
-                            auto_scroll=True,
+                        ftr.ReactiveDataTable(
                             height=300,
-                            controls=[
-                                ftr.ReactiveDataTable(
-                                    expand=True,
-                                    heading_row_color=ft.Colors.PRIMARY_CONTAINER,
-                                    heading_text_style=ft.TextStyle(color=ft.Colors.ON_PRIMARY_CONTAINER),
-                                    vertical_lines=ft.border.BorderSide(1, ft.Colors.PRIMARY),
-                                    horizontal_lines=ft.border.BorderSide(1, ft.Colors.PRIMARY),
-                                    border=ft.border.all(1, ft.Colors.PRIMARY),
-                                    columns=[
-                                        ft.DataColumn(
-                                            label=ft.Text(
-                                                value="File or directory name"
-                                            )
-                                        ),
-                                        ft.DataColumn(
-                                            label=ft.Text(
-                                                value="Parent directory",
-                                            )
-                                        ),
-                                    ],
-                                    rows_data=self.__search_paths,
-                                    rows_mapper=lambda path: ft.DataRow(
-                                        cells=[
-                                            ft.DataCell(
-                                                content=ft.Text(
-                                                    value=os.path.basename(path)
-                                                )
-                                            ),
-                                            ft.DataCell(
-                                                content=ft.Text(
-                                                    value=os.path.dirname(path)
-                                                )
-                                            ),
-                                        ]
-                                    ),
-                                    placeholder_rows_count=VISIBLE_SEARCH_PATHS_ROWS
+                            heading_row_color=ft.Colors.PRIMARY_CONTAINER,
+                            heading_text_style=ft.TextStyle(color=ft.Colors.ON_PRIMARY_CONTAINER),
+                            vertical_lines=ft.border.BorderSide(1, ft.Colors.PRIMARY),
+                            horizontal_lines=ft.border.BorderSide(1, ft.Colors.PRIMARY),
+                            border=ft.border.all(1, ft.Colors.PRIMARY),
+                            columns=[
+                                ftr.ReactiveDataColumn(
+                                    label=ft.Text(
+                                        value="File or directory name"
+                                    )
+                                ),
+                                ftr.ReactiveDataColumn(
+                                    label=ft.Text(
+                                        value="Parent directory",
+                                    )
                                 ),
                             ],
+                            rows_data=self.__search_paths,
+                            rows_mapper=lambda path: ftr.ReactiveDataRow(
+                                cells=[
+                                    ft.DataCell(
+                                        content=ft.Text(
+                                            value=os.path.basename(path)
+                                        )
+                                    ),
+                                    ft.DataCell(
+                                        content=ft.Text(
+                                            value=os.path.dirname(path)
+                                        )
+                                    ),
+                                ]
+                            ),
+                            placeholder_rows_count=VISIBLE_SEARCH_PATHS_ROWS
                         ),
                         ft.Text(value="Supported search targets: WitcherScript, user config XML, bundle XML, directory"),
                         ft.Row(

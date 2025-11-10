@@ -191,6 +191,18 @@ wheels = [
 ]
 
 [[package]]
+name = "flet-datatable2"
+version = "0.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "flet" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/5c/ab/7098196a83c7af82148a6d0b4d9c96f5d1a23e9a939fb3c49f5832a47fef/flet_datatable2-0.1.0.tar.gz", hash = "sha256:f1803fdf9b5650356fb2bd700806303bf9cf9114e9635c4bfd2772bed7d83a97", size = 24123, upload-time = "2025-03-16T19:57:26.827Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/55/60/f969cd16f9626e7c1bea25a6b6146ed5d9d241e0bca63c399826b23ba682/flet_datatable2-0.1.0-py3-none-any.whl", hash = "sha256:ac2aaf2d2472308eb2155b260a1972c920d492781ee36304744dbf6958bd110d", size = 26277, upload-time = "2025-03-16T19:57:25.663Z" },
+]
+
+[[package]]
 name = "flet-desktop"
 version = "0.28.3"
 source = { registry = "https://pypi.org/simple" }
@@ -237,10 +249,14 @@ version = "1.0.0"
 source = { editable = "../flet_reactive" }
 dependencies = [
     { name = "flet" },
+    { name = "flet-datatable2" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "flet", specifier = ">=0.28.3" }]
+requires-dist = [
+    { name = "flet", specifier = ">=0.28.3" },
+    { name = "flet-datatable2", specifier = ">=0.1.0" },
+]
 
 [package.metadata.requires-dev]
 dev = [{ name = "flet", extras = ["all"], specifier = "==0.28.3" }]

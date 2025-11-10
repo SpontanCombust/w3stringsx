@@ -3,6 +3,8 @@ from typing import Dict, Callable, Any, Iterable, MutableSequence, SupportsIndex
 import flet as ft
 from flet.core.text_style import StrutStyle
 from flet.core.gradients import Gradient
+import flet_datatable2 as ftdt2
+from flet_datatable2.datacolumn2 import DataColumnSortEvent
 
 from flet_reactive.state import State, ListState
 from flet_reactive.state_observer import StateObserver, ListStateObserver
@@ -80,19 +82,19 @@ class _StatefulCtrlSequencePropertyBinding(Generic[_T, _C], ListStateObserver[_T
         self.target_ctrl_seq.insert(int(key), self.state_ctrl_mapper(value))
         self.target_ctrl.update()
 
-class _StatefulDataRowsPropertyBinding(_StatefulCtrlSequencePropertyBinding[_T, ft.DataRow]):
+class _StatefulDataRowsPropertyBinding(_StatefulCtrlSequencePropertyBinding[_T, ftdt2.DataRow2]):
     def __init__(self, 
         state: ListState[_T], 
-        state_ctrl_mapper: Callable[[_T], ft.DataRow], 
+        state_ctrl_mapper: Callable[[_T], ftdt2.DataRow2], 
         target_ctrl: ft.Control, 
-        target_ctrl_seq: MutableSequence[ft.DataRow],
+        target_ctrl_seq: MutableSequence[ftdt2.DataRow2],
         column_count: int,
         placeholder_count: int
     ) -> None:
         super().__init__(state, state_ctrl_mapper, target_ctrl, target_ctrl_seq)
         self.column_count = column_count
         self.placeholder_count = placeholder_count
-        self.placeholder_ctrl_factory = lambda: ft.DataRow(
+        self.placeholder_ctrl_factory = lambda: ftdt2.DataRow2(
             cells=[
                 ft.DataCell(ft.Text(), placeholder=True)
                 for i in range(column_count)
@@ -175,9 +177,9 @@ class _ReactiveControlWrapper:
     
     def _new_stateful_data_rows_prop_binding(self, 
         state: ListState[_T], 
-        state_ctrl_mapper: Callable[[_T], ft.DataRow], 
+        state_ctrl_mapper: Callable[[_T], ftdt2.DataRow2], 
         target_ctrl: ft.Control, 
-        target_ctrl_seq: MutableSequence[ft.DataRow],
+        target_ctrl_seq: MutableSequence[ftdt2.DataRow2],
         column_count: int,
         placeholder_count: int
     ) -> _StatefulDataRowsPropertyBinding:
@@ -697,81 +699,178 @@ class ReactiveFilledButton(ft.FilledButton, _ReactiveControlWrapper):
 
 
 
-class ReactiveDataTable(ft.DataTable, _ReactiveControlWrapper, Generic[_T]):
+class ReactiveDataColumn(ftdt2.DataColumn2, _ReactiveControlWrapper):
     def __init__(self, 
-        columns: List[ft.DataColumn],
-        rows_data: ListState[_T] | None = None,
-        rows_mapper: Callable[[_T], ft.DataRow] | None = None,
-        placeholder_rows_count: int | None = None,
-        rows: List[ft.DataRow] | None = None,
-        sort_ascending: bool | None = None,
-        show_checkbox_column: bool | None = None,
-        sort_column_index: int | None = None,
-        show_bottom_border: bool | None = None,
-        border: ft.Border | None = None,
-        border_radius: int | float | ft.BorderRadius | None = None,
-        horizontal_lines: ft.BorderSide | None = None,
-        vertical_lines: ft.BorderSide | None = None,
-        checkbox_horizontal_margin: int | float | None = None,
-        column_spacing: int | float | None = None,
-        data_row_color: None | str | ft.Colors | ft.CupertinoColors | Dict[ft.ControlState, str | ft.Colors | ft.CupertinoColors] = None,
-        data_row_min_height: int | float | None = None,
-        data_row_max_height: int | float | None = None,
-        data_text_style: ft.TextStyle | None = None,
-        bgcolor: str | ft.Colors | ft.CupertinoColors | None = None,
-        gradient: Gradient | None = None,
-        divider_thickness: int | float | None = None,
-        heading_row_color: None | str | ft.Colors | ft.CupertinoColors | Dict[ft.ControlState, str | ft.Colors | ft.CupertinoColors] = None,
-        heading_row_height: int | float | None = None,
-        heading_text_style: ft.TextStyle | None = None,
-        horizontal_margin: int | float | None = None,
-        clip_behavior: ft.ClipBehavior | None = None,
-        on_select_all: Callable[[ft.ControlEvent], Any] | None = None,
-        ref: ft.Ref | None = None,
-        key: str | None = None,
-        width: int | float | None = None,
-        height: int | float | None = None,
-        left: int | float | None = None,
-        top: int | float | None = None,
-        right: int | float | None = None,
-        bottom: int | float | None = None,
-        expand: None | bool | int = None,
-        expand_loose: bool | None = None,
-        col: Dict[str, int | float] | int | float | None = None,
-        opacity: int | float | None = None,
-        rotate: int | float | ft.Rotate | None = None,
-        scale: int | float | ft.Scale | None = None,
-        offset: ft.Offset | None = None,
-        aspect_ratio: int | float | None = None,
-        animate_opacity: bool | int | ft.Animation | None = None,
-        animate_size: bool | int | ft.Animation | None = None,
-        animate_position: bool | int | ft.Animation | None = None,
-        animate_rotation: bool | int | ft.Animation | None = None,
-        animate_scale: bool | int | ft.Animation | None = None,
-        animate_offset: bool | int | ft.Animation | None = None,
-        on_animation_end: Callable[[ft.ControlEvent], Any] | None = None,
-        tooltip: str | ft.Tooltip | None = None,
-        badge: str | ft.Badge | None = None,
-        visible: bool | None = None,
-        disabled: bool | None = None,
+        label: ft.Control, 
+        size: ftdt2.Size | None = None, 
+        numeric: bool | None = None, 
+        tooltip: str | None = None, 
+        fixed_width: int | float | None = None, 
+        heading_row_alignment: ft.MainAxisAlignment | None = None, 
+        on_sort: ft.OptionalEventCallable[DataColumnSortEvent] = None, 
+        ref=None, 
+        visible: bool | None = None, 
+        disabled: bool | None = None, 
         data: Any = None
     ):
         super().__init__(
-            columns,
-            rows,
+            label, 
+            size, 
+            numeric, 
+            tooltip, 
+            fixed_width, 
+            heading_row_alignment, 
+            on_sort, 
+            ref, 
+            visible, 
+            disabled, 
+            data
+        )
+
+class ReactiveDataRow(ftdt2.DataRow2, _ReactiveControlWrapper):
+    def __init__(self, 
+        cells: List[ft.DataCell], 
+        color: None | str | ft.Colors | ft.CupertinoColors | Dict[ft.ControlState, str | ft.Colors | ft.CupertinoColors] = None,
+        decoration: ft.BoxDecoration | None = None,
+        specific_row_height: int | float | None = None,
+        selected: bool | None = None,
+        on_long_press: Callable[[ft.ControlEvent], Any] | None = None,
+        on_select_changed: Callable[[ft.ControlEvent], Any] | None = None,
+        on_double_tap: Callable[[ft.ControlEvent], Any] | None = None,
+        on_secondary_tap: Callable[[ft.ControlEvent], Any] | None = None,
+        on_secondary_tap_down: Callable[[ft.ControlEvent], Any] | None = None,
+        on_tap: Callable[[ft.ControlEvent], Any] | None = None,
+        ref=None,
+        visible: bool | None = None,
+        disabled: bool | None = None, 
+        data: Any = None
+    ):
+        super().__init__(
+            cells,
+            color,
+            decoration,
+            specific_row_height,
+            selected, 
+            on_long_press,
+            on_select_changed,
+            on_double_tap,
+            on_secondary_tap,
+            on_secondary_tap_down,
+            on_tap,
+            ref,
+            visible,
+            disabled,
+            data
+        )
+
+class ReactiveDataTable(ftdt2.DataTable2, _ReactiveControlWrapper, Generic[_T]):
+    def __init__(self, 
+        columns: Sequence[ReactiveDataColumn], 
+        rows_data: ListState[_T] | None = None,
+        rows_mapper: Callable[[_T], ReactiveDataRow] | None = None,
+        placeholder_rows_count: int | None = None,
+        rows: Sequence[ReactiveDataRow] | None = None, 
+        empty: ft.Control | None = None, 
+        bottom_margin: int | float | None = None, 
+        lm_ratio: int | float | None = None, 
+        sm_ratio: int | float | None = None, 
+        fixed_left_columns: int | None = None, 
+        fixed_top_rows: int | None = None, 
+        fixed_columns_color: str | ft.Colors | ft.CupertinoColors | None = None, 
+        fixed_corner_color: str | ft.Colors | ft.CupertinoColors | None = None, 
+        min_width: int | float | None = None, 
+        sort_ascending: bool | None = None, 
+        show_checkbox_column: bool | None = None, 
+        show_heading_checkbox: bool | None = None, 
+        heading_checkbox_theme: ft.CheckboxTheme | None = None, 
+        data_row_checkbox_theme: ft.CheckboxTheme | None = None, 
+        sort_column_index: int | None = None, 
+        sort_arrow_icon: str | ft.Icons | ft.CupertinoIcons | None = None, 
+        sort_arrow_animation_duration: int | ft.Duration | None = None, 
+        show_bottom_border: bool | None = None, 
+        is_horizontal_scroll_bar_visible: bool | None = None, 
+        is_vertical_scroll_bar_visible: bool | None = None, 
+        border: ft.Border | None = None, 
+        border_radius: int | float | ft.BorderRadius | None = None, 
+        horizontal_lines: ft.BorderSide | None = None, 
+        vertical_lines: ft.BorderSide | None = None, 
+        checkbox_horizontal_margin: int | float | None = None, 
+        checkbox_alignment: ft.Alignment | None = None, 
+        column_spacing: int | float | None = None, 
+        data_row_color: None | str | ft.Colors | ft.CupertinoColors | Dict[ft.ControlState, str | ft.Colors | ft.CupertinoColors] = None, 
+        data_row_height: int | float | None = None, 
+        data_text_style: ft.TextStyle | None = None, 
+        bgcolor: str | ft.Colors | ft.CupertinoColors | None = None, 
+        gradient: Gradient | None = None, 
+        divider_thickness: int | float | None = None, 
+        heading_row_color: None | str | ft.Colors | ft.CupertinoColors | Dict[ft.ControlState, str | ft.Colors | ft.CupertinoColors] = None, 
+        heading_row_height: int | float | None = None, 
+        heading_text_style: ft.TextStyle | None = None, 
+        heading_row_decoration: ft.BoxDecoration | None = None, 
+        horizontal_margin: int | float | None = None, 
+        clip_behavior: ft.ClipBehavior | None = None, 
+        on_select_all: Callable[[ft.ControlEvent], Any] | None = None, 
+        ref: ft.Ref | None = None, 
+        key: str | None = None, 
+        width: int | float | None = None, 
+        height: int | float | None = None, 
+        left: int | float | None = None, 
+        top: int | float | None = None, 
+        right: int | float | None = None, 
+        bottom: int | float | None = None, 
+        expand: None | bool | int = None, 
+        expand_loose: bool | None = None, 
+        col: Dict[str, int | float] | int | float | None = None, 
+        opacity: int | float | None = None, 
+        rotate: int | float | ft.Rotate | None = None, 
+        scale: int | float | ft.Scale | None = None, 
+        offset: ft.Offset | None = None, 
+        aspect_ratio: int | float | None = None, 
+        animate_opacity: bool | int | ft.Animation | None = None, 
+        animate_size: bool | int | ft.Animation | None = None, 
+        animate_position: bool | int | ft.Animation | None = None, 
+        animate_rotation: bool | int | ft.Animation | None = None, 
+        animate_scale: bool | int | ft.Animation | None = None, 
+        animate_offset: bool | int | ft.Animation | None = None, 
+        on_animation_end: Callable[[ft.ControlEvent], Any] | None = None, 
+        tooltip: str | ft.Tooltip | None = None, 
+        badge: str | ft.Badge | None = None, 
+        visible: bool | None = None, 
+        disabled: bool | None = None, 
+        data: Any = None
+    ):
+        super().__init__(
+            list(columns),
+            list(rows) if rows is not None else None,
+            empty,
+            bottom_margin,
+            lm_ratio,
+            sm_ratio,
+            fixed_left_columns,
+            fixed_top_rows,
+            fixed_columns_color,
+            fixed_corner_color,
+            min_width,
             sort_ascending,
             show_checkbox_column,
+            show_heading_checkbox,
+            heading_checkbox_theme,
+            data_row_checkbox_theme,
             sort_column_index,
+            sort_arrow_icon,
+            sort_arrow_animation_duration,
             show_bottom_border,
+            is_horizontal_scroll_bar_visible,
+            is_vertical_scroll_bar_visible,
             border,
             border_radius,
             horizontal_lines,
             vertical_lines,
             checkbox_horizontal_margin,
+            checkbox_alignment,
             column_spacing,
             data_row_color,
-            data_row_min_height,
-            data_row_max_height,
+            data_row_height,
             data_text_style,
             bgcolor,
             gradient,
@@ -779,6 +878,7 @@ class ReactiveDataTable(ft.DataTable, _ReactiveControlWrapper, Generic[_T]):
             heading_row_color,
             heading_row_height,
             heading_text_style,
+            heading_row_decoration,
             horizontal_margin,
             clip_behavior,
             on_select_all,
@@ -811,7 +911,7 @@ class ReactiveDataTable(ft.DataTable, _ReactiveControlWrapper, Generic[_T]):
             disabled,
             data
         )
-        
+
         if rows_data is not None and rows_mapper is not None:
             self.rows = []
 
