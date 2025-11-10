@@ -19,6 +19,7 @@ from w3stringsx_gui.services import (
 )
 from w3stringsx_gui.views import (
     HomeView, 
+    SettingsView,
     EncodeStringsView, 
     DecodeStringsView, 
     SearchForStringKeysView
@@ -27,22 +28,24 @@ from w3stringsx_gui.views import (
 
 ROUTE_MAP: dict[str, tuple[Type[ft.View], str]] = {
     Routes.HOME: (HomeView, HomeView.TITLE),
+    Routes.SETTINGS: (SettingsView, SettingsView.TITLE),
     Routes.ENCODE_STRINGS: (EncodeStringsView, EncodeStringsView.TITLE),
     Routes.DECODE_STRINGS: (DecodeStringsView, DecodeStringsView.TITLE),
-    Routes.SEARCH_FOR_STRING_KEYS: (SearchForStringKeysView, SearchForStringKeysView.TITLE)
+    Routes.SEARCH_FOR_STRING_KEYS: (SearchForStringKeysView, SearchForStringKeysView.TITLE),
 }
 
 def setup_services(page: ft.Page):
     page_provider = PageProvider()
     config = W3stringsxGuiConfiguration(page_provider)
 
+    # FIXME either encoder should be transitive or its service should be reloaded
     container = di.container_builder()\
         .singleton(PageProvider, page_provider)\
         .abstract_singleton(Configuration, W3stringsxGuiConfiguration, config)\
         .singleton(W3StringsEncoder)\
         .singleton(StringKeyDiscoveryService)\
         .transitive_factory(W3StringsEncoderLocator, lambda resolver:
-            W3StringsEncoderLocator()
+            W3StringsEncoderLocator(config)
             .with_handler(FromConfigW3stringsEncoderLocatorHandler(resolver.resolve(Configuration)))
             .with_handler(AppDirW3StringsEncoderLocatorHandler(resolver.resolve(Configuration)))
             .with_handler(PathEnvW3stringsEncoderLocatorHandler()))\
@@ -54,6 +57,17 @@ def setup_services(page: ft.Page):
     page_provider.acquire(page)
     init_logger(config.app_dir.get_required())
     set_log_level(logging.INFO)
+
+    theme_mode_str = config.theme_mode.get()
+    # memorize default theme
+    if theme_mode_str is None:
+        theme_mode_str = ft.ThemeMode.SYSTEM.value
+        config.theme_mode = theme_mode_str
+    if theme_mode_str in [member.value for member in list(ft.ThemeMode)]:
+        theme_mode = ft.ThemeMode(theme_mode_str)
+    else:
+        theme_mode = ft.ThemeMode.SYSTEM
+    page.theme_mode = theme_mode
 
 def main(page: ft.Page):
     setup_services(page)
@@ -111,5 +125,9 @@ def main(page: ft.Page):
 
     router = Router(page, [ViewRoute(route, view_factory, view_title) for route, (view_factory, view_title) in ROUTE_MAP.items()])
     router.goto(Routes.HOME)
-
+#FIXME show any error that doesn't get caucht as a snackbar
+# common 
+# self.use_state
+# self.use_effect
+# self.use_compound_state
 ft.app(main) # type: ignore

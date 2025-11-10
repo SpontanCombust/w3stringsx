@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Callable, Any, TypeVar, Type
+from typing import TypeVar, Type
 
 import flet as ft
 
@@ -66,11 +66,13 @@ class ViewRoute:
     def create_view(self) -> ft.View:
         view = di.resolve(self.view_cls)
         view.appbar = CommonAppBar(self.view_title)
+        view.padding = ft.padding.symmetric(10, 30)
         return view
 
 
 class Routes:
     HOME = '/'
+    SETTINGS = '/settings'
     ENCODE_STRINGS = '/encode'
     DECODE_STRINGS = '/decode'
     SEARCH_FOR_STRING_KEYS = '/find-keys'
