@@ -19,7 +19,7 @@ _logger = get_logger()
 class DecodeStringsViewProps:
     w3strings_paths: list[str] = dataclasses.field(default_factory=list)
 
-class DecodeStringsView(ViewBase):
+class DecodeStringsView(ViewBase, ftr.ReactiveHooks):
     TITLE = "DECODING"
     PROPS_TYPE = DecodeStringsViewProps
     ALLOWED_EXTS = ['w3strings']
@@ -30,11 +30,11 @@ class DecodeStringsView(ViewBase):
     ):
         self.__w3strings_manager = w3strings_manager
 
-        self.__w3strings_file_paths = ftr.ListState[str]([])
-        self.__output_dir_path = ftr.State[str | None]('')
+        self.__w3strings_file_paths: ftr.ListState[str] = self.use_list_state([])
+        self.__output_dir_path: ftr.State[str | None] = self.use_state('')
         self.__w3strings_file_picker = ft.FilePicker(on_result=self.on_w3strings_files_picked)
         self.__output_dir_picker = ft.FilePicker(on_result=self.on_output_dir_picked)
-        self.__decode_status = ftr.State[bool | None](None)
+        self.__decode_status: ftr.State[bool | None] = self.use_state(None)
 
         self.__w3strings_file_paths.extend(props.w3strings_paths)
         VISIBLE_W3STRINGS_PATHS_ROWS = 5
@@ -115,7 +115,7 @@ class DecodeStringsView(ViewBase):
                                     text='DECODE',
                                     width=300,
                                     on_click=self.on_decode_button_click,
-                                    disabled=ftr.CompoundState(
+                                    disabled=self.use_computed(
                                         [self.__w3strings_file_paths, self.__output_dir_path],
                                         lambda: len(self.__w3strings_file_paths) == 0 
                                              or not self.__output_dir_path.value

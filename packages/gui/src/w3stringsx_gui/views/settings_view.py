@@ -22,7 +22,9 @@ class SettingsView(ViewBase):
         self.__w3strings_encoder_path = ftr.State[str | None](self.__config.w3strings_encoder_path.get())
         self.__w3strings_encoder_picker = ft.FilePicker(on_result=self.on_w3strings_encoder_picked)
         self.__theme_mode = ftr.State[str | None](self.__config.theme_mode.get() or ft.ThemeMode.SYSTEM.value)
-        self.__theme_change_effect = ftr.Effect(self.__theme_mode, self.on_theme_mode_changed)
+        self.use_effect([self.__theme_mode], 
+            self.on_theme_mode_changed
+        )
 
         super().__init__(
             route=Routes.SETTINGS,
@@ -76,7 +78,7 @@ class SettingsView(ViewBase):
                     text="Save",
                     icon=ft.Icons.SAVE,
                     width=100,
-                    disabled=ftr.CompoundState([self.__should_save], lambda: not self.__should_save.value),
+                    disabled=ftr.Computed([self.__should_save], lambda: not self.__should_save.value),
                     on_click=self.on_save_button_click
                 )
             ],
@@ -92,7 +94,6 @@ class SettingsView(ViewBase):
         super().will_unmount()
         if self.page:
             self.page.overlay.remove(self.__w3strings_encoder_picker)
-        self.__theme_change_effect.release_observed_states()
 
 
     def on_w3strings_encoder_path_picker_button_click(self, ev: ft.ControlEvent):

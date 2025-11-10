@@ -134,8 +134,5 @@ def main(page: ft.Page):
     router = Router(page, [ViewRoute(route, view_factory) for route, view_factory in ROUTE_MAP.items()])
     router.goto(Routes.HOME)
 
-# common 
-# self.use_state
-# self.use_effect
-# self.use_compound_state
+
 ft.app(main) # type: ignore

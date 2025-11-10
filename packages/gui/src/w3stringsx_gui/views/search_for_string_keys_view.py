@@ -30,13 +30,13 @@ class SearchForStringKeysView(ViewBase):
     ):
         self.__string_key_discovery = string_key_discovery
 
-        self.__search_paths = ftr.ListState[str]([])
-        self.__output_dir_path = ftr.State[str | None]('')
-        self.__search_regex = ftr.State[str | None]('')
+        self.__search_paths: ftr.ListState[str] = self.use_list_state([])
+        self.__output_dir_path: ftr.State[str | None] = self.use_state('')
+        self.__search_regex: ftr.State[str | None] = self.use_state('')
         self.__search_file_picker = ft.FilePicker(on_result=self.on_search_files_picked)
         self.__search_dir_picker = ft.FilePicker(on_result=self.on_search_dir_picked)
         self.__output_dir_picker = ft.FilePicker(on_result=self.on_output_dir_picked)
-        self.__search_status = ftr.State[bool | None](None)
+        self.__search_status: ftr.State[bool | None] = self.use_state(None)
 
         if not isinstance(props, SearchForStringKeysViewProps):
             props = SearchForStringKeysViewProps(search_paths=[])
@@ -138,7 +138,7 @@ class SearchForStringKeysView(ViewBase):
                                     text='SEARCH',
                                     width=300,
                                     on_click=self.on_search_button_click,
-                                    disabled=ftr.CompoundState(
+                                    disabled=self.use_computed(
                                         [self.__search_paths, self.__search_regex, self.__output_dir_path],
                                         lambda: len(self.__search_paths) == 0
                                              or not self.__search_regex.value

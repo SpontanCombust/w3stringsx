@@ -38,22 +38,22 @@ class _StringLogHandler(logging.Handler):
         if len(self.logs) > MAX_LOG_LINES:
             del self.logs[:MAX_LOG_LINES // 2]
 
-class LogsPanel(ftr.ReactiveContainer):
+class LogsPanel(ftr.ReactiveContainer, ftr.ReactiveHooks):
     def __init__(
             self,
             width: ft.OptionalNumber = None,
             height: ft.OptionalNumber = None
     ):
         self.__expanded_height = height or 300
-        self.__expanded = ftr.State[bool | None](False)
-        self.__current_height = ftr.CompoundState[int | float | None](
+        self.__expanded: ftr.State[bool | None] = self.use_state(False)
+        self.__current_height = self.use_computed(
             [self.__expanded],
             lambda: height if self.__expanded.value else 35
         )
 
         self.__vlist_view_ref = ft.Ref[ft.ListView]()
         self.__logs_handler = _StringLogHandler()
-        self.__vlist_scroll_effect = ftr.ListEffect(self.__logs_handler.logs, lambda: 
+        self.use_effect([self.__logs_handler.logs], lambda: 
             self.__vlist_view_ref.current.scroll_to(offset=-1)
         )
         
@@ -142,7 +142,6 @@ class LogsPanel(ftr.ReactiveContainer):
 
     def will_unmount(self):
         super().will_unmount()
-        self.__vlist_scroll_effect.release_observed_states()
         unsubscribe_from_logger(self.__logs_handler)
 
     def is_isolated(self) -> bool:

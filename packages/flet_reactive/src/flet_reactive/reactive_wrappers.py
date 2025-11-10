@@ -310,7 +310,10 @@ class ReactiveCheckbox(ft.Checkbox, _ReactiveControlWrapper):
 
         if isinstance(value, State):
             binding = self._new_stateful_prop_binding(value, self, 'value')
-            self._add_event_handler('change', lambda ev: binding.sync_state())
+            self.on_change = lambda ev: (
+                binding.sync_state(),
+                on_change(ev) if on_change else None
+            )
 
     def did_mount(self):
         super().did_mount()
@@ -575,8 +578,8 @@ class ReactiveTextField(ft.TextField, _ReactiveControlWrapper):
         if isinstance(value, State):
             binding = self._new_stateful_prop_binding(value, self, 'value')
             self.on_change = lambda ev: (
-                on_change(ev) if on_change else None,
-                binding.sync_state()
+                binding.sync_state(),
+                on_change(ev) if on_change else None
             )
 
     def did_mount(self):
@@ -1454,6 +1457,6 @@ class ReactiveDropdown(ft.Dropdown, _ReactiveControlWrapper):
         if isinstance(value, State):
             binding = self._new_stateful_prop_binding(value, self, 'value')
             self.on_change = lambda ev: (
-                on_change(ev) if on_change else None,
-                binding.sync_state()
+                binding.sync_state(),
+                on_change(ev) if on_change else None
             )

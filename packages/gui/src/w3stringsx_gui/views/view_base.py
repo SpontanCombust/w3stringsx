@@ -1,9 +1,10 @@
-from typing import Sequence, Callable, Any
+from typing import Sequence, Callable, Any, TypeVar
 
 import flet as ft
+import flet_reactive as ftr
 
 
-class ViewBase(ft.View):
+class ViewBase(ft.View, ftr.ReactiveHooks):
     TITLE = "View"
 
     def __init__(self, 

@@ -32,13 +32,13 @@ class EncodeStringsView(ViewBase):
     ):
         self.__w3strings_manager = w3strings_manager
 
-        self.__csv_file_path = ftr.State[str | None]('')
-        self.__lang_selection = { lang: ftr.State[bool | None](True) for lang in ALL_LANGS }
-        self.__output_dir_path = ftr.State[str | None]('')
-        self.__keep_output_csv = ftr.State[bool | None](False)
+        self.__csv_file_path: ftr.State[str | None] = self.use_state('')
+        self.__lang_selection: dict[str, ftr.State[bool | None]] = { lang: self.use_state(True) for lang in ALL_LANGS }
+        self.__output_dir_path: ftr.State[str | None] = self.use_state('')
+        self.__keep_output_csv: ftr.State[bool | None] = self.use_state(False)
         self.__csv_file_picker = ft.FilePicker(on_result=self.on_csv_file_picked)
         self.__output_dir_picker = ft.FilePicker(on_result=self.on_output_dir_picked)
-        self.__encode_status = ftr.State[bool | None](None)
+        self.__encode_status: ftr.State[bool | None] = self.use_state(None)
 
         self.__csv_file_path.value = props.csv_path
 
@@ -128,7 +128,7 @@ class EncodeStringsView(ViewBase):
                                     text='ENCODE',
                                     width=300,
                                     on_click=self.on_encode_button_click,
-                                    disabled=ftr.CompoundState(
+                                    disabled=self.use_computed(
                                         [self.__csv_file_path, self.__output_dir_path, *self.__lang_selection.values()],
                                         lambda: not self.__csv_file_path.value
                                              or not self.__output_dir_path.value
