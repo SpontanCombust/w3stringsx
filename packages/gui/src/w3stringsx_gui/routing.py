@@ -1,9 +1,11 @@
 from __future__ import annotations
+import traceback
 from typing import TypeVar, Type
 
 import flet as ft
 
 from w3stringsx_ioc import di
+from w3stringsx_lib.logging import get_logger
 from w3stringsx_gui.components import CommonAppBar
 
 
@@ -39,10 +41,20 @@ class Router:
                     route_container = cb.build()
             
                     di.push_container(route_container)
-                    view = vr.create_view()
+                    try:
+                        view = vr.create_view()
+                        self.__page.views.append(view)    
+                    except Exception as ex:
+                        self.__page.open(ft.SnackBar(
+                            content=ft.Text(str(ex), color=ft.Colors.ON_ERROR),
+                            duration=10000,
+                            show_close_icon=True,
+                            bgcolor=ft.Colors.ERROR, 
+                        ))
+                        logger = get_logger()
+                        logger.error(ex)
+                        logger.error(traceback.format_exc())
                     di.pop_container()
-
-                    self.__page.views.append(view)
                     break
         self.__current_route_props = None
         self.__is_popping = False
