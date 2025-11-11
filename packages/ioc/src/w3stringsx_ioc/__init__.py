@@ -4,6 +4,7 @@ Voodoo metaprogramming, argument-juggling magic incoming!
 """
 
 from __future__ import annotations
+import contextlib
 import inspect
 import pprint
 from typing import Protocol, TypeVar, Type, Callable, Self, Any, cast, get_type_hints, Generic
@@ -19,6 +20,7 @@ __all__ = [
 
 T = TypeVar('T')
 U = TypeVar('U')
+R = TypeVar('R', bound=contextlib.AbstractContextManager)
 
 
 class ServiceResolver(Protocol):
@@ -35,6 +37,9 @@ class _ServiceProvider(Protocol):
     
     def impl_type(self) -> Type[Any]:
         raise NotImplementedError()
+    
+    def release(self):
+        pass
 
 class _ObjectServiceProvider(_ServiceProvider, Generic[T]):
     def __init__(self, cls: Type[T], obj: T) -> None:
@@ -73,6 +78,44 @@ class _MemoizedCallableServiceProvider(_CallableServiceProvider[T]):
         if self.memoized is None:
             self.memoized = self.callable(**kwargs)
         return self.memoized
+    
+    def release(self):
+        self.memoized = None
+
+class _ObjectContextManagerServiceProvider(_ObjectServiceProvider[R]):
+    def __init__(self, cls: type[R], obj: R) -> None:
+        super().__init__(cls, obj)
+        self._entered = False
+
+    def provide(self, **kwargs: Any) -> R:
+        if not self._entered:
+            self.obj.__enter__()
+            self._entered = True
+        return self.obj        
+    
+    def release(self):
+        if self._entered:
+            self.obj.__exit__(None, None, None)
+            self._entered = False
+
+class _MemoizedCallableContextManagerServiceProvider(_MemoizedCallableServiceProvider[R]):
+    def __init__(self, cls: Type[R], callable: Callable[..., R]) -> None:
+        super().__init__(cls, callable)
+        self._entered = False
+
+    def provide(self, **kwargs: Any) -> R:
+        memoized = super().provide(**kwargs)
+        if not self._entered:
+            memoized.__enter__()
+            self._entered = True
+        return memoized        
+    
+    def release(self):
+        if self.memoized:
+            if self._entered:
+                self.memoized.__exit__(None, None, None)
+                self._entered = False
+            self.memoized = None
 
 
 class Injected(Generic[T]):
@@ -111,6 +154,11 @@ class ServiceContainer(ServiceResolver):
     def inject(self, cls: Type[T]) -> Injected[T]:
         return Injected(lambda: self.resolve(cls))
     
+    def release_resources(self):
+        for provider in self.__providers.values():
+            provider.release()
+
+
     def __resolve_dependencies(self, cls: Type[T]) -> dict[str, Any]:
         sig = inspect.signature(cls.__init__)
         type_hints = get_type_hints(cls.__init__)
@@ -207,6 +255,14 @@ class ServiceContainerBuilder:
         self.__container.add_provider(base_cls, provider)
         return self
     
+    def singleton_resource(self, impl_cls: Type[R], obj: R | None = None) -> Self:
+        if obj is None:
+            provider = _MemoizedCallableContextManagerServiceProvider(impl_cls, lambda **kwargs: impl_cls(**kwargs))
+        else:
+            provider = _ObjectContextManagerServiceProvider(impl_cls, obj)
+        self.__container.add_provider(impl_cls, provider)
+        return self
+    
 
 
 class DependencyInjection(ServiceResolver):
@@ -228,8 +284,12 @@ class DependencyInjection(ServiceResolver):
         self.__rebuild_container()
 
     def pop_container(self):
-        self.__container_stack.pop()
+        top_container = self.__container_stack.pop()
+        top_container.release_resources()
         self.__rebuild_container()
+
+    def release_resources(self):
+        self.container.release_resources()
 
     def __rebuild_container(self):
         self.container = ServiceContainer()
