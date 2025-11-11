@@ -1,5 +1,8 @@
+import importlib.metadata
 import os
 from typing import Any
+
+import flet as ft
 
 from w3stringsx_svc.configuration import Configuration, ConfigurationValue
 from w3stringsx_gui.services.page_provider import PageProvider
@@ -15,6 +18,14 @@ class W3stringsxGuiConfiguration(Configuration):
     @property
     def app_dir(self) -> ConfigurationValue[str]:
         return self.some(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+    
+    @property
+    def app_version(self) -> ConfigurationValue[str]:
+        return self.__get('w3stringsx_gui.app_version')
+    
+    @app_version.setter
+    def app_version(self, val: str):
+        self.__set('w3stringsx_gui.app_version', val)
 
     @property
     def w3strings_encoder_path(self) -> ConfigurationValue[str]:
@@ -33,6 +44,15 @@ class W3stringsxGuiConfiguration(Configuration):
         self.__set('w3stringsx_gui.theme_mode', val)
 
 
+    def initialize(self):
+        super().initialize()
+
+    def reset_to_default(self):
+        self.app_version = importlib.metadata.version('w3stringsx-gui')
+        self.w3strings_encoder_path = ""
+        self.theme_mode = ft.ThemeMode.SYSTEM.value
+    
+
     def __get(self, key: str) -> ConfigurationValue[Any]:
         val = self.__page_provider.provide().client_storage.get(key)
         if val is None:
@@ -40,4 +60,9 @@ class W3stringsxGuiConfiguration(Configuration):
         return self.some(val)
     
     def __set(self, key: str, val: Any):
-        self.__page_provider.provide().client_storage.set(key, val)
+        client_storage = self.__page_provider.provide().client_storage
+        if bool(val):
+            client_storage.set(key, val)
+        else:
+            # remove falsy values
+            client_storage.remove(key)

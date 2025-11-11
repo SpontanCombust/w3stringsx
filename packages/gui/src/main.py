@@ -40,12 +40,13 @@ def setup_services(page: ft.Page):
     page_provider = PageProvider()
     page_provider.acquire(page)
     config = W3stringsxGuiConfiguration(page_provider)
+    config.initialize()
 
     container = di.container_builder()\
         .singleton(PageProvider, page_provider)\
         .abstract_singleton(Configuration, W3stringsxGuiConfiguration, config)\
         .singleton(W3StringsEncoderLocator,
-            W3StringsEncoderLocator(config)
+            W3StringsEncoderLocator()
             .with_handler(FromConfigW3stringsEncoderLocatorHandler(config))\
             .with_handler(AppDirW3StringsEncoderLocatorHandler(config))\
             .with_handler(PathEnvW3stringsEncoderLocatorHandler()))\
@@ -59,16 +60,7 @@ def setup_services(page: ft.Page):
     init_logger(config.app_dir.get_required())
     set_log_level(logging.INFO)
 
-    theme_mode_str = config.theme_mode.get()
-    # memorize default theme
-    if theme_mode_str is None:
-        theme_mode_str = ft.ThemeMode.SYSTEM.value
-        config.theme_mode = theme_mode_str
-    if theme_mode_str in [member.value for member in list(ft.ThemeMode)]:
-        theme_mode = ft.ThemeMode(theme_mode_str)
-    else:
-        theme_mode = ft.ThemeMode.SYSTEM
-    page.theme_mode = theme_mode
+    page.theme_mode = ft.ThemeMode(config.theme_mode.get_required())
 
 def main(page: ft.Page):
     setup_services(page)

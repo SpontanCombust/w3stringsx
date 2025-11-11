@@ -1,4 +1,5 @@
-from typing import Protocol, TypeVar, Generic
+from abc import ABC, abstractmethod
+from typing import TypeVar, Generic
 
 
 T = TypeVar('T')
@@ -16,7 +17,13 @@ class ConfigurationValue(Generic[T]):
             raise Exception('Configuration value not defined')
         return self.__value
     
-class Configuration(Protocol):
+    def is_some(self) -> bool:
+        return self.__value is not None
+    
+    def is_none(self) -> bool:
+        return self.__value is None
+    
+class Configuration(ABC):
     def some(self, v: T) -> ConfigurationValue[T]:
         return ConfigurationValue(v)
     
@@ -24,14 +31,24 @@ class Configuration(Protocol):
         return ConfigurationValue(None)
 
     @property
+    @abstractmethod
     def app_dir(self) -> ConfigurationValue[str]:
+        return self.none()
+    
+    @property
+    @abstractmethod
+    def app_version(self) -> ConfigurationValue[str]:
         return self.none()
 
     @property
+    @abstractmethod
     def w3strings_encoder_path(self) -> ConfigurationValue[str]:
         return self.none()
-    
-    @w3strings_encoder_path.setter
-    def w3strings_encoder_path(self, val: str):
+
+    @abstractmethod
+    def reset_to_default(self):
         ...
 
+    def initialize(self):
+        if self.app_version.is_none():
+            self.reset_to_default()

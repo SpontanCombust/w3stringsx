@@ -26,6 +26,18 @@ class SettingsView(ViewBase):
             self.on_theme_mode_changed
         )
 
+        self.__reset_confirm_dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Text("Please confirm"),
+            content=ft.Text("Are you sure you want to reset settings to default?"),
+            actions=[
+                ft.TextButton("Yes", on_click=self.on_reset_confirm_dialog_yes),
+                ft.TextButton("No", on_click=self.on_reset_confirm_dialog_no),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+            on_dismiss=self.on_reset_confirm_dialog_no,
+        )
+
         super().__init__(
             route=Routes.SETTINGS,
             spacing=15,
@@ -46,7 +58,7 @@ class SettingsView(ViewBase):
                             on_click=self.on_w3strings_encoder_path_picker_button_click,
                         ),
                         ft.IconButton(
-                            icon=ft.Icons.CANCEL,
+                            icon=ft.Icons.CLEAR,
                             on_click=self.on_w3strings_encoder_path_clear_button_click
                         )
                     ]
@@ -62,6 +74,7 @@ class SettingsView(ViewBase):
                             label="Theme mode",
                             value=self.__theme_mode,
                             border_color=ft.Colors.PRIMARY,
+                            width=300,
                             options=[
                                 ft.DropdownOption(
                                     key=member.value,
@@ -74,12 +87,27 @@ class SettingsView(ViewBase):
                 ft.Row(
                     height=10
                 ),
-                ftr.ReactiveFilledButton(
-                    text="Save",
-                    icon=ft.Icons.SAVE,
-                    width=100,
-                    disabled=ftr.Computed([self.__should_save], lambda: not self.__should_save.value),
-                    on_click=self.on_save_button_click
+                ft.Row(
+                    alignment=ft.MainAxisAlignment.CENTER,
+                    controls=[
+                        ft.Column(
+                            controls=[
+                                ftr.ReactiveFilledButton(
+                                    text="Save",
+                                    icon=ft.Icons.SAVE,
+                                    width=300,
+                                    disabled=ftr.Computed([self.__should_save], lambda: not self.__should_save.value),
+                                    on_click=self.on_save_button_click
+                                ),
+                                ft.FilledButton(
+                                    text="Reset to default",
+                                    icon=ft.Icons.ROTATE_LEFT,
+                                    width=300,
+                                    on_click=self.on_reset_button_click
+                                )
+                            ]
+                        ),
+                    ]
                 )
             ],
         )
@@ -136,11 +164,39 @@ class SettingsView(ViewBase):
         if should_update_page:
             self.page.update()
 
+    def on_reset_button_click(self, ev: ft.ControlEvent):
+        if self.page is None:
+            return
+        
+        self.page.open(self.__reset_confirm_dialog)
+
+    def on_reset_confirm_dialog_yes(self, ev: ft.ControlEvent):
+        if self.page is None:
+            return
+        
+        self.page.close(self.__reset_confirm_dialog)
+
+        self.__config.reset_to_default()
+        self.__w3strings_encoder_path.value = self.__config.w3strings_encoder_path.get()
+        self.__theme_mode.value = self.__config.theme_mode.get()
+        self.__should_save.value = False
+        self.__settings_to_save.clear()
+
+        self.page.theme_mode = ft.ThemeMode(self.__config.theme_mode.get())
+        self.page.update()
+        self.page.open(ft.SnackBar(ft.Text("Settings have been reset to default."), bgcolor=ft.Colors.AMBER))
+
+    def on_reset_confirm_dialog_no(self, ev: ft.ControlEvent):
+        if self.page is None:
+            return
+        
+        self.page.close(self.__reset_confirm_dialog)
+
 
     def __update_should_save(self, state: ftr.State, config_value: Any):
         if state.value != config_value:
             self.__settings_to_save.add(state)
-        else:
+        elif state in self.__settings_to_save:
             self.__settings_to_save.remove(state)
         self.__should_save.value = len(self.__settings_to_save) > 0
             
