@@ -1,5 +1,3 @@
-from typing import Any, List
-
 import flet as ft
 
 from w3stringsx_gui.components import ThemeButton

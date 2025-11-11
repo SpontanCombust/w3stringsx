@@ -1,4 +1,4 @@
-from typing import Sequence, Callable, Any, TypeVar
+from typing import Sequence, Callable, Any
 
 import flet as ft
 import flet_reactive as ftr
