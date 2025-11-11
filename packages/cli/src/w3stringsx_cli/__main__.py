@@ -9,7 +9,8 @@ from w3stringsx_svc import (
     StringKeyDiscoveryService,
     W3StringsEncoderLocator, FromConfigW3stringsEncoderLocatorHandler, AppDirW3StringsEncoderLocatorHandler, PathEnvW3stringsEncoderLocatorHandler,
     W3StringsEncoder,
-    W3StringsManagerService
+    W3StringsManagerService,
+    ScratchFolderService
 )
 from w3stringsx_cli.configuration import W3stringsxCliConfiguration
 from w3stringsx_cli.cli import cli_main
@@ -28,6 +29,7 @@ def setup_services():
             .with_handler(FromConfigW3stringsEncoderLocatorHandler(resolver.resolve(Configuration)))
             .with_handler(AppDirW3StringsEncoderLocatorHandler(resolver.resolve(Configuration)))
             .with_handler(PathEnvW3stringsEncoderLocatorHandler()))\
+        .singleton_resource(ScratchFolderService)\
         .singleton(W3StringsManagerService)\
         .build()
     
@@ -46,6 +48,7 @@ def main():
         logger.error(traceback.format_exc())
         sys.exit(-1)
     finally:
+        di.release_resources()
         logger.info(f'Logs have been written into {get_log_file_path()}')
 
 

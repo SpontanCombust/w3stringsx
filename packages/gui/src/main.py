@@ -10,7 +10,8 @@ from w3stringsx_svc import (
     StringKeyDiscoveryService,
     W3StringsEncoderLocator, FromConfigW3stringsEncoderLocatorHandler, AppDirW3StringsEncoderLocatorHandler, PathEnvW3stringsEncoderLocatorHandler,
     W3StringsEncoder,
-    W3StringsManagerService
+    W3StringsManagerService,
+    ScratchFolderService
 )
 from w3stringsx_gui.services import (
     PageProvider,
@@ -39,6 +40,7 @@ def setup_services(page: ft.Page):
             .with_handler(AppDirW3StringsEncoderLocatorHandler(config))\
             .with_handler(PathEnvW3stringsEncoderLocatorHandler()))\
         .transitive(W3StringsEncoder)\
+        .singleton_resource(ScratchFolderService)\
         .transitive(W3StringsManagerService)\
         .singleton(StringKeyDiscoveryService)\
         .build()
@@ -103,7 +105,13 @@ def main(page: ft.Page):
         logger = get_logger()
         logger.error(ev.data)
         logger.error(traceback.format_exc())
+    def page_on_app_lifecycle_state_change(ev: ft.AppLifecycleStateChangeEvent):
+        # DETACH doesn't seem to get called on desktop
+        if ev.state in (ft.AppLifecycleState.HIDE, ft.AppLifecycleState.DETACH):
+            di.release_resources()
+             
     page.on_error = page_on_error
+    page.on_app_lifecycle_state_change = page_on_app_lifecycle_state_change
 
 
     from w3stringsx_gui.routing import Routes, Router

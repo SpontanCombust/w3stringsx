@@ -3,6 +3,7 @@ Various utility classes and functions
 """
 
 from __future__ import annotations
+import contextlib
 import io
 import os
 import re
@@ -46,7 +47,7 @@ def replace_path_dirname(path: str, new_dirname: str) -> str:
 # Because encoder ALWAYS puts output in the same directory as input before we are able to move it 
 # we first need to create a temporary folder in which we'll execute the commands.
 # This way no files will be overwritten without user's consent
-class ScratchFolder:
+class ScratchFolder(contextlib.AbstractContextManager):
     folder_path: str
 
     def __init__(self, work_dir: str):
