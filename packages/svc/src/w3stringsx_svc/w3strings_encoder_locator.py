@@ -10,10 +10,7 @@ logger = get_logger()
 
 
 class W3StringsEncoderLocator:
-    def __init__(self,
-        config: Configuration
-    ):
-        self.__config = config
+    def __init__(self):
         self.handlers: list[W3StringsEncoderLocatorHandler] = []
 
     def with_handler(self, fallback_handler: W3StringsEncoderLocatorHandler):
@@ -29,9 +26,6 @@ class W3StringsEncoderLocator:
 
         if exe_path is not None:
             logger.info('Found w3strings encoder: %s', exe_path)
-            if self.__config.w3strings_encoder_path.get() is None:
-                logger.info('Saving found w3strings encoder path to configuration')
-                self.__config.w3strings_encoder_path = exe_path
             return exe_path
         else:
             logger.info('w3strings encoder could not be found')
