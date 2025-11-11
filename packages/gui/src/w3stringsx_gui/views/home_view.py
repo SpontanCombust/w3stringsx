@@ -34,19 +34,19 @@ class HomeView(ViewBase):
                             controls=[
                                 FeatureButton(
                                     'icons/file-lock.svg', 
-                                    'ENCODE \n CSV to w3strings',
+                                    'Encode \n CSV to w3strings',
                                     bgcolor=ft.Colors.PRIMARY,
                                     color=ft.Colors.ON_PRIMARY,
                                     on_click=lambda e: router.goto(Routes.ENCODE_STRINGS)),
                                 FeatureButton(
                                     'icons/file-lock-open.svg', 
-                                    'DECODE \n w3strings to CSV', 
+                                    'Decode \n w3strings to CSV', 
                                     bgcolor=ft.Colors.PRIMARY,
                                     color=ft.Colors.ON_PRIMARY,
                                     on_click=lambda e: router.goto(Routes.DECODE_STRINGS)),
                                 FeatureButton(
                                     'icons/file-find.svg', 
-                                    'SEARCH \n for string keys', 
+                                    'Search \n for string keys', 
                                     bgcolor=ft.Colors.PRIMARY,
                                     color=ft.Colors.ON_PRIMARY,
                                     on_click=lambda e: router.goto(Routes.SEARCH_FOR_STRING_KEYS)),

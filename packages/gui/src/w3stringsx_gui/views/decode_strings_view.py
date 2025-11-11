@@ -112,7 +112,7 @@ class DecodeStringsView(ViewBase, ftr.ReactiveHooks):
                             controls=[
                                 ftr.ReactiveFilledButton(
                                     icon=ft.Icons.LOCK_OPEN,
-                                    text='DECODE',
+                                    text='Decode',
                                     width=300,
                                     on_click=self.on_decode_button_click,
                                     disabled=self.use_computed(

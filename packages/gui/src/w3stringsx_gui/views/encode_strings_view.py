@@ -125,7 +125,7 @@ class EncodeStringsView(ViewBase):
                             controls=[
                                 ftr.ReactiveFilledButton(
                                     icon=ft.Icons.LOCK_OUTLINE,
-                                    text='ENCODE',
+                                    text='Encode',
                                     width=300,
                                     on_click=self.on_encode_button_click,
                                     disabled=self.use_computed(

@@ -46,7 +46,7 @@ class SettingsView(ViewBase):
                     controls=[
                         ftr.ReactiveTextField(
                             expand=True,
-                            label="w3strings encoder path",
+                            label="Custom w3strings encoder path",
                             icon=ft.Icons.TERMINAL,
                             value=self.__w3strings_encoder_path,
                             read_only=True,

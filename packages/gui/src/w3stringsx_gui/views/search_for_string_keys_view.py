@@ -135,7 +135,7 @@ class SearchForStringKeysView(ViewBase):
                             controls=[
                                 ftr.ReactiveFilledButton(
                                     icon=ft.Icons.SEARCH,
-                                    text='SEARCH',
+                                    text='Search',
                                     width=300,
                                     on_click=self.on_search_button_click,
                                     disabled=self.use_computed(
