@@ -25,6 +25,8 @@ class HomeView(ViewBase):
 
         super().__init__(
             route=Routes.HOME,
+            vertical_alignment=ft.MainAxisAlignment.CENTER,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             controls=[
                 ft.Column(
                     controls=[
@@ -95,9 +97,10 @@ class HomeView(ViewBase):
                     spacing=20
                 )
             ],
-            vertical_alignment=ft.MainAxisAlignment.CENTER,
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            padding=100
+            floating_action_button=ft.FloatingActionButton(
+                icon=ft.Icons.SETTINGS,
+                on_click=lambda ev: router.goto(Routes.SETTINGS)
+            )
         )
 
     def on_file_or_dir_dropped(self, ev: ftd.ListFiles):
