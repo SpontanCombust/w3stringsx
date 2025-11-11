@@ -38,25 +38,24 @@ ROUTE_MAP: dict[str, Type[ViewBase]] = {
 
 def setup_services(page: ft.Page):
     page_provider = PageProvider()
+    page_provider.acquire(page)
     config = W3stringsxGuiConfiguration(page_provider)
 
-    # FIXME either encoder should be transitive or its service should be reloaded
     container = di.container_builder()\
         .singleton(PageProvider, page_provider)\
         .abstract_singleton(Configuration, W3stringsxGuiConfiguration, config)\
-        .singleton(W3StringsEncoder)\
-        .singleton(StringKeyDiscoveryService)\
-        .transitive_factory(W3StringsEncoderLocator, lambda resolver:
+        .singleton(W3StringsEncoderLocator,
             W3StringsEncoderLocator(config)
-            .with_handler(FromConfigW3stringsEncoderLocatorHandler(resolver.resolve(Configuration)))
-            .with_handler(AppDirW3StringsEncoderLocatorHandler(resolver.resolve(Configuration)))
+            .with_handler(FromConfigW3stringsEncoderLocatorHandler(config))\
+            .with_handler(AppDirW3StringsEncoderLocatorHandler(config))\
             .with_handler(PathEnvW3stringsEncoderLocatorHandler()))\
-        .singleton(W3StringsManagerService)\
+        .transitive(W3StringsEncoder)\
+        .transitive(W3StringsManagerService)\
+        .singleton(StringKeyDiscoveryService)\
         .build()
     
     di.push_container(container)
 
-    page_provider.acquire(page)
     init_logger(config.app_dir.get_required())
     set_log_level(logging.INFO)
 
