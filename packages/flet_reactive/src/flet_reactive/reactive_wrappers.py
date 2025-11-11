@@ -1460,3 +1460,11 @@ class ReactiveDropdown(ft.Dropdown, _ReactiveControlWrapper):
                 binding.sync_state(),
                 on_change(ev) if on_change else None
             )
+
+    def did_mount(self):
+        super().did_mount()
+        self._init_prop_bindings()
+
+    def will_unmount(self):
+        super().will_unmount()
+        self._drop_prop_bindings()
