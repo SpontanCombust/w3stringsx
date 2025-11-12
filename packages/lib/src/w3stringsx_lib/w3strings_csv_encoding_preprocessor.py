@@ -79,7 +79,7 @@ class W3StringsCsvDocumentEncodingPreprocessor:
             meta_lang = self._header_meta_lang
             logger.info("Encoding for language meta '%s' based on file header", meta_lang)
         elif self._title_lang is not None:
-            meta_lang = self._title_lang
+            meta_lang = ALL_LANGS_META_MAP.get(self._title_lang)
             logger.info("Encoding for language meta '%s' based on file name", meta_lang)
         else:
             meta_lang = 'en'
