@@ -82,7 +82,11 @@ class W3StringsCsvAttributeComment:
     def __str__(self) -> str:
         return f";{self.key}={self.value}"
     
-W3StringsCsvDocumentLine = W3StringsCsvCompleteEntry | W3StringsCsvShortEntry | W3StringsCsvPlainComment | W3StringsCsvAttributeComment
+class W3StringsCsvEmptyLine:
+    def __str__(self) -> str:
+        return ""
+    
+W3StringsCsvDocumentLine = W3StringsCsvCompleteEntry | W3StringsCsvShortEntry | W3StringsCsvPlainComment | W3StringsCsvAttributeComment | W3StringsCsvEmptyLine
 
 
 class W3StringsCsvDocument:
@@ -135,10 +139,10 @@ class W3StringsCsvDocument:
             file.writelines(lines_as_strs)
     
     @staticmethod
-    def _read_line(line: str) -> W3StringsCsvDocumentLine | None:
+    def _read_line(line: str) -> W3StringsCsvDocumentLine:
         line = line.strip()
         if len(line) == 0:
-            return None
+            return W3StringsCsvEmptyLine()
         
         if line.startswith(';'):
             return W3StringsCsvDocument._read_comment(line)
@@ -146,7 +150,7 @@ class W3StringsCsvDocument:
             return W3StringsCsvDocument._read_string_entry(line)
 
     @staticmethod 
-    def _read_string_entry(entry_line: str) -> W3StringsCsvCompleteEntry | W3StringsCsvShortEntry | None:
+    def _read_string_entry(entry_line: str) -> W3StringsCsvCompleteEntry | W3StringsCsvShortEntry:
         split = entry_line.split('|')
             
         if len(split) == 2:
