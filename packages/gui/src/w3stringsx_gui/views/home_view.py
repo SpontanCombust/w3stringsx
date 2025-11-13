@@ -104,7 +104,7 @@ class HomeView(ViewBase):
                         ),
                         ft.FloatingActionButton(
                             bottom=50,
-                            right=10,
+                            right=0,
                             icon=ft.Icons.SETTINGS,
                             on_click=lambda ev: router.goto(Routes.SETTINGS),
                         ),

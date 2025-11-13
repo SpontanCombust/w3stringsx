@@ -1,5 +1,5 @@
 import traceback
-from typing import TypeVar, Type, Self
+from typing import Type, Self
 
 import flet as ft
 
@@ -17,7 +17,7 @@ class ViewRoute:
     def create_view(self) -> ft.View:
         view = di.resolve(self.view_cls)
         view.appbar = CommonAppBar(view.TITLE)
-        view.padding = ft.padding.symmetric(10, 30)
+        view.padding = ft.padding.symmetric(20, 50)
         return view
     
 class Router:
