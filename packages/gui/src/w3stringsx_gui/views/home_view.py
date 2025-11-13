@@ -126,11 +126,7 @@ class HomeView(ViewBase):
             if target_route not in (None, Routes.ENCODE_STRINGS):
                 return
             
-            # handle only the first encountered CSV
-            if encode_props.csv_path is not None:
-                return
-
-            encode_props.csv_path = path
+            encode_props.csv_paths.extend(path)
             target_route = Routes.ENCODE_STRINGS 
             target_route_props = encode_props
 

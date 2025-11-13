@@ -70,7 +70,7 @@ class SearchForStringKeysView(ViewBase):
                                 ),
                             ],
                             rows_data=self.__search_paths,
-                            rows_mapper=lambda path: ftr.ReactiveDataRow(
+                            rows_mapper=lambda path, _: ftr.ReactiveDataRow(
                                 cells=[
                                     ft.DataCell(
                                         content=ft.Text(

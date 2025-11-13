@@ -4,7 +4,7 @@ import flet as ft
 
 from flet_reactive import Reactive, Conditional, State
 
-
+#TODO replace status message with simple SnackBar
 class StatusMessage(Reactive):
     def __init__(self, status_state: State[bool | None], success_msg: str, error_msg: str):
         self.__status_state = status_state

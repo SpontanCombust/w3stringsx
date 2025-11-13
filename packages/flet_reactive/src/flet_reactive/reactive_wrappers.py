@@ -44,7 +44,7 @@ class _StatefulPropertyBinding(StateObserver[_T]):
 class _StatefulCtrlSequencePropertyBinding(Generic[_T, _C], ListStateObserver[_T]):
     def __init__(self, 
         state: ListState[_T], 
-        state_ctrl_mapper: Callable[[_T], _C], 
+        state_ctrl_mapper: Callable[[_T, int], _C], 
         target_ctrl: ft.Control, 
         target_ctrl_seq: MutableSequence[_C]
     ) -> None:
@@ -54,7 +54,7 @@ class _StatefulCtrlSequencePropertyBinding(Generic[_T, _C], ListStateObserver[_T
         self.target_ctrl_seq = target_ctrl_seq
 
         for i in range(len(state)):
-            target_ctrl_seq.insert(i, state_ctrl_mapper(state[i]))
+            target_ctrl_seq.insert(i, state_ctrl_mapper(state[i], i))
 
     def setup_observed_states(self):
         self.state.add_observer(self)
@@ -63,11 +63,11 @@ class _StatefulCtrlSequencePropertyBinding(Generic[_T, _C], ListStateObserver[_T
         self.state.remove_observer(self)
 
     def on_set_state_item(self, key: SupportsIndex, value: _T) -> None:
-        self.target_ctrl_seq.__setitem__(int(key), self.state_ctrl_mapper(value))
+        self.target_ctrl_seq.__setitem__(int(key), self.state_ctrl_mapper(value, int(key)))
         self.target_ctrl.update()
 
     def on_set_state_item_slice(self, key: slice, value: Iterable[_T]) -> None:
-        self.target_ctrl_seq.__setitem__(key, [self.state_ctrl_mapper(value) for value in value])
+        self.target_ctrl_seq.__setitem__(key, [self.state_ctrl_mapper(value, i) for value, i in zip(value, range(key.start, key.stop))])
         self.target_ctrl.update()
 
     def on_del_state_item(self, key: SupportsIndex) -> None:
@@ -79,13 +79,13 @@ class _StatefulCtrlSequencePropertyBinding(Generic[_T, _C], ListStateObserver[_T
         self.target_ctrl.update()
 
     def on_insert_state_item(self, key: SupportsIndex, value: _T) -> None:
-        self.target_ctrl_seq.insert(int(key), self.state_ctrl_mapper(value))
+        self.target_ctrl_seq.insert(int(key), self.state_ctrl_mapper(value, int(key)))
         self.target_ctrl.update()
 
 class _StatefulDataRowsPropertyBinding(_StatefulCtrlSequencePropertyBinding[_T, ftdt2.DataRow2]):
     def __init__(self, 
         state: ListState[_T], 
-        state_ctrl_mapper: Callable[[_T], ftdt2.DataRow2], 
+        state_ctrl_mapper: Callable[[_T, int], ftdt2.DataRow2], 
         target_ctrl: ft.Control, 
         target_ctrl_seq: MutableSequence[ftdt2.DataRow2],
         column_count: int,
@@ -109,12 +109,10 @@ class _StatefulDataRowsPropertyBinding(_StatefulCtrlSequencePropertyBinding[_T, 
 
 
     def on_set_state_item(self, key: SupportsIndex, value: _T) -> None:
-        self.target_ctrl_seq.__setitem__(int(key), self.state_ctrl_mapper(value))
-        self.target_ctrl.update()
+        return super().on_set_state_item(key, value)
 
     def on_set_state_item_slice(self, key: slice, value: Iterable[_T]) -> None:
-        self.target_ctrl_seq.__setitem__(key, [self.state_ctrl_mapper(value) for value in value])
-        self.target_ctrl.update()
+        return super().on_set_state_item_slice(key, value)
 
     def on_del_state_item(self, key: SupportsIndex) -> None:
         seq_idx = int(key)
@@ -144,7 +142,7 @@ class _StatefulDataRowsPropertyBinding(_StatefulCtrlSequencePropertyBinding[_T, 
     def on_insert_state_item(self, key: SupportsIndex, value: _T) -> None:
         seq_idx = int(key)
         seq_idx = seq_idx if seq_idx >= 0 else len(self.state) + seq_idx
-        mapped = self.state_ctrl_mapper(value)
+        mapped = self.state_ctrl_mapper(value, seq_idx)
         if seq_idx < self.placeholder_count and self.target_ctrl_seq[seq_idx].data == 'placeholder':
             self.target_ctrl_seq.__setitem__(seq_idx, mapped)
         else:
@@ -167,7 +165,7 @@ class _ReactiveControlWrapper:
     
     def _new_stateful_ctrl_seq_prop_binding(self, 
         state: ListState[_T], 
-        state_ctrl_mapper: Callable[[_T], _C], 
+        state_ctrl_mapper: Callable[[_T, int], _C], 
         target_ctrl: ft.Control, 
         target_ctrl_seq: MutableSequence[_C]
     ) -> _StatefulCtrlSequencePropertyBinding:
@@ -177,7 +175,7 @@ class _ReactiveControlWrapper:
     
     def _new_stateful_data_rows_prop_binding(self, 
         state: ListState[_T], 
-        state_ctrl_mapper: Callable[[_T], ftdt2.DataRow2], 
+        state_ctrl_mapper: Callable[[_T, int], ftdt2.DataRow2], 
         target_ctrl: ft.Control, 
         target_ctrl_seq: MutableSequence[ftdt2.DataRow2],
         column_count: int,
@@ -250,7 +248,7 @@ class ReactiveCheckbox(ft.Checkbox, _ReactiveControlWrapper):
         tooltip: str | ft.Tooltip | None = None, 
         badge: str | ft.Badge | None = None, 
         visible: bool | None = None, 
-        disabled: bool | None = None, 
+        disabled: bool | None | State[bool | None] = None, 
         data: Any = None, 
         adaptive: bool | None = None
     ):
@@ -303,7 +301,7 @@ class ReactiveCheckbox(ft.Checkbox, _ReactiveControlWrapper):
             tooltip, 
             badge, 
             visible, 
-            disabled, 
+            _unwrap_value(disabled), 
             data, 
             adaptive
         )
@@ -314,6 +312,8 @@ class ReactiveCheckbox(ft.Checkbox, _ReactiveControlWrapper):
                 binding.sync_state(),
                 on_change(ev) if on_change else None
             )
+        if isinstance(disabled, State):
+            self._new_stateful_prop_binding(disabled, self, 'disabled')
 
     def did_mount(self):
         super().did_mount()
@@ -730,13 +730,21 @@ class ReactiveDataColumn(ftdt2.DataColumn2, _ReactiveControlWrapper):
             data
         )
 
+    def did_mount(self):
+        super().did_mount()
+        self._init_prop_bindings()
+
+    def will_unmount(self):
+        super().will_unmount()
+        self._drop_prop_bindings()
+
 class ReactiveDataRow(ftdt2.DataRow2, _ReactiveControlWrapper):
     def __init__(self, 
         cells: List[ft.DataCell], 
         color: None | str | ft.Colors | ft.CupertinoColors | Dict[ft.ControlState, str | ft.Colors | ft.CupertinoColors] = None,
         decoration: ft.BoxDecoration | None = None,
         specific_row_height: int | float | None = None,
-        selected: bool | None = None,
+        selected: bool | None | State[bool | None] = None,
         on_long_press: Callable[[ft.ControlEvent], Any] | None = None,
         on_select_changed: Callable[[ft.ControlEvent], Any] | None = None,
         on_double_tap: Callable[[ft.ControlEvent], Any] | None = None,
@@ -753,7 +761,7 @@ class ReactiveDataRow(ftdt2.DataRow2, _ReactiveControlWrapper):
             color,
             decoration,
             specific_row_height,
-            selected, 
+            _unwrap_value(selected), 
             on_long_press,
             on_select_changed,
             on_double_tap,
@@ -766,11 +774,26 @@ class ReactiveDataRow(ftdt2.DataRow2, _ReactiveControlWrapper):
             data
         )
 
+        if isinstance(selected, State):
+            binding = self._new_stateful_prop_binding(selected, self, 'selected')
+            self.on_select_changed = lambda ev: (
+                binding.sync_state(),
+                on_select_changed(ev) if on_select_changed else None
+            )
+
+    def did_mount(self):
+        super().did_mount()
+        self._init_prop_bindings()
+
+    def will_unmount(self):
+        super().will_unmount()
+        self._drop_prop_bindings()
+
 class ReactiveDataTable(ftdt2.DataTable2, _ReactiveControlWrapper, Generic[_T]):
     def __init__(self, 
         columns: Sequence[ReactiveDataColumn], 
         rows_data: ListState[_T] | None = None,
-        rows_mapper: Callable[[_T], ReactiveDataRow] | None = None,
+        rows_mapper: Callable[[_T, int], ReactiveDataRow] | None = None,
         placeholder_rows_count: int | None = None,
         rows: Sequence[ReactiveDataRow] | None = None, 
         empty: ft.Control | None = None, 
@@ -938,7 +961,7 @@ class ReactiveColumn(ft.Column, _ReactiveControlWrapper, Generic[_T]):
     def __init__(self,
         controls: Sequence[ft.Control] | None = None,
         controls_data: ListState[_T] | None = None,
-        controls_mapper: Callable[[_T], ft.Control] | None = None,
+        controls_mapper: Callable[[_T, int], ft.Control] | None = None,
         alignment: ft.MainAxisAlignment | None = None,
         horizontal_alignment: ft.CrossAxisAlignment | None = None,
         spacing: int | float | None = None,
@@ -1095,7 +1118,7 @@ class ReactiveContainer(ft.Container, _ReactiveControlWrapper):
         tooltip: str | ft.Tooltip | None = None,
         badge: str | ft.Badge | None = None,
         visible: bool | None = None,
-        disabled: bool | None = None,
+        disabled: bool | None | State[bool | None] = None,
         data: Any = None,
         rtl: bool | None = None,
         adaptive: bool | None = None
@@ -1156,14 +1179,18 @@ class ReactiveContainer(ft.Container, _ReactiveControlWrapper):
             tooltip,
             badge,
             visible,
-            disabled,
+            _unwrap_value(disabled),
             data,
             rtl,
             adaptive
         )
 
+        if isinstance(bgcolor, State):
+            self._new_stateful_prop_binding(bgcolor, self, 'bgcolor')
         if isinstance(height, State):
             self._new_stateful_prop_binding(height, self, 'height')
+        if isinstance(disabled, State):
+            self._new_stateful_prop_binding(disabled, self, 'disabled')
 
     def did_mount(self):
         super().did_mount()

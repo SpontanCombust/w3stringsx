@@ -107,7 +107,7 @@ class LogsPanel(ftr.ReactiveContainer, ftr.ReactiveHooks):
                                                 ftr.ReactiveColumn(
                                                     spacing=0,
                                                     controls_data=self.__logs_handler.logs,
-                                                    controls_mapper=lambda record: ft.Text(
+                                                    controls_mapper=lambda record, _: ft.Text(
                                                         value=record.msg,
                                                         size=16,
                                                         style=ft.TextStyle(
