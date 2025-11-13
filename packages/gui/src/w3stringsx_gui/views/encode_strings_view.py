@@ -11,7 +11,7 @@ from w3stringsx_svc import W3StringsManagerService
 import flet_reactive as ftr
 from w3stringsx_gui.views.view_base import ViewBase
 from w3stringsx_gui.routing import Routes
-from w3stringsx_gui.components import LogsPanel, StatusMessage
+from w3stringsx_gui.components import StatusMessage
 
 
 _logger = get_logger()
@@ -80,164 +80,155 @@ class EncodeStringsView(ViewBase):
             route=Routes.ENCODE_STRINGS,
             scroll=ft.ScrollMode.AUTO,
             controls=[
-                ft.Column(
-                    expand=True,
+                ftr.ReactiveDataTable[_CsvFileEntry](
+                    height=300,
+                    heading_row_color=ft.Colors.PRIMARY_CONTAINER,
+                    heading_text_style=ft.TextStyle(color=ft.Colors.ON_PRIMARY_CONTAINER),
+                    vertical_lines=ft.border.BorderSide(1, ft.Colors.PRIMARY),
+                    horizontal_lines=ft.border.BorderSide(1, ft.Colors.PRIMARY),
+                    border=ft.border.all(1, ft.Colors.PRIMARY),
+                    # show_checkbox_column=False,
+                    show_heading_checkbox=False,
+                    columns=[
+                        ftr.ReactiveDataColumn(
+                            label=ft.Text("File name")
+                        ),
+                        ftr.ReactiveDataColumn(
+                            label=ft.Text("File directory")
+                        ),
+                        ftr.ReactiveDataColumn(
+                            label=ft.Text("Target languages")
+                        ),
+                    ],
+                    rows_data=self.__csv_file_entries,
+                    rows_mapper=lambda entry, idx: ftr.ReactiveDataRow(
+                        cells=[
+                            ft.DataCell(
+                                content=ft.Text(
+                                    value=os.path.basename(entry.csv_path)
+                                )
+                            ),
+                            ft.DataCell(
+                                content=ft.Text(
+                                    value=os.path.dirname(entry.csv_path)
+                                )
+                            ),
+                            #TODO error message when no languages are selected
+                            ft.DataCell(
+                                content=ft.Text(
+                                    value=', '.join(entry.target_langs)
+                                )
+                            ),
+                        ],
+                        selected=entry.selected,
+                        on_select_changed=lambda ev, idx=idx: self.on_csv_file_entries_datarow_select_changed(ev, idx)
+                    ),
+                    placeholder_rows_count=VISIBLE_CSV_ENTRY_ROWS
+                ),
+                ft.Row(
                     controls=[
-                        ftr.ReactiveDataTable[_CsvFileEntry](
-                            height=300,
-                            heading_row_color=ft.Colors.PRIMARY_CONTAINER,
-                            heading_text_style=ft.TextStyle(color=ft.Colors.ON_PRIMARY_CONTAINER),
-                            vertical_lines=ft.border.BorderSide(1, ft.Colors.PRIMARY),
-                            horizontal_lines=ft.border.BorderSide(1, ft.Colors.PRIMARY),
-                            border=ft.border.all(1, ft.Colors.PRIMARY),
-                            # show_checkbox_column=False,
-                            show_heading_checkbox=False,
-                            columns=[
-                                ftr.ReactiveDataColumn(
-                                    label=ft.Text("File name")
-                                ),
-                                ftr.ReactiveDataColumn(
-                                    label=ft.Text("File directory")
-                                ),
-                                ftr.ReactiveDataColumn(
-                                    label=ft.Text("Target languages")
-                                ),
-                            ],
-                            rows_data=self.__csv_file_entries,
-                            rows_mapper=lambda entry, idx: ftr.ReactiveDataRow(
-                                cells=[
-                                    ft.DataCell(
-                                        content=ft.Text(
-                                            value=os.path.basename(entry.csv_path)
-                                        )
-                                    ),
-                                    ft.DataCell(
-                                        content=ft.Text(
-                                            value=os.path.dirname(entry.csv_path)
-                                        )
-                                    ),
-                                    #TODO error message when no languages are selected
-                                    ft.DataCell(
-                                        content=ft.Text(
-                                            value=', '.join(entry.target_langs)
-                                        )
-                                    ),
-                                ],
-                                selected=entry.selected,
-                                on_select_changed=lambda ev, idx=idx: self.on_csv_file_entries_datarow_select_changed(ev, idx)
-                            ),
-                            placeholder_rows_count=VISIBLE_CSV_ENTRY_ROWS
+                        ft.FilledButton(
+                            icon=ft.Icons.ATTACH_FILE,
+                            text="Add files...",
+                            on_click=self.on_pick_csv_files_button_click
                         ),
-                        ft.Row(
-                            controls=[
-                                ft.FilledButton(
-                                    icon=ft.Icons.ATTACH_FILE,
-                                    text="Add files...",
-                                    on_click=self.on_pick_csv_files_button_click
-                                ),
-                                ft.FilledButton(
-                                    icon=ft.Icons.CLEAR,
-                                    text="Clear all",
-                                    on_click=self.on_clear_csv_files_button_click
-                                )
-                            ]
-                        ),
-                        ft.Row(
-                            height=10
-                        ),
-                        ftr.ReactiveContainer(
-                            border=ft.border.all(1, ft.Colors.PRIMARY),
-                            border_radius=5,
-                            height=250,
-                            padding=ft.padding.only(left=10, top=5, right=10, bottom=10),
-                            disabled=self.use_computed([self.__selected_csv_file_entry_idx],
-                                lambda: self.__selected_csv_file_entry_idx.value is None
-                            ),
-                            content=ft.Column(
-                                scroll=ft.ScrollMode.ADAPTIVE,
-                                controls=[
-                                    ft.Text(value="Select target languages:"),
-                                    ft.GridView(
-                                        expand=True,
-                                        runs_count=5,
-                                        run_spacing=100,
-                                        child_aspect_ratio=6.0,
-                                        controls=[
-                                            ftr.ReactiveCheckbox(
-                                                label=ft.Text(value=f'{lang_name} ({lang})', weight=ft.FontWeight.BOLD),
-                                                value=self.__lang_selection[lang],
-                                                disabled=self.use_computed([self.__lang_selection[lang]], 
-                                                    lambda lang=lang: self.__lang_selection[lang].value is None
-                                                ),
-                                                tristate=True,
-                                                on_change=lambda ev, lang=lang: self.on_lang_selection_checkbox_changed(ev, lang),
-                                            # display checkbox for each language, sorted by language name
-                                            ) for lang, lang_name in sorted(ALL_LANGS_NAME_MAP.items(), key=lambda kv: kv[1])
-                                        ] 
-                                    ),
-                                    ft.Row(), # small spacer
-                                    ft.Row(
-                                        controls=[
-                                            ft.FilledButton(
-                                                icon=ft.Icons.CHECK,
-                                                text="Select all",
-                                                on_click=self.on_select_all_langs_button_click
-                                            ),
-                                            ft.FilledButton(
-                                                icon=ft.Icons.CLEAR,
-                                                text="Deselect all",
-                                                on_click=self.on_deselect_all_langs_button_click
-                                            ),
-                                        ]
-                                    )
-                                ]
-                            ) 
-                        ),
-                        ft.Row(
-                            height=10
-                        ),
-                        ftr.ReactiveTextField(
-                            icon=ft.Icons.FOLDER,
-                            value=self.__output_dir_path,
-                            label="Click to choose output directory",
-                            read_only=True,
-                            border_color=ft.Colors.PRIMARY,
-                            on_click=self.on_output_dir_textfield_click,
-                        ),
-                        ftr.ReactiveCheckbox(
-                            label="Keep generated end-result CSV",
-                            value=self.__keep_output_csv,
-                        ),
-                        ft.Row(
-                            height=5
-                        ),
-                        ft.Row(
-                            alignment=ft.MainAxisAlignment.CENTER,
-                            controls=[
-                                ftr.ReactiveFilledButton(
-                                    icon=ft.Icons.LOCK_OUTLINE,
-                                    text='Encode',
-                                    width=300,
-                                    on_click=self.on_encode_button_click,
-                                    disabled=self.use_computed(
-                                        [self.__csv_file_entries, self.__output_dir_path],
-                                        lambda: len(self.__csv_file_entries) == 0
-                                             or not all([len(entry.target_langs) > 0 for entry in self.__csv_file_entries]) # check if every CSV entry has any target language assigned to it
-                                             or not self.__output_dir_path.value
-                                    )
-                                )
-                            ],
-                        ),
-                        StatusMessage(
-                            self.__encode_status,
-                            success_msg="File encoded successfully!",
-                            error_msg="Errors occured during encoding! Check the logs."
-                        ),
+                        ft.FilledButton(
+                            icon=ft.Icons.CLEAR,
+                            text="Clear all",
+                            on_click=self.on_clear_csv_files_button_click
+                        )
                     ]
                 ),
-                #FIXME should be fixed to viewport, not hidden at the end of page
-                LogsPanel(
-                    height=300
+                ft.Row(
+                    height=10
+                ),
+                ftr.ReactiveContainer(
+                    border=ft.border.all(1, ft.Colors.PRIMARY),
+                    border_radius=5,
+                    height=250,
+                    padding=ft.padding.only(left=10, top=5, right=10, bottom=10),
+                    disabled=self.use_computed([self.__selected_csv_file_entry_idx],
+                        lambda: self.__selected_csv_file_entry_idx.value is None
+                    ),
+                    content=ft.Column(
+                        scroll=ft.ScrollMode.ADAPTIVE,
+                        controls=[
+                            ft.Text(value="Select target languages:"),
+                            ft.GridView(
+                                expand=True,
+                                runs_count=5,
+                                run_spacing=100,
+                                child_aspect_ratio=6.0,
+                                controls=[
+                                    ftr.ReactiveCheckbox(
+                                        label=ft.Text(value=f'{lang_name} ({lang})', weight=ft.FontWeight.BOLD),
+                                        value=self.__lang_selection[lang],
+                                        disabled=self.use_computed([self.__lang_selection[lang]], 
+                                            lambda lang=lang: self.__lang_selection[lang].value is None
+                                        ),
+                                        tristate=True,
+                                        on_change=lambda ev, lang=lang: self.on_lang_selection_checkbox_changed(ev, lang),
+                                    # display checkbox for each language, sorted by language name
+                                    ) for lang, lang_name in sorted(ALL_LANGS_NAME_MAP.items(), key=lambda kv: kv[1])
+                                ] 
+                            ),
+                            ft.Row(), # small spacer
+                            ft.Row(
+                                controls=[
+                                    ft.FilledButton(
+                                        icon=ft.Icons.CHECK,
+                                        text="Select all",
+                                        on_click=self.on_select_all_langs_button_click
+                                    ),
+                                    ft.FilledButton(
+                                        icon=ft.Icons.CLEAR,
+                                        text="Deselect all",
+                                        on_click=self.on_deselect_all_langs_button_click
+                                    ),
+                                ]
+                            )
+                        ]
+                    ) 
+                ),
+                ft.Row(
+                    height=10
+                ),
+                ftr.ReactiveTextField(
+                    icon=ft.Icons.FOLDER,
+                    value=self.__output_dir_path,
+                    label="Click to choose output directory",
+                    read_only=True,
+                    border_color=ft.Colors.PRIMARY,
+                    on_click=self.on_output_dir_textfield_click,
+                ),
+                ftr.ReactiveCheckbox(
+                    label="Keep generated end-result CSV",
+                    value=self.__keep_output_csv,
+                ),
+                ft.Row(
+                    height=5
+                ),
+                ft.Row(
+                    alignment=ft.MainAxisAlignment.CENTER,
+                    controls=[
+                        ftr.ReactiveFilledButton(
+                            icon=ft.Icons.LOCK_OUTLINE,
+                            text='Encode',
+                            width=300,
+                            on_click=self.on_encode_button_click,
+                            disabled=self.use_computed(
+                                [self.__csv_file_entries, self.__output_dir_path],
+                                lambda: len(self.__csv_file_entries) == 0
+                                        or not all([len(entry.target_langs) > 0 for entry in self.__csv_file_entries]) # check if every CSV entry has any target language assigned to it
+                                        or not self.__output_dir_path.value
+                            )
+                        )
+                    ],
+                ),
+                StatusMessage(
+                    self.__encode_status,
+                    success_msg="File encoded successfully!",
+                    error_msg="Errors occured during encoding! Check the logs."
                 ),
             ]
         )

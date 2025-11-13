@@ -7,7 +7,7 @@ import flet_dropzone.flet_dropzone as ftd
 from w3stringsx_lib.file_type_relay import FileTypeRelay
 from w3stringsx_lib.logging import get_logger
 from w3stringsx_gui.views.view_base import ViewBase
-from w3stringsx_gui.components import FeatureButton
+from w3stringsx_gui.components import FeatureButton, LogsPanel
 from w3stringsx_gui.routing import Router, Routes
 from w3stringsx_gui.views.encode_strings_view import EncodeStringsView
 from w3stringsx_gui.views.decode_strings_view import DecodeStringsView
@@ -28,79 +28,89 @@ class HomeView(ViewBase):
             vertical_alignment=ft.MainAxisAlignment.CENTER,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             controls=[
-                ft.Column(
+                ft.Stack(
+                    fit=ft.StackFit.PASS_THROUGH,
+                    expand=True,
                     controls=[
-                        ft.Row(
+                        ft.Column(
+                            expand=True,
+                            alignment=ft.MainAxisAlignment.CENTER,
+                            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                            spacing=20,
                             controls=[
-                                FeatureButton(
-                                    'icons/file-lock.svg', 
-                                    'Encode \n CSV to w3strings',
-                                    bgcolor=ft.Colors.PRIMARY,
-                                    color=ft.Colors.ON_PRIMARY,
-                                    on_click=lambda e: router.goto(Routes.ENCODE_STRINGS)),
-                                FeatureButton(
-                                    'icons/file-lock-open.svg', 
-                                    'Decode \n w3strings to CSV', 
-                                    bgcolor=ft.Colors.PRIMARY,
-                                    color=ft.Colors.ON_PRIMARY,
-                                    on_click=lambda e: router.goto(Routes.DECODE_STRINGS)),
-                                FeatureButton(
-                                    'icons/file-find.svg', 
-                                    'Search \n for string keys', 
-                                    bgcolor=ft.Colors.PRIMARY,
-                                    color=ft.Colors.ON_PRIMARY,
-                                    on_click=lambda e: router.goto(Routes.SEARCH_FOR_STRING_KEYS)),
-                            ],
-                            spacing=40,
-                            alignment=ft.MainAxisAlignment.CENTER
-                        ),
-                        ft.Text("OR", size=16, weight=ft.FontWeight.BOLD),
-                        ftd.Dropzone(
-                            content=ft.Container(
-                                content=ft.Stack(
+                                ft.Row(
+                                    spacing=40,
+                                    alignment=ft.MainAxisAlignment.CENTER,
                                     controls=[
-                                        cv.Canvas(
-                                            shapes=[
-                                                cv.Path(
-                                                    elements=[
-                                                        cv.Path.MoveTo(-200, -75),
-                                                        cv.Path.LineTo(200, -75),
-                                                        cv.Path.LineTo(200, 75),
-                                                        cv.Path.LineTo(-200, 75),
-                                                        cv.Path.LineTo(-200, -75),
+                                        FeatureButton(
+                                            'icons/file-lock.svg', 
+                                            'Encode \n CSV to w3strings',
+                                            bgcolor=ft.Colors.PRIMARY,
+                                            color=ft.Colors.ON_PRIMARY,
+                                            on_click=lambda e: router.goto(Routes.ENCODE_STRINGS)),
+                                        FeatureButton(
+                                            'icons/file-lock-open.svg', 
+                                            'Decode \n w3strings to CSV', 
+                                            bgcolor=ft.Colors.PRIMARY,
+                                            color=ft.Colors.ON_PRIMARY,
+                                            on_click=lambda e: router.goto(Routes.DECODE_STRINGS)),
+                                        FeatureButton(
+                                            'icons/file-find.svg', 
+                                            'Search \n for string keys', 
+                                            bgcolor=ft.Colors.PRIMARY,
+                                            color=ft.Colors.ON_PRIMARY,
+                                            on_click=lambda e: router.goto(Routes.SEARCH_FOR_STRING_KEYS)),
+                                    ],
+                                ),
+                                ft.Text("OR", size=16, weight=ft.FontWeight.BOLD),
+                                ftd.Dropzone(
+                                    on_dropped=self.on_file_or_dir_dropped,
+                                    content=ft.Container(
+                                        bgcolor=ft.Colors.PRIMARY_CONTAINER,
+                                        content=ft.Stack(
+                                            width=400,
+                                            height=150,
+                                            alignment=ft.alignment.center,
+                                            controls=[
+                                                cv.Canvas(
+                                                    shapes=[
+                                                        cv.Path(
+                                                            elements=[
+                                                                cv.Path.MoveTo(-200, -75),
+                                                                cv.Path.LineTo(200, -75),
+                                                                cv.Path.LineTo(200, 75),
+                                                                cv.Path.LineTo(-200, 75),
+                                                                cv.Path.LineTo(-200, -75),
+                                                            ],
+                                                            paint=ft.Paint(
+                                                                style=ft.PaintingStyle.STROKE,
+                                                                stroke_width=2,
+                                                                stroke_dash_pattern=[10,5]
+                                                            )
+                                                        )
                                                     ],
-                                                    paint=ft.Paint(
-                                                        style=ft.PaintingStyle.STROKE,
-                                                        stroke_width=2,
-                                                        stroke_dash_pattern=[10,5]
-                                                    )
+                                                ),
+                                                ft.Text(
+                                                    value='Drag and drop a file here \n to deduce action automatically', 
+                                                    size=16, 
+                                                    text_align=ft.TextAlign.CENTER,
+                                                    color=ft.Colors.ON_PRIMARY_CONTAINER
                                                 )
                                             ],
                                         ),
-                                        ft.Text(
-                                            value='Drag and drop a file here \n to deduce action automatically', 
-                                            size=16, 
-                                            text_align=ft.TextAlign.CENTER,
-                                            color=ft.Colors.ON_PRIMARY_CONTAINER
-                                        )
-                                    ],
-                                    width=400,
-                                    height=150,
-                                    alignment=ft.alignment.center,
-                                ),
-                                bgcolor=ft.Colors.PRIMARY_CONTAINER
-                            ),
-                            on_dropped=self.on_file_or_dir_dropped,
-                        )
-                    ],
-                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                    spacing=20
-                )
+                                    ),
+                                )
+                            ],
+                        ),
+                        ft.FloatingActionButton(
+                            bottom=50,
+                            right=10,
+                            icon=ft.Icons.SETTINGS,
+                            on_click=lambda ev: router.goto(Routes.SETTINGS),
+                        ),
+                    ]
+                ),
             ],
-            floating_action_button=ft.FloatingActionButton(
-                icon=ft.Icons.SETTINGS,
-                on_click=lambda ev: router.goto(Routes.SETTINGS)
-            )
         )
 
     def on_file_or_dir_dropped(self, ev: ftd.ListFiles):

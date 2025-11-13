@@ -47,116 +47,108 @@ class SearchForStringKeysView(ViewBase):
         super().__init__(
             route=Routes.SEARCH_FOR_STRING_KEYS,
             controls=[
-                ft.Column(
-                    expand=True,
-                    controls=[
-                        ftr.ReactiveDataTable(
-                            height=300,
-                            heading_row_color=ft.Colors.PRIMARY_CONTAINER,
-                            heading_text_style=ft.TextStyle(color=ft.Colors.ON_PRIMARY_CONTAINER),
-                            vertical_lines=ft.border.BorderSide(1, ft.Colors.PRIMARY),
-                            horizontal_lines=ft.border.BorderSide(1, ft.Colors.PRIMARY),
-                            border=ft.border.all(1, ft.Colors.PRIMARY),
-                            columns=[
-                                ftr.ReactiveDataColumn(
-                                    label=ft.Text(
-                                        value="File or directory name"
-                                    )
-                                ),
-                                ftr.ReactiveDataColumn(
-                                    label=ft.Text(
-                                        value="Parent directory",
-                                    )
-                                ),
-                            ],
-                            rows_data=self.__search_paths,
-                            rows_mapper=lambda path, _: ftr.ReactiveDataRow(
-                                cells=[
-                                    ft.DataCell(
-                                        content=ft.Text(
-                                            value=os.path.basename(path)
-                                        )
-                                    ),
-                                    ft.DataCell(
-                                        content=ft.Text(
-                                            value=os.path.dirname(path)
-                                        )
-                                    ),
-                                ]
+                ftr.ReactiveDataTable(
+                    height=300,
+                    heading_row_color=ft.Colors.PRIMARY_CONTAINER,
+                    heading_text_style=ft.TextStyle(color=ft.Colors.ON_PRIMARY_CONTAINER),
+                    vertical_lines=ft.border.BorderSide(1, ft.Colors.PRIMARY),
+                    horizontal_lines=ft.border.BorderSide(1, ft.Colors.PRIMARY),
+                    border=ft.border.all(1, ft.Colors.PRIMARY),
+                    columns=[
+                        ftr.ReactiveDataColumn(
+                            label=ft.Text(
+                                value="File or directory name"
+                            )
+                        ),
+                        ftr.ReactiveDataColumn(
+                            label=ft.Text(
+                                value="Parent directory",
+                            )
+                        ),
+                    ],
+                    rows_data=self.__search_paths,
+                    rows_mapper=lambda path, _: ftr.ReactiveDataRow(
+                        cells=[
+                            ft.DataCell(
+                                content=ft.Text(
+                                    value=os.path.basename(path)
+                                )
                             ),
-                            placeholder_rows_count=VISIBLE_SEARCH_PATHS_ROWS
-                        ),
-                        ft.Text(value="Supported search targets: WitcherScript, user config XML, bundle XML, directory"),
-                        ft.Row(
-                            controls=[
-                                ft.FilledButton(
-                                    icon=ft.Icons.ATTACH_FILE,
-                                    text="Add files...",
-                                    on_click=self.on_pick_search_file_button_click
-                                ),
-                                ft.FilledButton(
-                                    icon=ft.Icons.FOLDER,
-                                    text="Add folder...",
-                                    on_click=self.on_pick_search_dir_button_click
-                                ),
-                                ft.FilledButton(
-                                    icon=ft.Icons.CLEAR,
-                                    text="Clear all",
-                                    on_click=self.on_clear_search_paths_button_click
+                            ft.DataCell(
+                                content=ft.Text(
+                                    value=os.path.dirname(path)
                                 )
-                            ]
+                            ),
+                        ]
+                    ),
+                    placeholder_rows_count=VISIBLE_SEARCH_PATHS_ROWS
+                ),
+                ft.Text(value="Supported search targets: WitcherScript, user config XML, bundle XML, directory"),
+                ft.Row(
+                    controls=[
+                        ft.FilledButton(
+                            icon=ft.Icons.ATTACH_FILE,
+                            text="Add files...",
+                            on_click=self.on_pick_search_file_button_click
                         ),
-                        ft.Row(
-                            height=5
-                        ),
-                        ftr.ReactiveTextField(
-                            icon=ft.Icons.MANAGE_SEARCH,
-                            value=self.__search_regex,
-                            label="Common string key pattern",
-                            hint_text='E.g. prefix "my_mod_". Supports regex.',
-                            border_color=ft.Colors.PRIMARY
-                        ),
-                        ft.Row(
-                            height=5
-                        ),
-                        ftr.ReactiveTextField(
+                        ft.FilledButton(
                             icon=ft.Icons.FOLDER,
-                            value=self.__output_dir_path,
-                            label="Click to choose output directory",
-                            read_only=True,
-                            border_color=ft.Colors.PRIMARY,
-                            on_click=self.on_output_dir_textfield_click,
+                            text="Add folder...",
+                            on_click=self.on_pick_search_dir_button_click
                         ),
-                        ft.Row(
-                            height=5
-                        ),
-                        ft.Row(
-                            alignment=ft.MainAxisAlignment.CENTER,
-                            controls=[
-                                ftr.ReactiveFilledButton(
-                                    icon=ft.Icons.SEARCH,
-                                    text='Search',
-                                    width=300,
-                                    on_click=self.on_search_button_click,
-                                    disabled=self.use_computed(
-                                        [self.__search_paths, self.__search_regex, self.__output_dir_path],
-                                        lambda: len(self.__search_paths) == 0
-                                             or not self.__search_regex.value
-                                             or not self.__output_dir_path.value
-                                    )
-                                )
-                            ],
-                        ),
-                        StatusMessage(
-                            self.__search_status,
-                            success_msg="Files and/or directories searched successfully!",
-                            error_msg="Errors occured during the search! Check the logs."
+                        ft.FilledButton(
+                            icon=ft.Icons.CLEAR,
+                            text="Clear all",
+                            on_click=self.on_clear_search_paths_button_click
+                        )
+                    ]
+                ),
+                ft.Row(
+                    height=5
+                ),
+                ftr.ReactiveTextField(
+                    icon=ft.Icons.MANAGE_SEARCH,
+                    value=self.__search_regex,
+                    label="Common string key pattern",
+                    hint_text='E.g. prefix "my_mod_". Supports regex.',
+                    border_color=ft.Colors.PRIMARY
+                ),
+                ft.Row(
+                    height=5
+                ),
+                ftr.ReactiveTextField(
+                    icon=ft.Icons.FOLDER,
+                    value=self.__output_dir_path,
+                    label="Click to choose output directory",
+                    read_only=True,
+                    border_color=ft.Colors.PRIMARY,
+                    on_click=self.on_output_dir_textfield_click,
+                ),
+                ft.Row(
+                    height=5
+                ),
+                ft.Row(
+                    alignment=ft.MainAxisAlignment.CENTER,
+                    controls=[
+                        ftr.ReactiveFilledButton(
+                            icon=ft.Icons.SEARCH,
+                            text='Search',
+                            width=300,
+                            on_click=self.on_search_button_click,
+                            disabled=self.use_computed(
+                                [self.__search_paths, self.__search_regex, self.__output_dir_path],
+                                lambda: len(self.__search_paths) == 0
+                                        or not self.__search_regex.value
+                                        or not self.__output_dir_path.value
+                            )
                         )
                     ],
                 ),
-                LogsPanel(
-                    height=300
-                ),
+                StatusMessage(
+                    self.__search_status,
+                    success_msg="Files and/or directories searched successfully!",
+                    error_msg="Errors occured during the search! Check the logs."
+                )
             ]
         )
 

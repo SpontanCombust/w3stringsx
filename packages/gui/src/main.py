@@ -120,6 +120,8 @@ def main(page: ft.Page):
     from w3stringsx_gui.views.encode_strings_view import EncodeStringsView
     from w3stringsx_gui.views.decode_strings_view import DecodeStringsView
     from w3stringsx_gui.views.search_for_string_keys_view import SearchForStringKeysView
+    from w3stringsx_gui.components import LogsPanel
+
     router = Router(page).with_routes({
         Routes.HOME: HomeView,
         Routes.SETTINGS: SettingsView,
@@ -127,6 +129,14 @@ def main(page: ft.Page):
         Routes.DECODE_STRINGS: DecodeStringsView,
         Routes.SEARCH_FOR_STRING_KEYS: SearchForStringKeysView,
     })
+
+    page.overlay.append(LogsPanel(
+        height=300,
+        bottom=5,
+        left=5,
+        right=5,
+    ))
+
     router.goto(Routes.HOME)
 
 

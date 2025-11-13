@@ -42,7 +42,11 @@ class LogsPanel(ftr.ReactiveContainer, ftr.ReactiveHooks):
     def __init__(
             self,
             width: ft.OptionalNumber = None,
-            height: ft.OptionalNumber = None
+            height: ft.OptionalNumber = None,
+            top: int | float | None = None,
+            bottom: int | float | None = None,
+            left: int | float | None = None,
+            right: int | float | None = None,
     ):
         self.__expanded_height = height or 300
         self.__expanded: ftr.State[bool | None] = self.use_state(False)
@@ -62,6 +66,10 @@ class LogsPanel(ftr.ReactiveContainer, ftr.ReactiveHooks):
             height=self.__current_height,
             bgcolor=ft.Colors.SURFACE,
             border=ft.border.all(1, ft.Colors.SECONDARY),
+            top=top,
+            bottom=bottom,
+            left=left,
+            right=right,
             content=ft.Column(
                 spacing=0,
                 controls=[

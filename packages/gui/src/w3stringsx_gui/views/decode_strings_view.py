@@ -9,7 +9,7 @@ from w3stringsx_svc import W3StringsManagerService
 import flet_reactive as ftr
 from w3stringsx_gui.views.view_base import ViewBase
 from w3stringsx_gui.routing import Routes
-from w3stringsx_gui.components import LogsPanel, StatusMessage
+from w3stringsx_gui.components import StatusMessage
 
 
 _logger = get_logger()
@@ -42,97 +42,87 @@ class DecodeStringsView(ViewBase, ftr.ReactiveHooks):
         super().__init__(
             route=Routes.DECODE_STRINGS,
             controls=[
-                ft.Column(
-                    expand=True,
-                    controls=[
-                        ftr.ReactiveDataTable(
-                            height=300,
-                            heading_row_color=ft.Colors.PRIMARY_CONTAINER,
-                            heading_text_style=ft.TextStyle(color=ft.Colors.ON_PRIMARY_CONTAINER),
-                            vertical_lines=ft.border.BorderSide(1, ft.Colors.PRIMARY),
-                            horizontal_lines=ft.border.BorderSide(1, ft.Colors.PRIMARY),
-                            border=ft.border.all(1, ft.Colors.PRIMARY),
-                            columns=[
-                                ftr.ReactiveDataColumn(
-                                    label=ft.Text("File name")
-                                ),
-                                ftr.ReactiveDataColumn(
-                                    label=ft.Text("File directory")
-                                ),
-                            ],
-                            rows_data=self.__w3strings_file_paths,
-                            rows_mapper=lambda path, _: ftr.ReactiveDataRow(
-                                cells=[
-                                    ft.DataCell(
-                                        content=ft.Text(
-                                            value=os.path.basename(path)
-                                        )
-                                    ),
-                                    ft.DataCell(
-                                        content=ft.Text(
-                                            value=os.path.dirname(path)
-                                        )
-                                    ),
-                                ]
+                ftr.ReactiveDataTable(
+                    height=300,
+                    heading_row_color=ft.Colors.PRIMARY_CONTAINER,
+                    heading_text_style=ft.TextStyle(color=ft.Colors.ON_PRIMARY_CONTAINER),
+                    vertical_lines=ft.border.BorderSide(1, ft.Colors.PRIMARY),
+                    horizontal_lines=ft.border.BorderSide(1, ft.Colors.PRIMARY),
+                    border=ft.border.all(1, ft.Colors.PRIMARY),
+                    columns=[
+                        ftr.ReactiveDataColumn(
+                            label=ft.Text("File name")
+                        ),
+                        ftr.ReactiveDataColumn(
+                            label=ft.Text("File directory")
+                        ),
+                    ],
+                    rows_data=self.__w3strings_file_paths,
+                    rows_mapper=lambda path, _: ftr.ReactiveDataRow(
+                        cells=[
+                            ft.DataCell(
+                                content=ft.Text(
+                                    value=os.path.basename(path)
+                                )
                             ),
-                            placeholder_rows_count=VISIBLE_W3STRINGS_PATHS_ROWS
-                        ),
-                        ft.Row(
-                            controls=[
-                                ft.FilledButton(
-                                    icon=ft.Icons.ATTACH_FILE,
-                                    text="Add files...",
-                                    on_click=self.on_pick_w3strings_file_button_click
-                                ),
-                                ft.FilledButton(
-                                    icon=ft.Icons.CLEAR,
-                                    text="Clear all",
-                                    on_click=self.on_clear_w3strings_files_button_click
+                            ft.DataCell(
+                                content=ft.Text(
+                                    value=os.path.dirname(path)
                                 )
-                            ]
+                            ),
+                        ]
+                    ),
+                    placeholder_rows_count=VISIBLE_W3STRINGS_PATHS_ROWS
+                ),
+                ft.Row(
+                    controls=[
+                        ft.FilledButton(
+                            icon=ft.Icons.ATTACH_FILE,
+                            text="Add files...",
+                            on_click=self.on_pick_w3strings_file_button_click
                         ),
-                        ft.Row(
-                            height=10
-                        ),
-                        ftr.ReactiveTextField(
-                            icon=ft.Icons.FOLDER,
-                            value=self.__output_dir_path,
-                            label="Click to choose output directory",
-                            read_only=True,
-                            # bgcolor=ft.Colors.PRIMARY_CONTAINER,
-                            # color=ft.Colors.ON_PRIMARY_CONTAINER,
-                            border_color=ft.Colors.PRIMARY,
-                            on_click=self.on_output_dir_textfield_click,
-                        ),
-                        ft.Row(
-                            height=5
-                        ),
-                        ft.Row(
-                            alignment=ft.MainAxisAlignment.CENTER,
-                            controls=[
-                                ftr.ReactiveFilledButton(
-                                    icon=ft.Icons.LOCK_OPEN,
-                                    text='Decode',
-                                    width=300,
-                                    on_click=self.on_decode_button_click,
-                                    disabled=self.use_computed(
-                                        [self.__w3strings_file_paths, self.__output_dir_path],
-                                        lambda: len(self.__w3strings_file_paths) == 0 
-                                             or not self.__output_dir_path.value
-                                    )        
-                                )
-                            ],
-                        ),
-                        StatusMessage(
-                            self.__decode_status,
-                            success_msg="Files decoded successfully!",
-                            error_msg="Errors occured during decoding! Check the logs."
+                        ft.FilledButton(
+                            icon=ft.Icons.CLEAR,
+                            text="Clear all",
+                            on_click=self.on_clear_w3strings_files_button_click
+                        )
+                    ]
+                ),
+                ft.Row(
+                    height=10
+                ),
+                ftr.ReactiveTextField(
+                    icon=ft.Icons.FOLDER,
+                    value=self.__output_dir_path,
+                    label="Click to choose output directory",
+                    read_only=True,
+                    border_color=ft.Colors.PRIMARY,
+                    on_click=self.on_output_dir_textfield_click,
+                ),
+                ft.Row(
+                    height=5
+                ),
+                ft.Row(
+                    alignment=ft.MainAxisAlignment.CENTER,
+                    controls=[
+                        ftr.ReactiveFilledButton(
+                            icon=ft.Icons.LOCK_OPEN,
+                            text='Decode',
+                            width=300,
+                            on_click=self.on_decode_button_click,
+                            disabled=self.use_computed(
+                                [self.__w3strings_file_paths, self.__output_dir_path],
+                                lambda: len(self.__w3strings_file_paths) == 0 
+                                        or not self.__output_dir_path.value
+                            )        
                         )
                     ],
                 ),
-                LogsPanel(
-                    height=300
-                ),
+                StatusMessage(
+                    self.__decode_status,
+                    success_msg="Files decoded successfully!",
+                    error_msg="Errors occured during decoding! Check the logs."
+                )
             ]
         )
 
