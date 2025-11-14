@@ -47,7 +47,7 @@ class SettingsView(ViewBase):
 
         super().__init__(
             route=Routes.SETTINGS,
-            spacing=15,
+            spacing=5,
             controls=[
                 ft.Row(
                     controls=[
@@ -70,6 +70,16 @@ class SettingsView(ViewBase):
                         )
                     ]
                 ),
+                ft.Container(
+                    padding=ft.padding.only(left=40),
+                    margin=ft.margin.only(bottom=15),
+                    content=ft.Text(
+                        value="Path to w3strings encoder exe that should be used instead of default search locations",
+                        size=14,
+                        color=ft.Colors.ON_SURFACE_VARIANT
+                    ),
+                ),
+
                 ft.Row(
                     spacing=15,
                     controls=[
@@ -77,20 +87,35 @@ class SettingsView(ViewBase):
                             name=ft.Icons.PALETTE_OUTLINED,
                             color=ft.Colors.ON_SURFACE_VARIANT,
                         ),
-                        ftr.ReactiveDropdown(
-                            label="Theme mode",
-                            value=self.__theme_mode,
-                            border_color=ft.Colors.PRIMARY,
-                            width=300,
-                            options=[
-                                ft.DropdownOption(
-                                    key=member.value,
-                                    text=member.value
-                                ) for member in list(ft.ThemeMode)
+                        ft.Column(
+                            expand=True,
+                            controls=[
+                                ftr.ReactiveDropdown(
+                                    label="Theme mode",
+                                    value=self.__theme_mode,
+                                    border_color=ft.Colors.PRIMARY,
+                                    menu_width=300,
+                                    options=[
+                                        ft.DropdownOption(
+                                            key=member.value,
+                                            text=member.value.capitalize()
+                                        ) for member in list(ft.ThemeMode)
+                                    ]
+                                ),
                             ]
                         ),
                     ]
                 ),
+                ft.Container(
+                    padding=ft.padding.only(left=40),
+                    margin=ft.margin.only(bottom=15),
+                    content=ft.Text(
+                        value="Visual application theme",
+                        size=14,
+                        color=ft.Colors.ON_SURFACE_VARIANT
+                    ),
+                ),
+
                 ft.Row(
                     spacing=15,
                     controls=[
@@ -101,12 +126,13 @@ class SettingsView(ViewBase):
                         ftr.ReactiveDropdown(
                             label="Log level",
                             value=self.__log_level,
+                            expand=True,
                             border_color=ft.Colors.PRIMARY,
-                            width=300,
+                            menu_width=300,
                             options=[
                                 ft.DropdownOption(
                                     key=str(level),
-                                    text=logging.getLevelName(level)
+                                    text=logging.getLevelName(level).lower().capitalize()
                                 ) for level in [
                                     logging.CRITICAL,
                                     logging.ERROR,
@@ -118,6 +144,16 @@ class SettingsView(ViewBase):
                         ),
                     ]
                 ),
+                ft.Container(
+                    padding=ft.padding.only(left=40),
+                    margin=ft.margin.only(bottom=15),
+                    content=ft.Text(
+                        value="What should be the lowest level of logs recorded by the application",
+                        size=14,
+                        color=ft.Colors.ON_SURFACE_VARIANT
+                    ),
+                ),
+
                 ft.Row(
                     spacing=15,
                     controls=[
@@ -128,8 +164,9 @@ class SettingsView(ViewBase):
                         ftr.ReactiveDropdown(
                             label="Default fallback language",
                             value=self.__default_fallback_lang,
+                            expand=True,
                             border_color=ft.Colors.PRIMARY,
-                            width=300,
+                            menu_width=300,
                             menu_height=400,
                             options=[
                                 ft.DropdownOption(
@@ -140,9 +177,17 @@ class SettingsView(ViewBase):
                         ),
                     ]
                 ),
-                ft.Row(
-                    height=10
+                ft.Container(
+                    padding=ft.padding.only(left=40),
+                    margin=ft.margin.only(bottom=15),
+                    content=ft.Text(
+                        value="Which language by default should be treated as the base for all other languages in localization. English should be preferred",
+                        size=14,
+                        color=ft.Colors.ON_SURFACE_VARIANT
+                    ),
                 ),
+                
+                ft.Row(height=10),
                 ft.Row(
                     alignment=ft.MainAxisAlignment.CENTER,
                     controls=[
