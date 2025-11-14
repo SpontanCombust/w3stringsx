@@ -67,7 +67,11 @@ class EncodeStringsView(ViewBase):
 
         self.__csv_file_entries: ftr.ListState[_CsvFileEntry] = self.use_list_state([])
         self.__selected_csv_file_entry_idx: ftr.State[int | None] = self.use_state(None)
-        self.__lang_selection: dict[str, ftr.State[bool | None]] = { lang: self.use_state(None) for lang in ALL_LANGS } # using None to indicate disabled control
+        # target languages assigned to currently selected CSV entry
+        # True means that entry will be encoded to that language
+        # False means it will not be
+        # None means it cannot be encoded for that langauge, because other entry has already taken that language
+        self.__lang_selection: dict[str, ftr.State[bool | None]] = { lang: self.use_state(None) for lang in ALL_LANGS }
         self.__output_dir_path: ftr.State[str | None] = self.use_state('')
         self.__keep_output_csv: ftr.State[bool | None] = self.use_state(False)
         self.__csv_file_picker = ft.FilePicker(on_result=self.on_csv_files_picked)
@@ -87,7 +91,7 @@ class EncodeStringsView(ViewBase):
                     vertical_lines=ft.border.BorderSide(1, ft.Colors.PRIMARY),
                     horizontal_lines=ft.border.BorderSide(1, ft.Colors.PRIMARY),
                     border=ft.border.all(1, ft.Colors.PRIMARY),
-                    # show_checkbox_column=False,
+                    show_checkbox_column=False,
                     show_heading_checkbox=False,
                     columns=[
                         ftr.ReactiveDataColumn(
@@ -113,10 +117,11 @@ class EncodeStringsView(ViewBase):
                                     value=os.path.dirname(entry.csv_path)
                                 )
                             ),
-                            #TODO error message when no languages are selected
                             ft.DataCell(
                                 content=ft.Text(
-                                    value=', '.join(entry.target_langs)
+                                    value=', '.join(entry.target_langs) if len(entry.target_langs) > 0
+                                        else 'Please assign target languages',
+                                    color=ft.Colors.ERROR if len(entry.target_langs) == 0 else None
                                 )
                             ),
                         ],
@@ -140,7 +145,16 @@ class EncodeStringsView(ViewBase):
                     ]
                 ),
                 ft.Row(
-                    height=10
+                    height=5
+                ),
+                ftr.ReactiveRow(
+                    opacity=self.use_computed([self.__csv_file_entries], lambda:
+                        1.0 if len(self.__csv_file_entries) > 0 else 0.0
+                    ),
+                    controls=[
+                        ft.Icon(name=ft.Icons.INFO_OUTLINE),
+                        ft.Text("Select an entry above to configure it")
+                    ]
                 ),
                 ftr.ReactiveContainer(
                     border=ft.border.all(1, ft.Colors.PRIMARY),
@@ -153,7 +167,9 @@ class EncodeStringsView(ViewBase):
                     content=ft.Column(
                         scroll=ft.ScrollMode.ADAPTIVE,
                         controls=[
-                            ft.Text(value="Select target languages:"),
+                            ftr.ReactiveText(
+                                value=self.use_computed([self.__selected_csv_file_entry_idx, *self.__lang_selection.values()], self.lang_selection_label_text)
+                            ),
                             ft.GridView(
                                 expand=True,
                                 runs_count=5,
@@ -289,7 +305,22 @@ class EncodeStringsView(ViewBase):
     
     def on_clear_csv_files_button_click(self, ev: ft.ControlEvent):
         self.__csv_file_entries.clear()
+        self.__selected_csv_file_entry_idx.value = None
+        self.__update_langugage_selections()
 
+
+    def lang_selection_label_text(self):
+        selected = self.__get_selected_csv_file_entry()
+        if selected:
+            any_available_langs = any([selection.value is not None for selection in self.__lang_selection.values()])
+            if any_available_langs:
+                return f"Select target languages for {os.path.basename(selected.csv_path)}:"
+            else:
+                return "Deselect languages for other entries to be able to assign them for this entry"
+        elif len(self.__csv_file_entries) > 0:
+            return "Choose a file entry from list above to select target languages for it"
+        else:
+            return "Select target languages"
 
     # this should get called after state bound to the checkbox gets updated
     def on_lang_selection_checkbox_changed(self, ev: ft.ControlEvent, lang: str):

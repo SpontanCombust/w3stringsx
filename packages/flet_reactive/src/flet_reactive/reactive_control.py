@@ -1,15 +1,15 @@
-from typing import List, Self, Any, Callable, TypeVar, Generic
+from typing import Iterable, List, Self, Any, Callable, SupportsIndex, TypeVar, Generic
 
 import flet as ft
 
-from flet_reactive.state import State
-from flet_reactive.state_observer import StateObserver
+from flet_reactive.state import State, ListState
+from flet_reactive.state_observer import StateObserver, ListStateObserver
 
 
 C = TypeVar('C', bound=ft.Control)
-class Reactive(ft.Control, StateObserver[Any], Generic[C]):
+class Reactive(ft.Control, StateObserver[Any], ListStateObserver[Any], Generic[C]):
     def __init__(self, 
-        states: list[State[Any]],
+        states: list[State[Any] | ListState[Any]],
         content: C | None = None,
         on_change: Callable[[C], Any] | None = None,
         # Control
@@ -56,6 +56,21 @@ class Reactive(ft.Control, StateObserver[Any], Generic[C]):
             state.add_observer(self)
     
     def on_state_changed(self, old_state: Any, new_state: Any):
+        self._on_state_changed()
+
+    def on_set_state_item(self, key: SupportsIndex, value: Any) -> None:
+        self._on_state_changed()
+
+    def on_set_state_item_slice(self, key: slice, value: Iterable[Any]) -> None:
+        self._on_state_changed()
+
+    def on_del_state_item(self, key: SupportsIndex) -> None:
+        self._on_state_changed()
+
+    def on_del_state_item_slice(self, key: slice) -> None:
+        self._on_state_changed()
+
+    def on_insert_state_item(self, key: SupportsIndex, value: Any) -> None:
         if self.__on_change and self._content:
             self.__on_change(self._content)
         self.update()
@@ -63,6 +78,12 @@ class Reactive(ft.Control, StateObserver[Any], Generic[C]):
     def release_observed_states(self) -> None:
         for state in self.__states:
             state.remove_observer(self)
+
+
+    def _on_state_changed(self):
+        if self.__on_change and self._content:
+            self.__on_change(self._content)
+        self.update()
 
 
 

@@ -5,7 +5,20 @@ from flet_reactive.computed import Computed
 from flet_reactive.reactive_control import Reactive, ReactiveBuilder
 from flet_reactive.reactive_sequence import ReactiveSequence
 from flet_reactive.conditional_control import Conditional
-from flet_reactive.reactive_wrappers import ReactiveCheckbox, ReactiveTextField, ReactiveFilledButton, ReactiveDataTable, ReactiveDataRow, ReactiveDataColumn, ReactiveColumn, ReactiveContainer, ReactiveStack, ReactiveDropdown
+from flet_reactive.reactive_wrappers import (
+    ReactiveCheckbox, 
+    ReactiveTextField, 
+    ReactiveFilledButton, 
+    ReactiveDataTable, 
+    ReactiveDataRow, 
+    ReactiveDataColumn, 
+    ReactiveColumn, 
+    ReactiveContainer, 
+    ReactiveStack, 
+    ReactiveDropdown,
+    ReactiveRow,
+    ReactiveText,
+)
 from flet_reactive.reactive_hooks import ReactiveHooks
 
 __all__ = [
@@ -16,6 +29,17 @@ __all__ = [
     "Reactive", "ReactiveBuilder",
     "ReactiveSequence",
     "Conditional",
-    "ReactiveCheckbox", "ReactiveTextField", "ReactiveFilledButton", "ReactiveDataTable", "ReactiveDataRow", "ReactiveDataColumn", "ReactiveColumn", "ReactiveContainer", "ReactiveStack", "ReactiveDropdown",
+    "ReactiveCheckbox", 
+    "ReactiveTextField", 
+    "ReactiveFilledButton", 
+    "ReactiveDataTable", 
+    "ReactiveDataRow", 
+    "ReactiveDataColumn", 
+    "ReactiveColumn", 
+    "ReactiveContainer", 
+    "ReactiveStack", 
+    "ReactiveDropdown",
+    "ReactiveRow",
+    "ReactiveText",
     "ReactiveHooks"
 ]

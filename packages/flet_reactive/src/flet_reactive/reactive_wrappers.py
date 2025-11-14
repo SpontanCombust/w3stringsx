@@ -3,12 +3,12 @@ from typing import Dict, Callable, Any, Iterable, MutableSequence, SupportsIndex
 import flet as ft
 from flet.core.text_style import StrutStyle
 from flet.core.gradients import Gradient
+from flet.core.text import TextSelectionChangeEvent
 import flet_datatable2 as ftdt2
 from flet_datatable2.datacolumn2 import DataColumnSortEvent
 
 from flet_reactive.state import State, ListState
 from flet_reactive.state_observer import StateObserver, ListStateObserver
-from flet_reactive.reactive_sequence import ReactiveSequence
 
 
 _T = TypeVar('_T')
@@ -1487,6 +1487,227 @@ class ReactiveDropdown(ft.Dropdown, _ReactiveControlWrapper):
                 binding.sync_state(),
                 on_change(ev) if on_change else None
             )
+
+    def did_mount(self):
+        super().did_mount()
+        self._init_prop_bindings()
+
+    def will_unmount(self):
+        super().will_unmount()
+        self._drop_prop_bindings()
+
+
+class ReactiveRow(ft.Row, _ReactiveControlWrapper):
+    def __init__(self, 
+        controls: Sequence[ft.Control] | None = None, 
+        alignment: ft.MainAxisAlignment | None = None, 
+        vertical_alignment: ft.CrossAxisAlignment | None = None, 
+        spacing: int | float | None = None, 
+        tight: bool | None = None, 
+        wrap: bool | None = None, 
+        run_spacing: int | float | None = None, 
+        run_alignment: ft.MainAxisAlignment | None = None, 
+        scroll: ft.ScrollMode | None = None, 
+        auto_scroll: bool | None = None, 
+        on_scroll_interval: int | float | None = None, 
+        on_scroll: Callable[[ft.OnScrollEvent], Any] | None = None, 
+        ref: ft.Ref | None = None, 
+        key: str | None = None, 
+        width: int | float | None = None, 
+        height: int | float | None = None, 
+        left: int | float | None = None, 
+        top: int | float | None = None, 
+        right: int | float | None = None, 
+        bottom: int | float | None = None, 
+        expand: None | bool | int = None, 
+        expand_loose: bool | None = None, 
+        col: Dict[str, int | float] | int | float | None = None, 
+        opacity: int | float | None | State[int | float | None] = None, 
+        rotate: int | float | ft.Rotate | None = None, 
+        scale: int | float | ft.Scale | None = None, 
+        offset: ft.Offset | None = None, 
+        aspect_ratio: int | float | None = None, 
+        animate_opacity: bool | int | ft.Animation | None = None, 
+        animate_size: bool | int | ft.Animation | None = None, 
+        animate_position: bool | int | ft.Animation | None = None, 
+        animate_rotation: bool | int | ft.Animation | None = None, 
+        animate_scale: bool | int | ft.Animation | None = None, 
+        animate_offset: bool | int | ft.Animation | None = None, 
+        on_animation_end: Callable[[ft.ControlEvent], Any] | None = None, 
+        visible: bool | None | State[bool | None] = None, 
+        disabled: bool | None = None, 
+        data: Any = None, 
+        rtl: bool | None = None, 
+        adaptive: bool | None = None
+    ):
+        super().__init__(
+            controls, 
+            alignment, 
+            vertical_alignment, 
+            spacing, 
+            tight, 
+            wrap, 
+            run_spacing, 
+            run_alignment, 
+            scroll, 
+            auto_scroll, 
+            on_scroll_interval, 
+            on_scroll, 
+            ref, 
+            key, 
+            width, 
+            height, 
+            left, 
+            top, 
+            right, 
+            bottom, 
+            expand, 
+            expand_loose, 
+            col, 
+            _unwrap_value(opacity), 
+            rotate, 
+            scale, 
+            offset, 
+            aspect_ratio, 
+            animate_opacity, 
+            animate_size, 
+            animate_position, 
+            animate_rotation, 
+            animate_scale, 
+            animate_offset, 
+            on_animation_end, 
+            _unwrap_value(visible), 
+            disabled, 
+            data, 
+            rtl, 
+            adaptive
+        )
+
+        if isinstance(opacity, State):
+            self._new_stateful_prop_binding(opacity, self, 'opacity')
+        if isinstance(visible, State):
+            self._new_stateful_prop_binding(visible, self, 'visible')
+
+    def did_mount(self):
+        super().did_mount()
+        self._init_prop_bindings()
+
+    def will_unmount(self):
+        super().will_unmount()
+        self._drop_prop_bindings()
+
+class ReactiveText(ft.Text, _ReactiveControlWrapper):
+    def __init__(self, 
+        value: str | None | State[str | None] = None, 
+        spans: List[ft.TextSpan] | None = None, 
+        text_align: ft.TextAlign | None = None, 
+        font_family: str | None = None, 
+        size: int | float | None = None, 
+        weight: ft.FontWeight | None = None, 
+        italic: bool | None = None, 
+        style: ft.TextThemeStyle | ft.TextStyle | None = None, 
+        theme_style: ft.TextThemeStyle | None = None, 
+        max_lines: int | None = None, 
+        overflow: ft.TextOverflow | None = None, 
+        selectable: bool | None = None, 
+        no_wrap: bool | None = None, 
+        color: str | ft.Colors | ft.CupertinoColors | None = None, 
+        bgcolor: str | ft.Colors | ft.CupertinoColors | None = None, 
+        semantics_label: str | None = None, 
+        show_selection_cursor: bool | None = None, 
+        enable_interactive_selection: bool | None = None, 
+        selection_cursor_width: int | float | None = None, 
+        selection_cursor_height: int | float | None = None, 
+        selection_cursor_color: str | ft.Colors | ft.CupertinoColors | None = None, 
+        on_tap: Callable[[ft.ControlEvent], Any] | None = None, 
+        on_selection_change: Callable[[TextSelectionChangeEvent], Any] | None = None, 
+        ref: ft.Ref | None = None, 
+        key: str | None = None, 
+        width: int | float | None = None, 
+        height: int | float | None = None, 
+        left: int | float | None = None, 
+        top: int | float | None = None, 
+        right: int | float | None = None, 
+        bottom: int | float | None = None, 
+        expand: None | bool | int = None, 
+        expand_loose: bool | None = None, 
+        col: Dict[str, int | float] | int | float | None = None, 
+        opacity: int | float | None = None, 
+        rotate: int | float | ft.Rotate | None = None, 
+        scale: int | float | ft.Scale | None = None, 
+        offset: ft.Offset | None = None, 
+        aspect_ratio: int | float | None = None, 
+        animate_opacity: bool | int | ft.Animation | None = None, 
+        animate_size: bool | int | ft.Animation | None = None, 
+        animate_position: bool | int | ft.Animation | None = None, 
+        animate_rotation: bool | int | ft.Animation | None = None, 
+        animate_scale: bool | int | ft.Animation | None = None, 
+        animate_offset: bool | int | ft.Animation | None = None, 
+        on_animation_end: Callable[[ft.ControlEvent], Any] | None = None, 
+        tooltip: str | ft.Tooltip | None = None, 
+        badge: str | ft.Badge | None = None, 
+        visible: bool | None = None, 
+        disabled: bool | None = None, 
+        data: Any = None, 
+        rtl: bool | None = None
+    ):
+        super().__init__(
+            _unwrap_value(value), 
+            spans, 
+            text_align, 
+            font_family, 
+            size, 
+            weight, 
+            italic, 
+            style, 
+            theme_style, 
+            max_lines, 
+            overflow, 
+            selectable, 
+            no_wrap, 
+            color, 
+            bgcolor, 
+            semantics_label, 
+            show_selection_cursor, 
+            enable_interactive_selection, 
+            selection_cursor_width, 
+            selection_cursor_height, 
+            selection_cursor_color, 
+            on_tap, 
+            on_selection_change, 
+            ref, 
+            key, 
+            width, 
+            height, 
+            left, 
+            top, 
+            right, 
+            bottom, 
+            expand, 
+            expand_loose, 
+            col, 
+            opacity, 
+            rotate, 
+            scale, 
+            offset, 
+            aspect_ratio, 
+            animate_opacity, 
+            animate_size, 
+            animate_position, 
+            animate_rotation, 
+            animate_scale, 
+            animate_offset, 
+            on_animation_end, 
+            tooltip, 
+            badge, 
+            visible, 
+            disabled, 
+            data, 
+            rtl
+        )
+
+        if isinstance(value, State):
+            self._new_stateful_prop_binding(value, self, 'value')
 
     def did_mount(self):
         super().did_mount()
