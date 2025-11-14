@@ -19,7 +19,7 @@ os.chdir(GUI_DIR)
 # make sure the packages are setup
 subprocess.run('uv sync --locked', check=True, shell=True)
 # use pyinstaller to pack the project into distributable standalone format
-subprocess.run('uv run --no-sync --no-editable task build windows', check=True, shell=True)
+subprocess.run('uv run --no-sync --no-editable task build-windows', check=True, shell=True)
 # zip it up
 with zipfile.ZipFile(TARGET_ZIP, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=zlib.Z_DEFAULT_COMPRESSION) as zip:
     for root, dirs, files in os.walk(GUI_ARTIFACT_DIR):

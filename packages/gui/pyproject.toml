@@ -47,5 +47,6 @@ dev = [
 ]
 
 [tool.taskipy.tasks]
-dev = "flet run -d -r"
-build = "flet build"
+run = "flet run" # just run the app
+dev = "flet run -r" # run the app in hot-reload mode, can be unstable
+build-windows = "flet build windows --compile-app --compile-packages" # compile and package the app for Windows
