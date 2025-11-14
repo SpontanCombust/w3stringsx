@@ -1,11 +1,11 @@
-name: lint
+name: check
 
 on:
   push:
     branches: ['*']
 
 jobs:
-  update-docs:
+  check:
     runs-on: ubuntu-latest
 
     steps:
