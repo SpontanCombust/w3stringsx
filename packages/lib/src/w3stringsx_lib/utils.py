@@ -69,8 +69,8 @@ class ScratchFolder(contextlib.AbstractContextManager):
     def file_scratch_copy(self, input_path: str) -> str:
         copy_path = replace_path_dirname(input_path, self.folder_path)
 
-        if not os.path.exists(copy_path):
-            shutil.copy(input_path, copy_path)
+        logger.info(f'Creating a copy of {input_path} in the scratch folder')
+        shutil.copy(input_path, copy_path)
         
         return copy_path
     
