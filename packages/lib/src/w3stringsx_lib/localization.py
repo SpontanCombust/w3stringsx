@@ -101,6 +101,12 @@ class StringId:
         else:
             return False
         
+    def __ge__(self, value: object) -> bool:
+        if isinstance(value, StringId):
+            return self.id_num >= value.id_num
+        else:
+            return False
+        
     def __hash__(self) -> int:
         return hash(self.id_num)
     

@@ -131,7 +131,7 @@ class W3StringsCsvDocument:
                     parsed_with_errors = True
 
         if parsed_with_errors:
-            raise Exception("Errors occured while reading the file (check logs for details)")
+            raise Exception("Errors occured while reading the file")
 
     def save_to_file(self):
         with io.open(self.file_path, mode='w', encoding='UTF-8') as file:

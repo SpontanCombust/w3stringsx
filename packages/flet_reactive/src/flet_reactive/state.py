@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any, Iterable, Iterator, SupportsIndex, TypeVar, Generic, Callable, MutableSequence, overload, final
+from typing import Iterator, SupportsIndex, TypeVar, Generic, Callable, MutableSequence, overload, final
 
 from flet_reactive.state_observer import StateObserver, ListStateObserver
 

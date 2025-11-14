@@ -31,11 +31,12 @@ class ThemeButton(ft.IconButton):
                     theme_mode = ft.ThemeMode.LIGHT
                     
             if theme_mode == ft.ThemeMode.LIGHT:
-                self.page.theme_mode = ft.ThemeMode.DARK
+                theme_mode = ft.ThemeMode.DARK
             else:
-                self.page.theme_mode = ft.ThemeMode.LIGHT
+                theme_mode = ft.ThemeMode.LIGHT
 
-            self.__config.theme_mode = self.page.theme_mode.value
+            self.__config.theme_mode = theme_mode.value
+            self.page.theme_mode = theme_mode
             self.__set_icon()
             self.page.update()
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 import os
-from typing import Self, Protocol
+from typing import Protocol
 
 from w3stringsx_lib.logging import get_logger
 from w3stringsx_svc.configuration import Configuration

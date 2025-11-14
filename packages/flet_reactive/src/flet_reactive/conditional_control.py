@@ -1,4 +1,4 @@
-from typing import Self, Any, Callable, TypeVar, Generic
+from typing import Self, Any, Callable, TypeVar
 
 import flet as ft
 

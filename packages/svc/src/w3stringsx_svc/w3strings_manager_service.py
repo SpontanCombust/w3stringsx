@@ -2,7 +2,7 @@ import os
 import shutil
 
 from w3stringsx_lib.logging import get_logger
-from w3stringsx_lib.utils import replace_path_dirname, replace_path_ext, ScratchFolder, lf_to_crlf
+from w3stringsx_lib.utils import replace_path_dirname, replace_path_ext, lf_to_crlf
 from w3stringsx_lib.w3strings_csv import W3StringsCsvDocument
 from w3stringsx_lib.w3strings_csv_encoding_preprocessor import W3StringsCsvDocumentEncodingPreprocessor
 from w3stringsx_svc.validators import validate_file_input_path, validate_output_dir, validate_target_langs

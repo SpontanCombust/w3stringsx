@@ -1,4 +1,4 @@
-from typing import Any, Callable, Generic, Iterable, Iterator, SupportsIndex, TypeVar, Sequence, overload
+from typing import Callable, Generic, Iterable, Iterator, SupportsIndex, TypeVar, Sequence, overload
 
 import flet as ft
 

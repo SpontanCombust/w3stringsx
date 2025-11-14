@@ -1,4 +1,4 @@
-from typing import Dict, Callable, Any, Iterable, MutableSequence, SupportsIndex, TypeVar, final, List, Sequence, Generic
+from typing import Dict, Callable, Any, Iterable, MutableSequence, SupportsIndex, TypeVar, final, List, Sequence, Generic, cast
 
 import flet as ft
 from flet.core.text_style import StrutStyle
@@ -940,12 +940,13 @@ class ReactiveDataTable(ftdt2.DataTable2, _ReactiveControlWrapper, Generic[_T]):
 
         if rows_data is not None and rows_mapper is not None:
             self.rows = []
+            some_rows = cast(list[ftdt2.DataRow2], self.rows) # promise type-cheker it won't be None
 
             if placeholder_rows_count is not None and placeholder_rows_count > 0:
                 column_count = len(columns)
-                self._new_stateful_data_rows_prop_binding(rows_data, rows_mapper, self, self.rows, column_count, placeholder_rows_count)
+                self._new_stateful_data_rows_prop_binding(rows_data, rows_mapper, self, some_rows, column_count, placeholder_rows_count)
             else:
-                self._new_stateful_ctrl_seq_prop_binding(rows_data, rows_mapper, self, self.rows)
+                self._new_stateful_ctrl_seq_prop_binding(rows_data, rows_mapper, self, some_rows)
 
     def did_mount(self):
         super().did_mount()

@@ -1,4 +1,4 @@
-from typing import Iterable, SupportsIndex, TypeVar, final, Callable, Any
+from typing import Iterable, SupportsIndex, final, Callable, Any
 
 from flet_reactive.state_observer import StateObserver, ListStateObserver
 from flet_reactive.state import State, ListState
