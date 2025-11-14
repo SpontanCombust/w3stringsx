@@ -1,12 +1,14 @@
 import importlib.metadata
 import os
-from typing import Any
+from typing import Any, TypeVar
 
 import flet as ft
 
 from w3stringsx_svc.configuration import Configuration, ConfigurationValue
 from w3stringsx_gui.services.page_provider import PageProvider
 
+
+_T = TypeVar('_T')
 
 class W3stringsxGuiConfiguration(Configuration):
     def __init__(self, 
@@ -21,7 +23,7 @@ class W3stringsxGuiConfiguration(Configuration):
     
     @property
     def app_version(self) -> ConfigurationValue[str]:
-        return self.__get('w3stringsx_gui.app_version')
+        return self.__get('w3stringsx_gui.app_version', importlib.metadata.version('w3stringsx-gui'))
     
     @app_version.setter
     def app_version(self, val: str):
@@ -29,34 +31,31 @@ class W3stringsxGuiConfiguration(Configuration):
 
     @property
     def w3strings_encoder_path(self) -> ConfigurationValue[str]:
-        return self.__get('w3stringsx_gui.w3strings_encoder_path')
+        return self.__get('w3stringsx_gui.w3strings_encoder_path', None)
     
     @w3strings_encoder_path.setter
-    def w3strings_encoder_path(self, val: str):
+    def w3strings_encoder_path(self, val: str| None):
         self.__set('w3stringsx_gui.w3strings_encoder_path', val)
     
     @property
     def theme_mode(self) -> ConfigurationValue[str]:
-        return self.__get('w3stringsx_gui.theme_mode')
+        return self.__get('w3stringsx_gui.theme_mode', ft.ThemeMode.SYSTEM.value)
     
     @theme_mode.setter
-    def theme_mode(self, val: str):
+    def theme_mode(self, val: str | None):
         self.__set('w3stringsx_gui.theme_mode', val)
 
 
-    def initialize(self):
-        super().initialize()
-
     def reset_to_default(self):
-        self.app_version = importlib.metadata.version('w3stringsx-gui')
-        self.w3strings_encoder_path = ""
-        self.theme_mode = ft.ThemeMode.SYSTEM.value
+        client_storage = self.__page_provider.provide().client_storage
+        for key in client_storage.get_keys("w3stringsx_gui."):
+            client_storage.remove(key)
     
 
-    def __get(self, key: str) -> ConfigurationValue[Any]:
+    def __get(self, key: str, default: _T | None) -> ConfigurationValue[_T]:
         val = self.__page_provider.provide().client_storage.get(key)
         if val is None:
-            return self.none()
+            return self.none(default)
         return self.some(val)
     
     def __set(self, key: str, val: Any):

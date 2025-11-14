@@ -18,7 +18,6 @@ from w3stringsx_cli.cli import cli_main
 
 def setup_services():
     config = W3stringsxCliConfiguration()
-    config.initialize()
 
     container = di.container_builder()\
         .abstract_singleton(Configuration, W3stringsxCliConfiguration, config)\
@@ -35,7 +34,7 @@ def setup_services():
     
     di.push_container(container)
 
-    init_logger(config.app_dir.get_required())
+    init_logger(config.app_dir.get_or_default())
 
 def main():
     setup_services()

@@ -24,12 +24,11 @@ def setup_services(page: ft.Page):
     page_provider.acquire(page)
 
     config = W3stringsxGuiConfiguration(page_provider)
-    config.initialize()
 
-    init_logger(config.app_dir.get_required())
+    init_logger(config.app_dir.get_or_default())
     set_log_level(logging.INFO)
 
-    page.theme_mode = ft.ThemeMode(config.theme_mode.get_required())
+    page.theme_mode = ft.ThemeMode(config.theme_mode.get_or_default())
 
     container = di.container_builder()\
         .singleton(PageProvider, page_provider)\

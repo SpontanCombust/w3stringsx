@@ -21,7 +21,7 @@ class SettingsView(ViewBase):
         self.__settings_to_save: set[object] = set()
         self.__w3strings_encoder_path = ftr.State[str | None](self.__config.w3strings_encoder_path.get())
         self.__w3strings_encoder_picker = ft.FilePicker(on_result=self.on_w3strings_encoder_picked)
-        self.__theme_mode = ftr.State[str | None](self.__config.theme_mode.get() or ft.ThemeMode.SYSTEM.value)
+        self.__theme_mode = ftr.State[str | None](self.__config.theme_mode.get_or_default())
         self.use_effect([self.__theme_mode], 
             self.on_theme_mode_changed
         )
@@ -149,11 +149,15 @@ class SettingsView(ViewBase):
         
         should_update_page = False
         if self.__w3strings_encoder_path in self.__settings_to_save:
-            self.__config.w3strings_encoder_path = self.__w3strings_encoder_path.value or ""
+            self.__config.w3strings_encoder_path = self.__w3strings_encoder_path.value
         if self.__theme_mode in self.__settings_to_save:
-            theme_mode = ft.ThemeMode(self.__theme_mode.value) if self.__theme_mode.value is not None else ft.ThemeMode.SYSTEM
-            self.page.theme_mode = theme_mode
-            self.__config.theme_mode = theme_mode.value
+            if self.__theme_mode.value is not None:
+                theme_mode = ft.ThemeMode(self.__theme_mode.value)
+                self.page.theme_mode = theme_mode
+                self.__config.theme_mode = theme_mode.value
+            else:
+                self.__config.theme_mode = None
+
             should_update_page = True
 
         self.__settings_to_save.clear()
@@ -182,7 +186,7 @@ class SettingsView(ViewBase):
         self.__should_save.value = False
         self.__settings_to_save.clear()
 
-        self.page.theme_mode = ft.ThemeMode(self.__config.theme_mode.get())
+        self.page.theme_mode = ft.ThemeMode(self.__config.theme_mode.get_or_default())
         self.page.update()
         self.page.open(ft.SnackBar(ft.Text("Settings have been reset to default."), bgcolor=ft.Colors.AMBER))
 

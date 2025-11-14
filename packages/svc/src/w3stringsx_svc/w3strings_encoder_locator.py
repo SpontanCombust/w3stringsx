@@ -38,7 +38,7 @@ class W3StringsEncoderLocatorHandler(Protocol):
 
 class AppDirW3StringsEncoderLocatorHandler(W3StringsEncoderLocatorHandler):
     def __init__(self, config: Configuration):
-        self.app_dir: str = config.app_dir.get_required()
+        self.app_dir: str = config.app_dir.get_or_default()
 
     def find(self) -> str | None:
         logger.info('Looking for w3strings encoder in w3stringsx\'s directory...')

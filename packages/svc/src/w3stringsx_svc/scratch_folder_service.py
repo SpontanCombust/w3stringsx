@@ -28,6 +28,6 @@ class ScratchFolderService(AbstractContextManager):
 
     def __ensure_scratch(self) -> ScratchFolder:
         if self.__scratch is None:
-            self.__scratch = ScratchFolder(self.__config.app_dir.get_required())
+            self.__scratch = ScratchFolder(self.__config.app_dir.get_or_default())
             self.__scratch.__enter__()
         return self.__scratch
