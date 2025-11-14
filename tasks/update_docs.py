@@ -2,7 +2,7 @@ import io
 import os
 import subprocess
 
-ROOT = os.path.realpath(os.path.dirname(os.path.dirname(__name__)))
+ROOT = os.path.realpath(os.path.dirname(os.path.dirname(__file__)))
 ORIG_CWD = os.getcwd()
 
 CLI_DIR = os.path.join(ROOT, "packages", "cli")
