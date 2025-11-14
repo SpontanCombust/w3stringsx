@@ -1103,7 +1103,7 @@ class ReactiveContainer(ft.Container, _ReactiveControlWrapper):
         expand: None | bool | int = None,
         expand_loose: bool | None = None,
         col: Dict[str, int | float] | int | float | None = None,
-        opacity: int | float | None = None,
+        opacity: int | float | None | State[int | float | None] = None,
         rotate: int | float | ft.Rotate | None = None,
         scale: int | float | ft.Scale | None = None,
         offset: ft.Offset |  None = None,
@@ -1164,7 +1164,7 @@ class ReactiveContainer(ft.Container, _ReactiveControlWrapper):
             expand,
             expand_loose,
             col,
-            opacity,
+            _unwrap_value(opacity),
             rotate,
             scale,
             offset,
@@ -1189,6 +1189,8 @@ class ReactiveContainer(ft.Container, _ReactiveControlWrapper):
             self._new_stateful_prop_binding(bgcolor, self, 'bgcolor')
         if isinstance(height, State):
             self._new_stateful_prop_binding(height, self, 'height')
+        if isinstance(opacity, State):
+            self._new_stateful_prop_binding(opacity, self, 'opacity')
         if isinstance(disabled, State):
             self._new_stateful_prop_binding(disabled, self, 'disabled')
 
@@ -1497,6 +1499,7 @@ class ReactiveDropdown(ft.Dropdown, _ReactiveControlWrapper):
         self._drop_prop_bindings()
 
 
+
 class ReactiveRow(ft.Row, _ReactiveControlWrapper):
     def __init__(self, 
         controls: Sequence[ft.Control] | None = None, 
@@ -1611,8 +1614,8 @@ class ReactiveText(ft.Text, _ReactiveControlWrapper):
         overflow: ft.TextOverflow | None = None, 
         selectable: bool | None = None, 
         no_wrap: bool | None = None, 
-        color: str | ft.Colors | ft.CupertinoColors | None = None, 
-        bgcolor: str | ft.Colors | ft.CupertinoColors | None = None, 
+        color: ft.ColorValue | None | State[ft.ColorValue | None] = None, 
+        bgcolor: ft.ColorValue | None = None, 
         semantics_label: str | None = None, 
         show_selection_cursor: bool | None = None, 
         enable_interactive_selection: bool | None = None, 
@@ -1665,7 +1668,7 @@ class ReactiveText(ft.Text, _ReactiveControlWrapper):
             overflow, 
             selectable, 
             no_wrap, 
-            color, 
+            _unwrap_value(color), 
             bgcolor, 
             semantics_label, 
             show_selection_cursor, 
@@ -1708,6 +1711,95 @@ class ReactiveText(ft.Text, _ReactiveControlWrapper):
 
         if isinstance(value, State):
             self._new_stateful_prop_binding(value, self, 'value')
+        if isinstance(color, State):
+            self._new_stateful_prop_binding(color, self, 'color')
+
+    def did_mount(self):
+        super().did_mount()
+        self._init_prop_bindings()
+
+    def will_unmount(self):
+        super().will_unmount()
+        self._drop_prop_bindings()
+
+
+
+class ReactiveIcon(ft.Icon, _ReactiveControlWrapper):
+    def __init__(self,
+        name: ft.IconValue | None | State[ft.IconValue | None] = None,
+        color: ft.ColorValue | None | State[ft.ColorValue | None] = None,
+        size: int | float | None = None,
+        semantics_label: str | None = None,
+        shadows: ft.BoxShadow | List[ft.BoxShadow] | None = None,
+        fill: int | float | None = None,
+        apply_text_scaling: bool | None = None,
+        grade: int | float | None = None,
+        weight: int | float | None = None,
+        optical_size: int | float | None = None,
+        blend_mode: ft.BlendMode | None = None,
+        ref: ft.Ref | None = None,
+        key: str | None = None,
+        expand: None | bool | int = None,
+        expand_loose: bool | None = None,
+        col: Dict[str, int | float] | int | float | None = None,
+        opacity: int | float | None = None,
+        rotate: int | float | ft.Rotate | None = None,
+        scale: int | float | ft.Scale | None = None,
+        offset: ft.Offset | None = None,
+        aspect_ratio: int | float | None = None,
+        animate_opacity: bool | int | ft.Animation | None = None,
+        animate_size: bool | int | ft.Animation | None = None,
+        animate_position: bool | int | ft.Animation | None = None,
+        animate_rotation: bool | int | ft.Animation | None = None,
+        animate_scale: bool | int | ft.Animation | None = None,
+        animate_offset: bool | int | ft.Animation | None = None,
+        on_animation_end: Callable[[ft.ControlEvent], Any] | None = None,
+        tooltip: str | ft.Tooltip | None = None,
+        badge: str | ft.Badge | None = None,
+        visible: bool | None = None,
+        disabled: bool | None = None,
+        data: Any = None
+    ):
+        super().__init__(
+            _unwrap_value(name),
+            _unwrap_value(color),
+            size,
+            semantics_label,
+            shadows,
+            fill,
+            apply_text_scaling,
+            grade,
+            weight,
+            optical_size,
+            blend_mode,
+            ref,
+            key,
+            expand,
+            expand_loose,
+            col,
+            opacity,
+            rotate,
+            scale,
+            offset,
+            aspect_ratio,
+            animate_opacity,
+            animate_size,
+            animate_position,
+            animate_rotation,
+            animate_scale,
+            animate_offset,
+            on_animation_end,
+            tooltip,
+            badge,
+            visible,
+            disabled,
+            data
+        )
+
+        if isinstance(name, State):
+            self._new_stateful_prop_binding(name, self, 'name')
+        if isinstance(color, State):
+            self._new_stateful_prop_binding(color, self, 'color')
 
     def did_mount(self):
         super().did_mount()

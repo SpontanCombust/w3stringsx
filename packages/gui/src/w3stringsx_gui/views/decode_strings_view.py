@@ -9,7 +9,7 @@ from w3stringsx_svc import W3StringsManagerService
 import flet_reactive as ftr
 from w3stringsx_gui.views.view_base import ViewBase
 from w3stringsx_gui.routing import Routes
-from w3stringsx_gui.components import StatusMessage
+from w3stringsx_gui.components import StatusPill
 
 
 _logger = get_logger()
@@ -34,10 +34,11 @@ class DecodeStringsView(ViewBase, ftr.ReactiveHooks):
         self.__output_dir_path: ftr.State[str | None] = self.use_state('')
         self.__w3strings_file_picker = ft.FilePicker(on_result=self.on_w3strings_files_picked)
         self.__output_dir_picker = ft.FilePicker(on_result=self.on_output_dir_picked)
-        self.__decode_status: ftr.State[bool | None] = self.use_state(None)
 
         self.__w3strings_file_paths.extend(props.w3strings_paths)
         VISIBLE_W3STRINGS_PATHS_ROWS = 5
+
+        self.__decode_status_pill = StatusPill()
         
         super().__init__(
             route=Routes.DECODE_STRINGS,
@@ -118,11 +119,7 @@ class DecodeStringsView(ViewBase, ftr.ReactiveHooks):
                         )
                     ],
                 ),
-                StatusMessage(
-                    self.__decode_status,
-                    success_msg="Files decoded successfully!",
-                    error_msg="Errors occured during decoding! Check the logs."
-                )
+                self.__decode_status_pill,
             ]
         )
 
@@ -179,14 +176,19 @@ class DecodeStringsView(ViewBase, ftr.ReactiveHooks):
         if self.__output_dir_path.value is None:
             return
 
+        errored = False
         for input_path in self.__w3strings_file_paths:
             try:
                 self.__w3strings_manager.decode_w3strings_to_csv(
                     input_path, 
                     self.__output_dir_path.value
                 )
-                self.__decode_status.value = True
             except Exception as ex:
                 _logger.error(ex)
                 _logger.debug(traceback.format_exc())
-                self.__decode_status.value = False
+                errored = True
+        
+        if not errored:
+            self.__decode_status_pill.show("Files decoded successfully!")
+        else:
+            self.__decode_status_pill.show("Errors occured during decoding! Check the logs.", True)

@@ -9,7 +9,7 @@ from w3stringsx_lib.logging import get_logger
 from w3stringsx_svc import StringKeyDiscoveryService
 from w3stringsx_gui.views.view_base import ViewBase
 from w3stringsx_gui.routing import Routes
-from w3stringsx_gui.components import StatusMessage, LogsPanel
+from w3stringsx_gui.components import StatusPill
 
 
 _logger = get_logger()
@@ -36,13 +36,14 @@ class SearchForStringKeysView(ViewBase):
         self.__search_file_picker = ft.FilePicker(on_result=self.on_search_files_picked)
         self.__search_dir_picker = ft.FilePicker(on_result=self.on_search_dir_picked)
         self.__output_dir_picker = ft.FilePicker(on_result=self.on_output_dir_picked)
-        self.__search_status: ftr.State[bool | None] = self.use_state(None)
 
         if not isinstance(props, SearchForStringKeysViewProps):
             props = SearchForStringKeysViewProps(search_paths=[])
         
         self.__search_paths.extend(props.search_paths)
         VISIBLE_SEARCH_PATHS_ROWS = 5
+
+        self.__search_status_pill = StatusPill()
 
         super().__init__(
             route=Routes.SEARCH_FOR_STRING_KEYS,
@@ -144,11 +145,7 @@ class SearchForStringKeysView(ViewBase):
                         )
                     ],
                 ),
-                StatusMessage(
-                    self.__search_status,
-                    success_msg="Files and/or directories searched successfully!",
-                    error_msg="Errors occured during the search! Check the logs."
-                )
+                self.__search_status_pill,
             ]
         )
 
@@ -216,6 +213,7 @@ class SearchForStringKeysView(ViewBase):
         or self.__search_regex.value is None:
             return
         
+        errored = False
         for input_path in self.__search_paths:
             try:
                 if os.path.isdir(input_path):
@@ -224,9 +222,12 @@ class SearchForStringKeysView(ViewBase):
                     self.__string_key_discovery.discover_str_keys_in_xml(input_path, self.__output_dir_path.value, self.__search_regex.value)
                 elif input_path.endswith(('.ws', '.wss')):
                     self.__string_key_discovery.discover_str_keys_in_witcherscript(input_path, self.__output_dir_path.value, self.__search_regex.value)
-
-                self.__search_status.value = True
             except Exception as ex:
                 _logger.error(ex)
                 _logger.debug(traceback.format_exc())
-                self.__search_status.value = False
+                errored = True
+
+        if not errored:
+            self.__search_status_pill.show("Files and/or directories searched successfully!")
+        else:
+            self.__search_status_pill.show("Errors occured during the search! Check the logs.", True)

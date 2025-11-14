@@ -18,6 +18,7 @@ from flet_reactive.reactive_wrappers import (
     ReactiveDropdown,
     ReactiveRow,
     ReactiveText,
+    ReactiveIcon
 )
 from flet_reactive.reactive_hooks import ReactiveHooks
 
@@ -41,5 +42,6 @@ __all__ = [
     "ReactiveDropdown",
     "ReactiveRow",
     "ReactiveText",
+    "ReactiveIcon",
     "ReactiveHooks"
 ]

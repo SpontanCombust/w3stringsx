@@ -11,7 +11,7 @@ from w3stringsx_svc import W3StringsManagerService
 import flet_reactive as ftr
 from w3stringsx_gui.views.view_base import ViewBase
 from w3stringsx_gui.routing import Routes
-from w3stringsx_gui.components import StatusMessage
+from w3stringsx_gui.components import StatusPill
 
 
 _logger = get_logger()
@@ -76,9 +76,10 @@ class EncodeStringsView(ViewBase):
         self.__keep_output_csv: ftr.State[bool | None] = self.use_state(False)
         self.__csv_file_picker = ft.FilePicker(on_result=self.on_csv_files_picked)
         self.__output_dir_picker = ft.FilePicker(on_result=self.on_output_dir_picked)
-        self.__encode_status: ftr.State[bool | None] = self.use_state(None)
         self.__csv_file_entries.extend([_CsvFileEntry(path, self.use_state(False)) for path in props.csv_paths])
         VISIBLE_CSV_ENTRY_ROWS = 5
+
+        self.__encode_status_pill = StatusPill()
 
         super().__init__(
             route=Routes.ENCODE_STRINGS,
@@ -241,11 +242,7 @@ class EncodeStringsView(ViewBase):
                         )
                     ],
                 ),
-                StatusMessage(
-                    self.__encode_status,
-                    success_msg="File encoded successfully!",
-                    error_msg="Errors occured during encoding! Check the logs."
-                ),
+                self.__encode_status_pill,
             ]
         )
 
@@ -364,6 +361,7 @@ class EncodeStringsView(ViewBase):
         if self.__output_dir_path.value is None:
             return
 
+        errored = False
         for entry in self.__csv_file_entries:
             try:
                 self.__w3strings_manager.encode_w3strings_from_csv(
@@ -375,11 +373,14 @@ class EncodeStringsView(ViewBase):
             except Exception as ex:
                 _logger.error(ex)
                 _logger.debug(traceback.format_exc())
-                self.__encode_status.value = False
-                break
+                errored = True
 
-            self.__encode_status.value = True
-            
+        if not errored:
+            self.__encode_status_pill.show("File encoded successfully!")
+        else:
+            self.__encode_status_pill.show("Errors occured during encoding! Check the logs.", True)
+                
+
     
     # User can supply multiple CSVs, which will correspond to different languages
     # target encoding languages however should not repeat between each CSV file
