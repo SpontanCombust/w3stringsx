@@ -28,14 +28,15 @@ class ConfigurationValue(Generic[T]):
     def is_none(self) -> bool:
         return self.__value is None
     
+    
 class Configuration(ABC):
     def some(self, v: T) -> ConfigurationValue[T]:
         return ConfigurationValue(v)
     
-    def none(self, default: T | None) -> ConfigurationValue[T]: # pyright: ignore[reportInvalidTypeVarUse]
+    def none(self, default: T | None) -> ConfigurationValue[T]:
         return ConfigurationValue(None, default)
 
-    #TODO move out of config
+
     @property
     @abstractmethod
     def app_dir(self) -> ConfigurationValue[str]:
@@ -54,6 +55,11 @@ class Configuration(ABC):
     @property
     @abstractmethod
     def w3strings_encoder_path(self) -> ConfigurationValue[str]:
+        ...
+
+    @property
+    @abstractmethod
+    def default_fallback_language(self) -> ConfigurationValue[str]:
         ...
 
 

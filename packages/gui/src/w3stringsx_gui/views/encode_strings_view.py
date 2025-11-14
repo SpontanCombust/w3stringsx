@@ -1,13 +1,12 @@
 import dataclasses
 import os
 import traceback
-from typing import cast
 
 import flet as ft
 
 from w3stringsx_lib.logging import get_logger
 from w3stringsx_lib.localization import ALL_LANGS, ALL_LANGS_NAME_MAP
-from w3stringsx_svc import W3StringsManagerService
+from w3stringsx_svc import W3StringsManagerService, Configuration
 import flet_reactive as ftr
 from w3stringsx_gui.views.view_base import ViewBase
 from w3stringsx_gui.routing import Routes
@@ -61,9 +60,11 @@ class EncodeStringsView(ViewBase):
 
     def __init__(self, 
         w3strings_manager: W3StringsManagerService,
+        config: Configuration,
         props: EncodeStringsViewProps = EncodeStringsViewProps(csv_paths=[]),
     ):
         self.__w3strings_manager = w3strings_manager
+        self.__config = config
 
         self.__csv_file_entries: ftr.ListState[_CsvFileEntry] = self.use_list_state([])
         self.__selected_csv_file_entry_idx: ftr.State[int | None] = self.use_state(None)
@@ -406,10 +407,9 @@ class EncodeStringsView(ViewBase):
                 lang_pool.remove(entry.preferred_lang)
 
         # now assign the rest of available languages
-        # we assume that the user would want to encode for all possible languages
+        # we assume that the user would want to encode for all possible languages by default
         if len(lang_pool) > 0:
-            # the default fallback language should be English
-            en_csvs = [entry for entry in changed_entries if entry.preferred_lang == 'en']
+            en_csvs = [entry for entry in changed_entries if entry.preferred_lang == self.__config.default_fallback_language.get_or_default()]
             if len(en_csvs) > 0:
                 en_csvs[0].target_langs.extend(lang_pool)
             else:

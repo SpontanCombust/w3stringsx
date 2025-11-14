@@ -54,6 +54,14 @@ class W3stringsxGuiConfiguration(Configuration):
     def theme_mode(self, val: str | None):
         self.__set('w3stringsx_gui.theme_mode', val)
 
+    @property
+    def default_fallback_language(self) -> ConfigurationValue[str]:
+        return self.__get('w3stringsx_gui.default_fallback_language', 'en')
+    
+    @default_fallback_language.setter
+    def default_fallback_language(self, val: str | None):
+        self.__set('w3stringsx_gui.default_fallback_language', val)
+
 
     def reset_to_default(self):
         client_storage = self.__page_provider.provide().client_storage

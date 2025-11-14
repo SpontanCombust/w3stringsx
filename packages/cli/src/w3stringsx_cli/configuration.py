@@ -1,4 +1,5 @@
 import importlib.metadata
+import logging
 import os
 
 from w3stringsx_svc.configuration import Configuration, ConfigurationValue
@@ -15,16 +16,19 @@ class W3stringsxCliConfiguration(Configuration):
 
     @property
     def app_version(self) -> ConfigurationValue[str]:
-        return self.none(default=importlib.metadata.version('w3stringsx-cli'))
+        return self.none(importlib.metadata.version('w3stringsx-cli'))
     
     @property
     def log_level(self) -> ConfigurationValue[int]:
-        return self.none()
+        return self.none(logging.INFO)
     
     @property
     def w3strings_encoder_path(self) -> ConfigurationValue[str]:
-        return self.none(default=None)
+        return self.none(None)
+    
+    @property
+    def default_fallback_language(self) -> ConfigurationValue[str]:
+        return self.none('en')
 
     def reset_to_default(self):
-        # CLI does not persist settings (for now)
         pass
