@@ -1,0 +1,21 @@
+name: lint
+
+on:
+  push:
+    branches: ['*']
+
+jobs:
+  update-docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11' 
+      - name: Install workspace dependencies
+        run: pip install -r requirements.txt
+      - name: Run python task
+        run: python tasks/check.py
