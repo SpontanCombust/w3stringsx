@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import logging
 import os
+import sys
 
 import flet as ft
 
@@ -156,4 +157,10 @@ class LogsPanel(ftr.ReactiveContainer, ftr.ReactiveHooks):
         return True
     
     def on_open_logs_file_button_click(self, ev: ft.ControlEvent):
-        os.startfile(get_log_file_path())
+        if 'win32' in sys.platform:
+            os.startfile(get_log_file_path())
+        elif 'linux' in sys.platform:
+            import subprocess
+            subprocess.call(["xdg-open", get_log_file_path()])
+        else:
+            raise Exception('Operation not supported on this platform')
