@@ -1,4 +1,5 @@
 import importlib.metadata
+import logging
 import os
 from typing import Any, TypeVar
 
@@ -30,11 +31,19 @@ class W3stringsxGuiConfiguration(Configuration):
         self.__set('w3stringsx_gui.app_version', val)
 
     @property
+    def log_level(self) -> ConfigurationValue[int]:
+        return self.__get('w3stringsx_gui.log_level', logging.INFO)
+    
+    @log_level.setter
+    def log_level(self, val: int | None):
+        self.__set('w3stringsx_gui.log_level', val)
+
+    @property
     def w3strings_encoder_path(self) -> ConfigurationValue[str]:
         return self.__get('w3stringsx_gui.w3strings_encoder_path', None)
     
     @w3strings_encoder_path.setter
-    def w3strings_encoder_path(self, val: str| None):
+    def w3strings_encoder_path(self, val: str | None):
         self.__set('w3stringsx_gui.w3strings_encoder_path', val)
     
     @property

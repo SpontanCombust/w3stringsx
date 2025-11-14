@@ -48,6 +48,11 @@ class Configuration(ABC):
 
     @property
     @abstractmethod
+    def log_level(self) -> ConfigurationValue[int]:
+        ...
+
+    @property
+    @abstractmethod
     def w3strings_encoder_path(self) -> ConfigurationValue[str]:
         ...
 

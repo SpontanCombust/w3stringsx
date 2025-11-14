@@ -1,13 +1,17 @@
-from typing import Any, cast
+import logging
+from typing import cast, TypeVar
 
 import flet as ft
 
 import flet_reactive as ftr
+from w3stringsx_lib.logging import set_log_level
 from w3stringsx_svc import Configuration
 from w3stringsx_gui.views.view_base import ViewBase
 from w3stringsx_gui.services import W3stringsxGuiConfiguration
 from w3stringsx_gui.routing import Routes
 
+
+_T = TypeVar('_T')
 
 class SettingsView(ViewBase):
     TITLE = "SETTINGS"
@@ -22,9 +26,9 @@ class SettingsView(ViewBase):
         self.__w3strings_encoder_path = ftr.State[str | None](self.__config.w3strings_encoder_path.get())
         self.__w3strings_encoder_picker = ft.FilePicker(on_result=self.on_w3strings_encoder_picked)
         self.__theme_mode = ftr.State[str | None](self.__config.theme_mode.get_or_default())
-        self.use_effect([self.__theme_mode], 
-            self.on_theme_mode_changed
-        )
+        self.use_effect([self.__theme_mode], self.on_theme_mode_changed)
+        self.__log_level: ftr.State[str | None] = self.use_state(str(self.__config.log_level.get_or_default()))
+        self.use_effect([self.__log_level], self.on_log_level_changed)
 
         self.__reset_confirm_dialog = ft.AlertDialog(
             modal=True,
@@ -80,6 +84,33 @@ class SettingsView(ViewBase):
                                     key=member.value,
                                     text=member.value
                                 ) for member in list(ft.ThemeMode)
+                            ]
+                        ),
+                    ]
+                ),
+                ft.Row(
+                    spacing=15,
+                    controls=[
+                        ft.Icon(
+                            name=ft.Icons.ARTICLE,
+                            color=ft.Colors.ON_SURFACE_VARIANT,
+                        ),
+                        ftr.ReactiveDropdown(
+                            label="Log level",
+                            value=self.__log_level,
+                            border_color=ft.Colors.PRIMARY,
+                            width=300,
+                            options=[
+                                ft.DropdownOption(
+                                    key=str(level),
+                                    text=logging.getLevelName(level)
+                                ) for level in [
+                                    logging.CRITICAL,
+                                    logging.ERROR,
+                                    logging.WARNING,
+                                    logging.INFO,
+                                    logging.DEBUG
+                                ]
                             ]
                         ),
                     ]
@@ -142,6 +173,11 @@ class SettingsView(ViewBase):
 
     def on_theme_mode_changed(self):
         self.__update_should_save(self.__theme_mode, self.__config.theme_mode.get())
+
+    def on_log_level_changed(self):
+        config_value = self.__config.log_level.get()
+        config_value_str = str(config_value) if config_value is not None else None
+        self.__update_should_save(self.__log_level, config_value_str)
         
     def on_save_button_click(self, ev: ft.ControlEvent):
         if self.page is None:
@@ -159,6 +195,9 @@ class SettingsView(ViewBase):
                 self.__config.theme_mode = None
 
             should_update_page = True
+        if self.__log_level in self.__settings_to_save:
+            self.__config.log_level = int(self.__log_level.value) if self.__log_level.value else None
+            set_log_level(self.__config.log_level.get_or_default())
 
         self.__settings_to_save.clear()
         self.__should_save.value = False
@@ -182,11 +221,14 @@ class SettingsView(ViewBase):
 
         self.__config.reset_to_default()
         self.__w3strings_encoder_path.value = self.__config.w3strings_encoder_path.get()
-        self.__theme_mode.value = self.__config.theme_mode.get()
+        self.__theme_mode.value = self.__config.theme_mode.get_or_default()
+        self.__log_level.value = str(self.__config.log_level.get_or_default())
         self.__should_save.value = False
         self.__settings_to_save.clear()
 
         self.page.theme_mode = ft.ThemeMode(self.__config.theme_mode.get_or_default())
+        set_log_level(self.__config.log_level.get_or_default())
+
         self.page.update()
         self.page.open(ft.SnackBar(ft.Text("Settings have been reset to default."), bgcolor=ft.Colors.AMBER))
 
@@ -197,7 +239,7 @@ class SettingsView(ViewBase):
         self.page.close(self.__reset_confirm_dialog)
 
 
-    def __update_should_save(self, state: ftr.State, config_value: Any):
+    def __update_should_save(self, state: ftr.State[_T], config_value: _T):
         if state.value != config_value:
             self.__settings_to_save.add(state)
         elif state in self.__settings_to_save:

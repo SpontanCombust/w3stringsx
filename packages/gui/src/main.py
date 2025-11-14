@@ -1,4 +1,3 @@
-import logging
 import traceback
 
 import flet as ft
@@ -26,7 +25,7 @@ def setup_services(page: ft.Page):
     config = W3stringsxGuiConfiguration(page_provider)
 
     init_logger(config.app_dir.get_or_default())
-    set_log_level(logging.INFO)
+    set_log_level(config.log_level.get_or_default())
 
     page.theme_mode = ft.ThemeMode(config.theme_mode.get_or_default())
 
