@@ -160,34 +160,36 @@ class EncodeStringsView(ViewBase):
                 ftr.ReactiveContainer(
                     border=ft.border.all(1, ft.Colors.PRIMARY),
                     border_radius=5,
-                    height=250,
                     padding=ft.padding.only(left=10, top=5, right=10, bottom=10),
                     disabled=self.use_computed([self.__selected_csv_file_entry_idx],
                         lambda: self.__selected_csv_file_entry_idx.value is None
                     ),
                     content=ft.Column(
-                        scroll=ft.ScrollMode.ADAPTIVE,
                         controls=[
                             ftr.ReactiveText(
                                 value=self.use_computed([self.__selected_csv_file_entry_idx, *self.__lang_selection.values()], self.lang_selection_label_text)
                             ),
-                            ft.GridView(
+                            ft.Row(
+                                scroll=ft.ScrollMode.ALWAYS,
                                 expand=True,
-                                runs_count=5,
-                                run_spacing=100,
-                                child_aspect_ratio=6.0,
+                                wrap=True,
+                                spacing=0,
+                                run_spacing=10,
                                 controls=[
-                                    ftr.ReactiveCheckbox(
-                                        label=ft.Text(value=f'{lang_name} ({lang})', weight=ft.FontWeight.BOLD),
-                                        value=self.__lang_selection[lang],
-                                        disabled=self.use_computed([self.__lang_selection[lang]], 
-                                            lambda lang=lang: self.__lang_selection[lang].value is None
-                                        ),
-                                        tristate=True,
-                                        on_change=lambda ev, lang=lang: self.on_lang_selection_checkbox_changed(ev, lang),
-                                    # display checkbox for each language, sorted by language name
+                                    ft.Container(
+                                        width=250,
+                                        content=ftr.ReactiveCheckbox(
+                                            label=ft.Text(value=f'{lang_name} ({lang})', weight=ft.FontWeight.BOLD),
+                                            value=self.__lang_selection[lang],
+                                            disabled=self.use_computed([self.__lang_selection[lang]], 
+                                                lambda lang=lang: self.__lang_selection[lang].value is None
+                                            ),
+                                            tristate=True,
+                                            on_change=lambda ev, lang=lang: self.on_lang_selection_checkbox_changed(ev, lang),
+                                        # display checkbox for each language, sorted by language name
+                                        ) 
                                     ) for lang, lang_name in sorted(ALL_LANGS_NAME_MAP.items(), key=lambda kv: kv[1])
-                                ] 
+                                ]
                             ),
                             ft.Row(), # small spacer
                             ft.Row(
@@ -219,7 +221,7 @@ class EncodeStringsView(ViewBase):
                     on_click=self.on_output_dir_textfield_click,
                 ),
                 ftr.ReactiveCheckbox(
-                    label="Keep generated end-result CSV",
+                    label="Keep generated end-result CSVs",
                     value=self.__keep_output_csv,
                 ),
                 ft.Row(
