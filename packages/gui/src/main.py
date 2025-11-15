@@ -129,6 +129,7 @@ def main(page: ft.Page):
     from w3stringsx_gui.views.decode_strings_view import DecodeStringsView
     from w3stringsx_gui.views.search_for_string_keys_view import SearchForStringKeysView
     from w3stringsx_gui.views.strings_db_encoding_view import StringsDbEncodingView
+    from w3stringsx_gui.views.strings_db_exporting_view import StringsDbExportingView
 
     router = Router(page).with_routes({
         Routes.HOME: HomeView,
@@ -136,7 +137,8 @@ def main(page: ft.Page):
         Routes.ENCODE_STRINGS: EncodeStringsView,
         Routes.DECODE_STRINGS: DecodeStringsView,
         Routes.SEARCH_FOR_STRING_KEYS: SearchForStringKeysView,
-        Routes.ENCODE_DB: StringsDbEncodingView
+        Routes.ENCODE_DB: StringsDbEncodingView,
+        Routes.EXPORT_DB: StringsDbExportingView,
     })
 
     router.goto(Routes.HOME)

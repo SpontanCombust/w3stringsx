@@ -49,6 +49,12 @@ class HomeView(ViewBase):
                                             color=ft.Colors.ON_PRIMARY,
                                             on_click=lambda e: router.goto(Routes.ENCODE_DB)),
                                         FeatureButton(
+                                            'icons/database-export.svg', 
+                                            'Export \n DB to CSV',
+                                            bgcolor=ft.Colors.PRIMARY,
+                                            color=ft.Colors.ON_PRIMARY,
+                                            on_click=lambda e: router.goto(Routes.EXPORT_DB)),
+                                        FeatureButton(
                                             'icons/file-lock.svg', 
                                             'Encode \n CSV to w3strings',
                                             bgcolor=ft.Colors.PRIMARY,

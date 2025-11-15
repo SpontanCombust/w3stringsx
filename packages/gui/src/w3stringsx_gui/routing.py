@@ -95,3 +95,4 @@ class Routes:
     DECODE_STRINGS = '/decode'
     SEARCH_FOR_STRING_KEYS = '/find-keys'
     ENCODE_DB = '/encode-db'
+    EXPORT_DB = '/export-db'

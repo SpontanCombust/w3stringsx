@@ -14,17 +14,17 @@ from w3stringsx_gui.components import StatusPill
 
 
 @dataclass
-class StringsDbEncodingViewProps:
+class StringsDbExportingViewProps:
     db_path: str | None = None
 
-class StringsDbEncodingView(ViewBase):
-    TITLE = "STRINGS DB ENCODING"
-    PROPS_TYPE = StringsDbEncodingViewProps
+class StringsDbExportingView(ViewBase):
+    TITLE = "STRINGS DB EXPORTING"
+    PROPS_TYPE = StringsDbExportingViewProps
     ALLOWED_EXTS = ['db']
 
     def __init__(self,
         config: Configuration,
-        props: StringsDbEncodingViewProps = StringsDbEncodingViewProps(db_path=None)
+        props: StringsDbExportingViewProps = StringsDbExportingViewProps(db_path=None)
     ):
         self.__db_file_path: ftr.State[str | None] = self.use_state(None)
         self.__db_file_picker = ft.FilePicker(on_result=self.on_db_file_picked)
@@ -35,14 +35,20 @@ class StringsDbEncodingView(ViewBase):
 
         self.__db_file_path.value = props.db_path
 
-        self.__encode_status_pill = StatusPill()
+        self.__can_export: ftr.Computed[bool | None] = self.use_computed(
+            [self.__db_file_path, *self.__lang_selection.values(), self.__output_dir_path],
+            lambda: bool(self.__db_file_path.value)
+                    and any([selection.value is True for selection in self.__lang_selection.values()])
+                    and bool(self.__output_dir_path.value)
+        )
+
+        self.__export_status_pill = StatusPill()
 
         super().__init__(
             route=Routes.ENCODE_DB,
             scroll=ft.ScrollMode.AUTO,
             spacing=30,
             controls=[
-                # flet doesn't have database icons 😒
                 ft.Row(
                     controls=[
                         ft.Image(
@@ -90,7 +96,7 @@ class StringsDbEncodingView(ViewBase):
                     content=ft.Column(
                         controls=[
                             ft.Text(
-                                value="Select target languages"
+                                value="Select languages to export"
                             ),
                             ft.Row(
                                 scroll=ft.ScrollMode.ALWAYS,
@@ -138,21 +144,56 @@ class StringsDbEncodingView(ViewBase):
                 ft.Row(
                     alignment=ft.MainAxisAlignment.CENTER,
                     controls=[
-                        ftr.ReactiveFilledButton(
-                            icon=ft.Icons.LOCK_OUTLINE,
-                            text='Encode',
-                            width=300,
-                            on_click=self.on_encode_button_click,
-                            disabled=self.use_computed(
-                                [self.__db_file_path, *self.__lang_selection.values(), self.__output_dir_path],
-                                lambda: not self.__db_file_path.value
-                                        or not any([selection.value is True for selection in self.__lang_selection.values()])
-                                        or not self.__output_dir_path.value
-                            )
+                        ft.Column(
+                            controls=[
+                                ftr.ReactiveFilledButton(
+                                    width=300,
+                                    on_click=self.on_separate_export_button_click,
+                                    disabled=self.use_computed([self.__can_export], lambda: not self.__can_export.value),
+                                    content=ft.Row(
+                                        alignment=ft.MainAxisAlignment.CENTER,
+                                        controls=[
+                                            ftr.ReactiveImage(
+                                                src='icons/file-export-outline.svg',
+                                                color=self.use_computed([self.__can_export], lambda:
+                                                    # this is close enough
+                                                    ft.Colors.ON_PRIMARY if self.__can_export.value else ft.Colors.with_opacity(0.4, ft.Colors.ON_SURFACE) 
+                                                ),
+                                                width=20,
+                                                height=20,
+                                            ),
+                                            ft.Text(
+                                                value="Export to separate CSVs"
+                                            )
+                                        ]
+                                    ),
+                                ),
+                                ftr.ReactiveFilledButton(
+                                    width=300,
+                                    on_click=self.on_redkit_export_button_click,
+                                    disabled=self.use_computed([self.__can_export], lambda: not self.__can_export.value),
+                                    content=ft.Row(
+                                        alignment=ft.MainAxisAlignment.CENTER,
+                                        controls=[
+                                            ftr.ReactiveImage(
+                                                src='icons/file-export-outline.svg',
+                                                color=self.use_computed([self.__can_export], lambda: 
+                                                    ft.Colors.ON_PRIMARY if self.__can_export.value else ft.Colors.with_opacity(0.4, ft.Colors.ON_SURFACE) 
+                                                ),
+                                                width=20,
+                                                height=20
+                                            ),
+                                            ft.Text(
+                                                value="Export to REDkit CSV"
+                                            )
+                                        ]
+                                    ),
+                                )
+                            ]
                         )
                     ],
                 ),
-                self.__encode_status_pill
+                self.__export_status_pill
             ]
         )
 
@@ -210,13 +251,13 @@ class StringsDbEncodingView(ViewBase):
             self.__output_dir_path.value = ev.path
 
 
-    def on_encode_button_click(self, ev: ft.ControlEvent):
+    def on_separate_export_button_click(self, ev: ft.ControlEvent):
         if self.__db_file_path.value is None or self.__output_dir_path.value is None:
             return
         
         errored = False
         try:
-            #TODO encoding DB
+            #TODO export to separate CSVs
             raise NotImplementedError()
         except Exception as ex:
             logger = get_logger()
@@ -225,6 +266,25 @@ class StringsDbEncodingView(ViewBase):
             errored = True
             
         if not errored:
-            self.__encode_status_pill.show("Database encoded successfully!")
+            self.__export_status_pill.show("Database exported successfully!")
         else:
-            self.__encode_status_pill.show("Errors occured during encoding! Check the logs.", True)
+            self.__export_status_pill.show("Errors occured during export! Check the logs.", True)
+
+    def on_redkit_export_button_click(self, ev: ft.ControlEvent):
+        if self.__db_file_path.value is None or self.__output_dir_path.value is None:
+            return
+        
+        errored = False
+        try:
+            #TODO export to redkit CSV
+            raise NotImplementedError()
+        except Exception as ex:
+            logger = get_logger()
+            logger.error(ex)
+            logger.debug(traceback.format_exc())
+            errored = True
+            
+        if not errored:
+            self.__export_status_pill.show("Database exported successfully!")
+        else:
+            self.__export_status_pill.show("Errors occured during export! Check the logs.", True)

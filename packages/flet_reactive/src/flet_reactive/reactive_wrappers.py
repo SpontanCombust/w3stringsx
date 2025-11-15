@@ -1809,3 +1809,108 @@ class ReactiveIcon(ft.Icon, _ReactiveControlWrapper):
     def will_unmount(self):
         super().will_unmount()
         self._drop_prop_bindings()
+
+
+
+class ReactiveImage(ft.Image, _ReactiveControlWrapper):
+    def __init__(self, 
+        src: str | None = None, 
+        src_base64: str | None = None, 
+        error_content: ft.Control | None = None, 
+        repeat: ft.ImageRepeat | None = None, 
+        fit: ft.ImageFit | None = None, 
+        border_radius: int | float | ft.BorderRadius | None = None, 
+        color: str | ft.Colors | ft.CupertinoColors | None | State[str | ft.Colors | ft.CupertinoColors | None] = None, 
+        color_blend_mode: ft.BlendMode | None = None, 
+        gapless_playback: bool | None = None, 
+        semantics_label: str | None = None, 
+        exclude_from_semantics: bool | None = None, 
+        filter_quality: ft.FilterQuality | None = None, 
+        cache_width: int | None = None, 
+        cache_height: int | None = None, 
+        anti_alias: bool | None = None, 
+        ref: ft.Ref | None = None, 
+        key: str | None = None, 
+        width: int | float | None = None, 
+        height: int | float | None = None, 
+        left: int | float | None = None, 
+        top: int | float | None = None, 
+        right: int | float | None = None, 
+        bottom: int | float | None = None, 
+        expand: None | bool | int = None, 
+        expand_loose: bool | None = None, 
+        col: Dict[str, int | float] | int | float | None = None, 
+        opacity: int | float | None = None, 
+        rotate: int | float | ft.Rotate | None = None, 
+        scale: int | float | ft.Scale | None = None, 
+        offset: ft.Offset | None = None, 
+        aspect_ratio: int | float | None = None, 
+        animate_opacity: bool | int | ft.Animation | None = None, 
+        animate_size: bool | int | ft.Animation | None = None, 
+        animate_position: bool | int | ft.Animation | None = None, 
+        animate_rotation: bool | int | ft.Animation | None = None, 
+        animate_scale: bool | int | ft.Animation | None = None, 
+        animate_offset: bool | int | ft.Animation | None = None, 
+        on_animation_end: Callable[[ft.ControlEvent], Any] | None = None, 
+        tooltip: str | ft.Tooltip | None = None, 
+        badge: str | ft.Badge | None = None, 
+        visible: bool | None = None, 
+        disabled: bool | None = None, 
+        data: Any = None
+    ):
+        super().__init__(
+            src,
+            src_base64,
+            error_content,
+            repeat,
+            fit,
+            border_radius,
+            _unwrap_value(color),
+            color_blend_mode,
+            gapless_playback,
+            semantics_label,
+            exclude_from_semantics,
+            filter_quality,
+            cache_width,
+            cache_height,
+            anti_alias,
+            ref,
+            key,
+            width,
+            height,
+            left,
+            top,
+            right,
+            bottom,
+            expand,
+            expand_loose,
+            col,
+            opacity,
+            rotate,
+            scale,
+            offset,
+            aspect_ratio,
+            animate_opacity,
+            animate_size,
+            animate_position,
+            animate_rotation,
+            animate_scale,
+            animate_offset,
+            on_animation_end,
+            tooltip,
+            badge,
+            visible,
+            disabled,
+            data
+        )
+
+        if isinstance(color, State):
+            self._new_stateful_prop_binding(color, self, 'color')
+
+    def did_mount(self):
+        super().did_mount()
+        self._init_prop_bindings()
+
+    def will_unmount(self):
+        super().will_unmount()
+        self._drop_prop_bindings()
