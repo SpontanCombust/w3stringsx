@@ -13,16 +13,12 @@ from w3stringsx_svc import (
     ScratchFolderService
 )
 from w3stringsx_gui.services import (
-    PageProvider,
     W3stringsxGuiConfiguration
 )
 
 
 def setup_services(page: ft.Page):
-    page_provider = PageProvider()
-    page_provider.acquire(page)
-
-    config = W3stringsxGuiConfiguration(page_provider)
+    config = W3stringsxGuiConfiguration(page)
 
     init_logger(config.app_dir.get_or_default())
     set_log_level(config.log_level.get_or_default())
@@ -30,7 +26,6 @@ def setup_services(page: ft.Page):
     page.theme_mode = ft.ThemeMode(config.theme_mode.get_or_default())
 
     container = di.container_builder()\
-        .singleton(PageProvider, page_provider)\
         .abstract_singleton(Configuration, W3stringsxGuiConfiguration, config)\
         .singleton(W3StringsEncoderLocator,
             W3StringsEncoderLocator()

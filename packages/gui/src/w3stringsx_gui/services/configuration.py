@@ -6,16 +6,15 @@ from typing import Any, TypeVar
 import flet as ft
 
 from w3stringsx_svc.configuration import Configuration, ConfigurationValue
-from w3stringsx_gui.services.page_provider import PageProvider
 
 
 _T = TypeVar('_T')
 
 class W3stringsxGuiConfiguration(Configuration):
     def __init__(self, 
-        page_provider: PageProvider
+        page: ft.Page
     ):
-        self.__page_provider = page_provider
+        self.__page = page
 
 
     @property
@@ -64,19 +63,19 @@ class W3stringsxGuiConfiguration(Configuration):
 
 
     def reset_to_default(self):
-        client_storage = self.__page_provider.provide().client_storage
+        client_storage = self.__page.client_storage
         for key in client_storage.get_keys("w3stringsx_gui."):
             client_storage.remove(key)
     
 
     def __get(self, key: str, default: _T | None) -> ConfigurationValue[_T]:
-        val = self.__page_provider.provide().client_storage.get(key)
+        val = self.__page.client_storage.get(key)
         if val is None:
             return self.none(default)
         return self.some(val)
     
     def __set(self, key: str, val: Any):
-        client_storage = self.__page_provider.provide().client_storage
+        client_storage = self.__page.client_storage
         if bool(val):
             client_storage.set(key, val)
         else:
