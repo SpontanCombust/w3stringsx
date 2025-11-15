@@ -77,6 +77,7 @@ class EncodeStringsView(ViewBase):
         self.__keep_output_csv: ftr.State[bool | None] = self.use_state(False)
         self.__csv_file_picker = ft.FilePicker(on_result=self.on_csv_files_picked)
         self.__output_dir_picker = ft.FilePicker(on_result=self.on_output_dir_picked)
+        
         self.__csv_file_entries.extend([_CsvFileEntry(path, self.use_state(False)) for path in props.csv_paths])
         VISIBLE_CSV_ENTRY_ROWS = 5
 

@@ -111,8 +111,8 @@ def main(page: ft.Page):
 
     def page_on_error(ev: ft.ControlEvent):
         logger = get_logger()
-        logger.error(ev.data)
-        logger.error(traceback.format_exc())
+        logger.critical(ev.data)
+        logger.critical(traceback.format_exc())
     def page_on_app_lifecycle_state_change(ev: ft.AppLifecycleStateChangeEvent):
         # DETACH doesn't seem to get called on desktop
         if ev.state in (ft.AppLifecycleState.HIDE, ft.AppLifecycleState.DETACH):
@@ -128,6 +128,7 @@ def main(page: ft.Page):
     from w3stringsx_gui.views.encode_strings_view import EncodeStringsView
     from w3stringsx_gui.views.decode_strings_view import DecodeStringsView
     from w3stringsx_gui.views.search_for_string_keys_view import SearchForStringKeysView
+    from w3stringsx_gui.views.strings_db_encoding_view import StringsDbEncodingView
 
     router = Router(page).with_routes({
         Routes.HOME: HomeView,
@@ -135,6 +136,7 @@ def main(page: ft.Page):
         Routes.ENCODE_STRINGS: EncodeStringsView,
         Routes.DECODE_STRINGS: DecodeStringsView,
         Routes.SEARCH_FOR_STRING_KEYS: SearchForStringKeysView,
+        Routes.ENCODE_DB: StringsDbEncodingView
     })
 
     router.goto(Routes.HOME)

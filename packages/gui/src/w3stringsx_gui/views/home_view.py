@@ -43,6 +43,12 @@ class HomeView(ViewBase):
                                     alignment=ft.MainAxisAlignment.CENTER,
                                     controls=[
                                         FeatureButton(
+                                            'icons/database-lock.svg', 
+                                            'Encode \n DB to w3strings',
+                                            bgcolor=ft.Colors.PRIMARY,
+                                            color=ft.Colors.ON_PRIMARY,
+                                            on_click=lambda e: router.goto(Routes.ENCODE_DB)),
+                                        FeatureButton(
                                             'icons/file-lock.svg', 
                                             'Encode \n CSV to w3strings',
                                             bgcolor=ft.Colors.PRIMARY,

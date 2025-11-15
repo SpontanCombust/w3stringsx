@@ -45,8 +45,10 @@ class Router:
 
     def __on_route_change(self, ev: ft.RouteChangeEvent):
         if not self.__is_popping:
+            vr_found = False
             for vr in self.__view_routes:
                 if ev.route == vr.route:
+                    vr_found = True
                     props = self.__current_route_props
                     cb = di.container_builder()\
                         .transitive(vr.view_cls)\
@@ -71,6 +73,9 @@ class Router:
                         logger.error(traceback.format_exc())
                     di.pop_container()
                     break
+            if not vr_found:
+                logger = get_logger()
+                logger.critical("Route %s not found", ev.route)
         self.__current_route_props = None
         self.__is_popping = False
         self.__page.update()
@@ -89,3 +94,4 @@ class Routes:
     ENCODE_STRINGS = '/encode'
     DECODE_STRINGS = '/decode'
     SEARCH_FOR_STRING_KEYS = '/find-keys'
+    ENCODE_DB = '/encode-db'
