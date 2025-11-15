@@ -1914,3 +1914,128 @@ class ReactiveImage(ft.Image, _ReactiveControlWrapper):
     def will_unmount(self):
         super().will_unmount()
         self._drop_prop_bindings()
+
+
+
+class ReactiveSwitch(ft.Switch, _ReactiveControlWrapper):
+    def __init__(self, 
+        label: str | ft.Control | None = None, 
+        label_position: ft.LabelPosition | None = None, 
+        label_style: ft.TextStyle | None = None, 
+        value: bool | None | State[bool | None] = None, 
+        autofocus: bool | None = None, 
+        active_color: str | ft.Colors | ft.CupertinoColors | None = None, 
+        active_track_color: str | ft.Colors | ft.CupertinoColors | None = None, 
+        focus_color: str | ft.Colors | ft.CupertinoColors | None = None, 
+        inactive_thumb_color: str | ft.Colors | ft.CupertinoColors | None = None, 
+        inactive_track_color: str | ft.Colors | ft.CupertinoColors | None = None, 
+        thumb_color: None | str | ft.Colors | ft.CupertinoColors | Dict[ft.ControlState, str | ft.Colors | ft.CupertinoColors] = None, 
+        thumb_icon: None | str | ft.Icons | ft.CupertinoIcons | Dict[ft.ControlState, str | ft.Icons | ft.CupertinoIcons] = None, 
+        track_color: None | str | ft.Colors | ft.CupertinoColors | Dict[ft.ControlState, str | ft.Colors | ft.CupertinoColors] = None, 
+        adaptive: bool | None = None, 
+        hover_color: str | ft.Colors | ft.CupertinoColors | None = None, 
+        splash_radius: int | float | None = None, 
+        overlay_color: None | str | ft.Colors | ft.CupertinoColors | Dict[ft.ControlState, str | ft.Colors | ft.CupertinoColors] = None, 
+        track_outline_color: None | str | ft.Colors | ft.CupertinoColors | Dict[ft.ControlState, str | ft.Colors | ft.CupertinoColors] = None, 
+        track_outline_width: None | int | float | Dict[ft.ControlState, int | float | None] = None, 
+        mouse_cursor: ft.MouseCursor | None = None, 
+        on_change: Callable[[ft.ControlEvent], Any] | None = None, 
+        on_focus: Callable[[ft.ControlEvent], Any] | None = None, 
+        on_blur: Callable[[ft.ControlEvent], Any] | None = None, 
+        ref: ft.Ref | None = None, 
+        key: str | None = None, 
+        width: int | float | None = None, 
+        height: int | float | None = None, 
+        left: int | float | None = None, 
+        top: int | float | None = None, 
+        right: int | float | None = None, 
+        bottom: int | float | None = None, 
+        expand: None | bool | int = None, 
+        expand_loose: bool | None = None, 
+        col: Dict[str, int | float] | int | float | None = None, 
+        opacity: int | float | None = None, 
+        rotate: int | float | ft.Rotate | None = None, 
+        scale: int | float | ft.Scale | None = None, 
+        offset: ft.Offset | None = None, 
+        aspect_ratio: int | float | None = None, 
+        animate_opacity: bool | int | ft.Animation | None = None, 
+        animate_size: bool | int | ft.Animation | None = None, 
+        animate_position: bool | int | ft.Animation | None = None, 
+        animate_rotation: bool | int | ft.Animation | None = None, 
+        animate_scale: bool | int | ft.Animation | None = None, 
+        animate_offset: bool | int | ft.Animation | None = None, 
+        on_animation_end: Callable[[ft.ControlEvent], Any] | None = None, 
+        tooltip: str | ft.Tooltip | None = None, 
+        badge: str | ft.Badge | None = None, 
+        visible: bool | None = None, 
+        disabled: bool | None = None, 
+        data: Any = None
+    ):
+        super().__init__(
+            label,
+            label_position,
+            label_style,
+            _unwrap_value(value),
+            autofocus,
+            active_color,
+            active_track_color,
+            focus_color,
+            inactive_thumb_color,
+            inactive_track_color,
+            thumb_color,
+            thumb_icon,
+            track_color,
+            adaptive,
+            hover_color,
+            splash_radius,
+            overlay_color,
+            track_outline_color,
+            track_outline_width,
+            mouse_cursor,
+            on_change,
+            on_focus,
+            on_blur,
+            ref,
+            key,
+            width,
+            height,
+            left,
+            top,
+            right,
+            bottom,
+            expand,
+            expand_loose,
+            col,
+            opacity,
+            rotate,
+            scale,
+            offset,
+            aspect_ratio,
+            animate_opacity,
+            animate_size,
+            animate_position,
+            animate_rotation,
+            animate_scale,
+            animate_offset,
+            on_animation_end,
+            tooltip,
+            badge,
+            visible,
+            disabled,
+            data
+        )
+
+        if isinstance(value, State):
+            binding = self._new_stateful_prop_binding(value, self, 'value')
+            self.on_change = lambda ev: (
+                binding.sync_state(),
+                on_change(ev) if on_change else None
+            )
+
+    def did_mount(self):
+        super().did_mount()
+        self._init_prop_bindings()
+
+    def will_unmount(self):
+        super().will_unmount()
+        self._drop_prop_bindings()
