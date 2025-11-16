@@ -19,7 +19,11 @@ class W3stringsxGuiConfiguration(Configuration):
 
     @property
     def app_dir(self) -> ConfigurationValue[str]:
-        return self.some(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+        path = __file__
+        # climb back to services < w3stringsx_gui < src < gui
+        for i in range(4):
+            path = os.path.dirname(path)
+        return self.some(path)
     
     @property
     def app_version(self) -> ConfigurationValue[str]:
