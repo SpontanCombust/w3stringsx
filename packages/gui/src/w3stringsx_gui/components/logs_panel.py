@@ -29,14 +29,14 @@ class _StringLogHandler(logging.Handler):
         self.scrollback = scrollback
 
     def emit(self, record: logging.LogRecord) -> None:
+        if len(self.logs) >= self.scrollback:
+            self.logs.pop(0)
+
         self.logs.append(FormattedLogRecord(
             msg=self.format(record),
             level=record.levelno
         ))
 
-        # trim to half the expected max size when exceeded
-        if len(self.logs) > self.scrollback:
-            del self.logs[:self.scrollback // 2]
 
 class LogsPanel(ftr.ReactiveContainer, ftr.ReactiveHooks):
     def __init__(
