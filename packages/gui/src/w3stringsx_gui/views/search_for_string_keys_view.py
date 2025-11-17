@@ -12,9 +12,6 @@ from w3stringsx_gui.routing import Routes
 from w3stringsx_gui.components import StatusPill
 
 
-_logger = get_logger()
-
-
 @dataclasses.dataclass
 class SearchForStringKeysViewProps:
     search_paths: list[str] = dataclasses.field(default_factory=list)
@@ -37,9 +34,6 @@ class SearchForStringKeysView(ViewBase):
         self.__search_dir_picker = ft.FilePicker(on_result=self.on_search_dir_picked)
         self.__output_dir_picker = ft.FilePicker(on_result=self.on_output_dir_picked)
 
-        if not isinstance(props, SearchForStringKeysViewProps):
-            props = SearchForStringKeysViewProps(search_paths=[])
-        
         self.__search_paths.extend(props.search_paths)
         VISIBLE_SEARCH_PATHS_ROWS = 5
 
@@ -138,9 +132,9 @@ class SearchForStringKeysView(ViewBase):
                             on_click=self.on_search_button_click,
                             disabled=self.use_computed(
                                 [self.__search_paths, self.__search_regex, self.__output_dir_path],
-                                lambda: len(self.__search_paths) == 0
-                                        or not self.__search_regex.value
-                                        or not self.__output_dir_path.value
+                                lambda: not bool(self.__search_paths)
+                                        or not bool(self.__search_regex.value)
+                                        or not bool(self.__output_dir_path.value)
                             )
                         )
                     ],
@@ -155,6 +149,9 @@ class SearchForStringKeysView(ViewBase):
             self.page.overlay.append(self.__search_file_picker)
             self.page.overlay.append(self.__search_dir_picker)
             self.page.overlay.append(self.__output_dir_picker)
+
+            self.__init_output_dir_to_first_input_dirname()
+
             self.page.update()
 
     def will_unmount(self):
@@ -180,8 +177,8 @@ class SearchForStringKeysView(ViewBase):
                     self.__search_paths.append(f.path)
 
             # set default output path when picking the first file
-            if self.__output_dir_path.value == '' and len(self.__search_paths) == 1:
-                self.__output_dir_path.value = os.path.dirname(self.__search_paths[0])
+            if self.__output_dir_path.value == '':
+                self.__init_output_dir_to_first_input_dirname()
 
     def on_pick_search_dir_button_click(self, ev: ft.ControlEvent):
         self.__search_dir_picker.get_directory_path()
@@ -192,7 +189,7 @@ class SearchForStringKeysView(ViewBase):
 
             # set default output path when picking the first file
             if self.__output_dir_path.value == '':
-                self.__output_dir_path.value = os.path.dirname(ev.path)
+                self.__init_output_dir_to_first_input_dirname()
 
     def on_clear_search_paths_button_click(self, ev: ft.ControlEvent):
         self.__search_paths.clear()
@@ -209,10 +206,18 @@ class SearchForStringKeysView(ViewBase):
 
 
     def on_search_button_click(self, ev: ft.ControlEvent):
-        if self.__output_dir_path.value is None\
-        or self.__search_regex.value is None:
+        logger = get_logger()
+
+        if not bool(self.__search_paths):
+            logger.error("No search paths supplied. Aborting search operation.")
             return
-        
+        if not bool(self.__search_regex.value):
+            logger.error("No string key supplied. Aborting search operation.")
+            return
+        if not bool(self.__output_dir_path.value):
+            logger.error("Output directory not supplied. Aborting search operation.")
+            return
+
         errored = False
         for input_path in self.__search_paths:
             try:
@@ -223,11 +228,17 @@ class SearchForStringKeysView(ViewBase):
                 elif input_path.endswith(('.ws', '.wss')):
                     self.__string_key_discovery.discover_str_keys_in_witcherscript(input_path, self.__output_dir_path.value, self.__search_regex.value)
             except Exception as ex:
-                _logger.error(ex)
-                _logger.debug(traceback.format_exc())
+                logger.error(ex)
+                logger.debug(traceback.format_exc())
                 errored = True
 
         if not errored:
             self.__search_status_pill.show("Files and/or directories searched successfully!")
         else:
             self.__search_status_pill.show("Errors occured during the search! Check the logs.", True)
+
+
+    def __init_output_dir_to_first_input_dirname(self):
+        # set default output path when picking the first file
+        if len(self.__search_paths) > 0:
+            self.__output_dir_path.value = os.path.dirname(self.__search_paths[0])

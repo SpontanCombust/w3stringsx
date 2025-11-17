@@ -145,9 +145,9 @@ class StringsDbEncodingView(ViewBase):
                             on_click=self.on_encode_button_click,
                             disabled=self.use_computed(
                                 [self.__db_file_path, *self.__lang_selection.values(), self.__output_dir_path],
-                                lambda: not self.__db_file_path.value
+                                lambda: not bool(self.__db_file_path.value)
                                         or not any([selection.value is True for selection in self.__lang_selection.values()])
-                                        or not self.__output_dir_path.value
+                                        or not bool(self.__output_dir_path.value)
                             )
                         )
                     ],
@@ -161,6 +161,9 @@ class StringsDbEncodingView(ViewBase):
         if (self.page):
             self.page.overlay.append(self.__db_file_picker)
             self.page.overlay.append(self.__output_dir_picker)
+
+            self.__init_output_dir_to_first_input_dirname()
+
             self.page.update()
 
     def will_unmount(self):
@@ -187,8 +190,8 @@ class StringsDbEncodingView(ViewBase):
             self.__db_file_path.value = db_path
 
             # set default output path when picking the first file(s)
-            if self.__output_dir_path.value is None:
-                self.__output_dir_path.value = os.path.dirname(db_path)
+            if not bool(self.__output_dir_path.value):
+                self.__init_output_dir_to_first_input_dirname()
 
 
     def on_select_all_langs_button_click(self, ev: ft.ControlEvent):
@@ -211,7 +214,19 @@ class StringsDbEncodingView(ViewBase):
 
 
     def on_encode_button_click(self, ev: ft.ControlEvent):
-        if self.__db_file_path.value is None or self.__output_dir_path.value is None:
+        logger = get_logger()
+
+        if not bool(self.__db_file_path.value):
+            logger.error("Database file not supplied. Aborting encode operation.")
+            return
+        if not bool(self.__fallback_lang.value):
+            logger.error("Fallback language not supplied. Export aborted.")
+            return
+        if not any([selection.value is True for selection in self.__lang_selection.values()]):
+            logger.error("No target languages selected. Aborting encode operation.")
+            return
+        if not bool(self.__output_dir_path.value):
+            logger.error("Output directory not supplied. Aborting encode operation.")
             return
         
         errored = False
@@ -219,7 +234,6 @@ class StringsDbEncodingView(ViewBase):
             #TODO encoding DB
             raise NotImplementedError()
         except Exception as ex:
-            logger = get_logger()
             logger.error(ex)
             logger.debug(traceback.format_exc())
             errored = True
@@ -228,3 +242,9 @@ class StringsDbEncodingView(ViewBase):
             self.__encode_status_pill.show("Database encoded successfully!")
         else:
             self.__encode_status_pill.show("Errors occured during encoding! Check the logs.", True)
+
+
+    def __init_output_dir_to_first_input_dirname(self):
+        # set default output path when picking the first file
+        if self.__db_file_path.value:
+            self.__output_dir_path.value = os.path.dirname(self.__db_file_path.value)

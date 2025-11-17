@@ -199,6 +199,9 @@ class StringsDbExportingView(ViewBase):
         if (self.page):
             self.page.overlay.append(self.__db_file_picker)
             self.page.overlay.append(self.__output_dir_picker)
+
+            self.__init_output_dir_to_first_input_dirname()
+
             self.page.update()
 
     def will_unmount(self):
@@ -225,8 +228,8 @@ class StringsDbExportingView(ViewBase):
             self.__db_file_path.value = db_path
 
             # set default output path when picking the first file(s)
-            if self.__output_dir_path.value is None:
-                self.__output_dir_path.value = os.path.dirname(db_path)
+            if not bool(self.__output_dir_path.value):
+                self.__init_output_dir_to_first_input_dirname()
 
 
     def on_select_all_langs_button_click(self, ev: ft.ControlEvent):
@@ -251,13 +254,16 @@ class StringsDbExportingView(ViewBase):
     def on_export_button_click(self, ev: ft.ControlEvent):
         logger = get_logger()
 
-        if self.__db_file_path.value is None:
+        if not bool(self.__db_file_path.value):
             logger.error("Database file path not supplied. Export aborted.")
             return
-        if self.__fallback_lang.value is None:
+        if not bool(self.__fallback_lang.value):
             logger.error("Fallback language not supplied. Export aborted.")
             return
-        if self.__output_dir_path.value is None:
+        if not self.__single_file_export.value and not any([selection.value is True for selection in self.__lang_selection.values()]):
+            logger.error("No target languages selected. Aborting encode operation.")
+            return
+        if not bool(self.__output_dir_path.value):
             logger.error("Output directory not supplied. Export aborted.")
             return
         
@@ -279,3 +285,9 @@ class StringsDbExportingView(ViewBase):
             self.__export_status_pill.show("Database exported successfully!")
         else:
             self.__export_status_pill.show("Errors occured during export! Check the logs.", True)
+
+
+    def __init_output_dir_to_first_input_dirname(self):
+        # set default output path when picking the first file
+        if self.__db_file_path.value:
+            self.__output_dir_path.value = os.path.dirname(self.__db_file_path.value)

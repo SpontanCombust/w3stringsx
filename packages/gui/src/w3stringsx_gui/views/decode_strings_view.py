@@ -12,9 +12,6 @@ from w3stringsx_gui.routing import Routes
 from w3stringsx_gui.components import StatusPill
 
 
-_logger = get_logger()
-
-
 @dataclasses.dataclass
 class DecodeStringsViewProps:
     w3strings_paths: list[str] = dataclasses.field(default_factory=list)
@@ -113,8 +110,8 @@ class DecodeStringsView(ViewBase, ftr.ReactiveHooks):
                             on_click=self.on_decode_button_click,
                             disabled=self.use_computed(
                                 [self.__w3strings_file_paths, self.__output_dir_path],
-                                lambda: len(self.__w3strings_file_paths) == 0 
-                                        or not self.__output_dir_path.value
+                                lambda: not bool(self.__w3strings_file_paths)
+                                        or not bool(self.__output_dir_path.value)
                             )        
                         )
                     ],
@@ -128,6 +125,9 @@ class DecodeStringsView(ViewBase, ftr.ReactiveHooks):
         if (self.page):
             self.page.overlay.append(self.__w3strings_file_picker)
             self.page.overlay.append(self.__output_dir_picker)
+            
+            self.__init_output_dir_to_first_input_dirname()
+
             self.page.update()
 
     def will_unmount(self):
@@ -159,9 +159,8 @@ class DecodeStringsView(ViewBase, ftr.ReactiveHooks):
                 if f.path not in self.__w3strings_file_paths:
                     self.__w3strings_file_paths.append(f.path)
 
-            # set default output path when picking the first file
-            if self.__output_dir_path.value == '' and len(self.__w3strings_file_paths) == 1:
-                self.__output_dir_path.value = os.path.dirname(self.__w3strings_file_paths[0])
+            if not self.__output_dir_path.value:
+                self.__init_output_dir_to_first_input_dirname()
 
     def on_output_dir_textfield_click(self, ev: ft.ControlEvent):
         self.__output_dir_picker.get_directory_path(
@@ -173,7 +172,13 @@ class DecodeStringsView(ViewBase, ftr.ReactiveHooks):
             self.__output_dir_path.value = ev.path
 
     def on_decode_button_click(self, ev: ft.ControlEvent):
-        if self.__output_dir_path.value is None:
+        logger = get_logger()
+
+        if not bool(self.__w3strings_file_paths):
+            logger.error("No input w3strings files supplied. Aborting decode operation.")
+            return
+        if not bool(self.__output_dir_path.value):
+            logger.error("Output directory not supplied. Aborting decode operation.")
             return
 
         errored = False
@@ -184,11 +189,17 @@ class DecodeStringsView(ViewBase, ftr.ReactiveHooks):
                     self.__output_dir_path.value
                 )
             except Exception as ex:
-                _logger.error(ex)
-                _logger.debug(traceback.format_exc())
+                logger.error(ex)
+                logger.debug(traceback.format_exc())
                 errored = True
         
         if not errored:
             self.__decode_status_pill.show("Files decoded successfully!")
         else:
             self.__decode_status_pill.show("Errors occured during decoding! Check the logs.", True)
+
+
+    def __init_output_dir_to_first_input_dirname(self):
+        # set default output path when picking the first file
+        if len(self.__w3strings_file_paths) > 0:
+            self.__output_dir_path.value = os.path.dirname(self.__w3strings_file_paths[0])

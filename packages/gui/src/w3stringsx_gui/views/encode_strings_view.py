@@ -13,9 +13,6 @@ from w3stringsx_gui.routing import Routes
 from w3stringsx_gui.components import StatusPill
 
 
-_logger = get_logger()
-
-
 @dataclasses.dataclass
 class EncodeStringsViewProps:
     csv_paths: list[str] = dataclasses.field(default_factory=list)
@@ -239,9 +236,9 @@ class EncodeStringsView(ViewBase):
                             on_click=self.on_encode_button_click,
                             disabled=self.use_computed(
                                 [self.__csv_file_entries, self.__output_dir_path],
-                                lambda: len(self.__csv_file_entries) == 0
+                                lambda: not bool(self.__csv_file_entries)
                                         or not all([len(entry.target_langs) > 0 for entry in self.__csv_file_entries]) # check if every CSV entry has any target language assigned to it
-                                        or not self.__output_dir_path.value
+                                        or not bool(self.__output_dir_path.value)
                             )
                         )
                     ],
@@ -255,6 +252,12 @@ class EncodeStringsView(ViewBase):
         if (self.page):
             self.page.overlay.append(self.__csv_file_picker)
             self.page.overlay.append(self.__output_dir_picker)
+
+            self.__distribute_target_langs()
+            self.__select_csv_file_entry(0)
+            self.__update_langugage_selections()
+            self.__init_output_dir_to_first_input_dirname()
+
             self.page.update()
 
     def will_unmount(self):
@@ -295,14 +298,13 @@ class EncodeStringsView(ViewBase):
 
                 # select the first row if none was selected beforehand
                 if self.__selected_csv_file_entry_idx.value is None:
-                    self.__selected_csv_file_entry_idx.value = 0
-                    self.__csv_file_entries[0].selected.value = True
+                    self.__select_csv_file_entry(0)
 
                 self.__update_langugage_selections()
 
                 # set default output path when picking the first file(s)
-                if self.__output_dir_path.value == '':
-                    self.__output_dir_path.value = os.path.dirname(new_paths[0])
+                if not self.__output_dir_path.value:
+                    self.__init_output_dir_to_first_input_dirname()
     
     def on_clear_csv_files_button_click(self, ev: ft.ControlEvent):
         self.__csv_file_entries.clear()
@@ -362,7 +364,17 @@ class EncodeStringsView(ViewBase):
 
 
     def on_encode_button_click(self, ev: ft.ControlEvent):
-        if self.__output_dir_path.value is None:
+        logger = get_logger()
+
+        if not bool(self.__csv_file_entries):
+            logger.error("No input csv files supplied. Aborting encode operation.")
+            return
+        for entry in self.__csv_file_entries:
+            if not bool(entry.target_langs):
+                logger.error("Target languages not set for %s. Aborting encode operation.", os.path.basename(entry.csv_path))
+                return
+        if not bool(self.__output_dir_path.value):
+            logger.error("No output directory supplied. Aborting encode operation.")
             return
 
         errored = False
@@ -375,8 +387,8 @@ class EncodeStringsView(ViewBase):
                     self.__keep_output_csv.value or False
                 )
             except Exception as ex:
-                _logger.error(ex)
-                _logger.debug(traceback.format_exc())
+                logger.error(ex)
+                logger.debug(traceback.format_exc())
                 errored = True
 
         if not errored:
@@ -428,6 +440,13 @@ class EncodeStringsView(ViewBase):
             return self.__csv_file_entries[self.__selected_csv_file_entry_idx.value]
         return None
     
+    def __select_csv_file_entry(self, index: int):
+        if len(self.__csv_file_entries) - 1 >= index: 
+            self.__selected_csv_file_entry_idx.value = index
+            for i, entry in enumerate(self.__csv_file_entries):
+                selected = i == index
+                entry.selected.value = selected
+    
     def __update_selected_csv_file_entry_target_langs_from_selections(self):
         if self.__selected_csv_file_entry_idx.value is not None\
         and self.__selected_csv_file_entry_idx.value in range(0, len(self.__csv_file_entries)):
@@ -453,3 +472,8 @@ class EncodeStringsView(ViewBase):
                     selected.value = True
                 else:
                     selected.value = None
+
+    def __init_output_dir_to_first_input_dirname(self):
+        # set default output path when picking the first file
+        if len(self.__csv_file_entries) > 0:
+            self.__output_dir_path.value = os.path.dirname(self.__csv_file_entries[0].csv_path)

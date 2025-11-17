@@ -14,6 +14,9 @@ class State(Generic[T]):
 
     def __repr__(self) -> str:
         return f'<State value={self._value}>'
+    
+    def __bool__(self) -> bool:
+        return bool(self._value)
 
     @property
     def value(self) -> T:
@@ -47,6 +50,9 @@ class ListState(MutableSequence[T]):
 
     def __repr__(self) -> str:
         return f'<ListState list={self.__list}>'
+    
+    def __bool__(self) -> bool:
+        return bool(self.__list)
     
     # +++ MutableSequence +++
     def __contains__(self, value: object) -> bool:
