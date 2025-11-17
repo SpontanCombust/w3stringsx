@@ -234,23 +234,23 @@ class ServiceContainerBuilder:
         provider = _MemoizedCallableServiceProvider(impl_cls, lambda **kwargs: factory(self.__container))
         self.__container.add_provider(base_cls, provider)
         return self
-    
-    def transitive(self, impl_cls: Type[T]) -> Self:
+
+    def transient(self, impl_cls: Type[T]) -> Self:
         provider = _CallableServiceProvider(impl_cls, lambda **kwargs: impl_cls(**kwargs))
         self.__container.add_provider(impl_cls, provider)
         return self
     
-    def transitive_factory(self, impl_cls: Type[T], factory: Callable[[ServiceResolver], T]) -> Self:
+    def transient_factory(self, impl_cls: Type[T], factory: Callable[[ServiceResolver], T]) -> Self:
         provider = _CallableServiceProvider(impl_cls, lambda **kwargs: factory(self.__container))
         self.__container.add_provider(impl_cls, provider)
         return self
     
-    def abstract_transitive(self, base_cls: Type[T], impl_cls: Type[U]) -> Self:
+    def abstract_transient(self, base_cls: Type[T], impl_cls: Type[U]) -> Self:
         provider = _CallableServiceProvider(impl_cls, lambda **kwargs: impl_cls(**kwargs))
         self.__container.add_provider(base_cls, provider)
         return self
     
-    def abstract_transitive_factory(self, base_cls: Type[T], impl_cls: Type[U], factory: Callable[[ServiceResolver], U]) -> Self:
+    def abstract_transient_factory(self, base_cls: Type[T], impl_cls: Type[U], factory: Callable[[ServiceResolver], U]) -> Self:
         provider = _CallableServiceProvider(impl_cls, lambda **kwargs: factory(self.__container))
         self.__container.add_provider(base_cls, provider)
         return self

@@ -22,14 +22,15 @@ def setup_services():
         .abstract_singleton(Configuration, W3stringsxCliConfiguration, config)\
         .singleton(W3StringsEncoder)\
         .singleton(StringKeyDiscoveryService)\
-        .transitive_factory(W3StringsEncoderLocator, lambda resolver:
+        .singleton(W3StringsEncoderLocator,
             W3StringsEncoderLocator()
-            .with_handler(FromConfigW3stringsEncoderLocatorHandler(resolver.resolve(Configuration)))
-            .with_handler(AppDirW3StringsEncoderLocatorHandler(resolver.resolve(Configuration)))
+            .with_handler(FromConfigW3stringsEncoderLocatorHandler(config))
+            .with_handler(AppDirW3StringsEncoderLocatorHandler(config))
             .with_handler(PathEnvW3stringsEncoderLocatorHandler()))\
         .singleton_resource(ScratchFolderService)\
         .singleton(W3StringsManagerService)\
         .build()
+        #TODO db export, db encoding
     
     di.push_container(container)
 

@@ -33,9 +33,9 @@ def setup_services(page: ft.Page):
             .with_handler(FromConfigW3stringsEncoderLocatorHandler(config))\
             .with_handler(AppDirW3StringsEncoderLocatorHandler(config))\
             .with_handler(PathEnvW3stringsEncoderLocatorHandler()))\
-        .transitive(W3StringsEncoder)\
+        .transient(W3StringsEncoder)\
         .singleton_resource(ScratchFolderService)\
-        .transitive(W3StringsManagerService)\
+        .transient(W3StringsManagerService)\
         .singleton(StringKeyDiscoveryService)\
         .singleton(StringsDbManagerService)\
         .build()
