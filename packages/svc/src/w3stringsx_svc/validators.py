@@ -9,7 +9,8 @@ __all__ = [
     "validate_file_input_path",
     "validate_dir_input_path",
     "validate_output_dir",
-    "validate_target_langs",
+    "validate_lang",
+    "validate_lang_list",
     "validate_regex_search_string"
 ]
 
@@ -43,12 +44,16 @@ def validate_output_dir(output_dir: str) -> str:
         
     return os.path.realpath(output_dir)
 
-def validate_target_langs(target_langs: list[str]) -> list[str]:
+def validate_lang(lang: str) -> str:
+    if lang not in ALL_LANGS:
+        raise Exception(f"Invalid target language identifier: {lang}")
+    return lang
+
+def validate_lang_list(target_langs: list[str]) -> list[str]:
     # remove duplicates
     target_langs = list(set(target_langs))
     for lang in target_langs:
-        if lang not in ALL_LANGS:
-            raise Exception(f"Invalid target language identifier: {lang}")
+        validate_lang(lang)
     return target_langs
     
 def validate_regex_search_string(search: str) -> str:

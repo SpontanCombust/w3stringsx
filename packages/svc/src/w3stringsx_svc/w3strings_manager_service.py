@@ -5,7 +5,7 @@ from w3stringsx_lib.logging import get_logger
 from w3stringsx_lib.utils import replace_path_dirname, replace_path_ext, lf_to_crlf
 from w3stringsx_lib.w3strings_csv import W3StringsCsvDocument
 from w3stringsx_lib.w3strings_csv_encoding_preprocessor import W3StringsCsvDocumentEncodingPreprocessor
-from w3stringsx_svc.validators import validate_file_input_path, validate_output_dir, validate_target_langs
+from w3stringsx_svc.validators import validate_file_input_path, validate_output_dir, validate_lang_list
 from w3stringsx_svc.w3strings_encoder import W3StringsEncoder
 from w3stringsx_svc.scratch_folder_service import ScratchFolderService
 
@@ -43,7 +43,7 @@ class W3StringsManagerService:
     def encode_w3strings_from_csv(self, input_path: str, output_dir: str, target_langs: list[str], keep_processed_csv: bool):
         input_path = validate_file_input_path(input_path, "CSV", ['.csv'])
         output_dir = validate_output_dir(output_dir)
-        target_langs = validate_target_langs(target_langs)
+        target_langs = validate_lang_list(target_langs)
 
         input_copy_path = self.__scratch.get().file_scratch_copy(input_path)
         input_doc = W3StringsCsvDocument(input_copy_path)
