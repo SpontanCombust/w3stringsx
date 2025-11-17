@@ -1071,7 +1071,7 @@ class ReactiveContainer(ft.Container, _ReactiveControlWrapper):
         bgcolor: str | ft.Colors | ft.CupertinoColors | None | State[str | ft.Colors | ft.CupertinoColors | None] = None,
         gradient: Gradient | None = None,
         blend_mode: ft.BlendMode | None = None,
-        border: ft.Border | None = None,
+        border: ft.Border | None | State[ft.Border | None] = None,
         border_radius: int | float | ft.BorderRadius | None = None,
         shape: ft.BoxShape | None = None,
         clip_behavior: ft.ClipBehavior | None = None,
@@ -1132,7 +1132,7 @@ class ReactiveContainer(ft.Container, _ReactiveControlWrapper):
             _unwrap_value(bgcolor),
             gradient,
             blend_mode,
-            border,
+            _unwrap_value(border),
             border_radius,
             shape,
             clip_behavior,
@@ -1188,6 +1188,8 @@ class ReactiveContainer(ft.Container, _ReactiveControlWrapper):
 
         if isinstance(bgcolor, State):
             self._new_stateful_prop_binding(bgcolor, self, 'bgcolor')
+        if isinstance(border, State):
+            self._new_stateful_prop_binding(border, self, 'border')
         if isinstance(height, State):
             self._new_stateful_prop_binding(height, self, 'height')
         if isinstance(opacity, State):
@@ -1539,7 +1541,7 @@ class ReactiveRow(ft.Row, _ReactiveControlWrapper):
         animate_offset: bool | int | ft.Animation | None = None, 
         on_animation_end: Callable[[ft.ControlEvent], Any] | None = None, 
         visible: bool | None | State[bool | None] = None, 
-        disabled: bool | None = None, 
+        disabled: bool | None | State[bool | None] = None, 
         data: Any = None, 
         rtl: bool | None = None, 
         adaptive: bool | None = None
@@ -1581,7 +1583,7 @@ class ReactiveRow(ft.Row, _ReactiveControlWrapper):
             animate_offset, 
             on_animation_end, 
             _unwrap_value(visible), 
-            disabled, 
+            _unwrap_value(disabled), 
             data, 
             rtl, 
             adaptive
@@ -1591,6 +1593,8 @@ class ReactiveRow(ft.Row, _ReactiveControlWrapper):
             self._new_stateful_prop_binding(opacity, self, 'opacity')
         if isinstance(visible, State):
             self._new_stateful_prop_binding(visible, self, 'visible')
+        if isinstance(disabled, State):
+            self._new_stateful_prop_binding(disabled, self, 'disabled')
 
     def did_mount(self):
         super().did_mount()

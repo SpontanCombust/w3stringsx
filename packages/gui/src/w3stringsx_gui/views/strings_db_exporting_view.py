@@ -69,36 +69,42 @@ class StringsDbExportingView(ViewBase):
                         ),
                     ]
                 ),
-                ft.Row(
-                    spacing=15,
-                    controls=[
-                        ft.Icon(
-                            name=ft.Icons.TRANSLATE,
-                            color=ft.Colors.ON_SURFACE_VARIANT,
-                        ),
-                        ftr.ReactiveDropdown(
-                            label="Fallback language",
-                            value=self.__fallback_lang,
-                            border_color=ft.Colors.PRIMARY,
-                            menu_width=300,
-                            menu_height=400,
-                            options=[
-                                ft.DropdownOption(
-                                    key=lang,
-                                    text=lang_name
-                                ) for lang, lang_name in ALL_LANGS_NAME_MAP.items()
-                            ]
-                        ),
-                    ]
-                ),
                 ft.Column(
+                    spacing=15,
                     controls=[
                         ftr.ReactiveSwitch(
                             label="Export to a single file (REDkit format)",
                             value=self.__single_file_export
                         ),
+                        ftr.ReactiveRow(
+                            spacing=15,
+                            disabled=self.__single_file_export,
+                            controls=[
+                                ft.Icon(
+                                    name=ft.Icons.TRANSLATE,
+                                    color=ft.Colors.ON_SURFACE_VARIANT,
+                                ),
+                                ftr.ReactiveDropdown(
+                                    label="Fallback language",
+                                    value=self.__fallback_lang,
+                                    border_color=ft.Colors.PRIMARY,
+                                    menu_width=300,
+                                    menu_height=400,
+                                    options=[
+                                        ft.DropdownOption(
+                                            key=lang,
+                                            text=lang_name
+                                        ) for lang, lang_name in ALL_LANGS_NAME_MAP.items()
+                                    ]
+                                ),
+                            ]
+                        ),
                         ftr.ReactiveContainer(
-                            border=ft.border.all(1, ft.Colors.PRIMARY),
+                            border=self.use_computed([self.__single_file_export], lambda:
+                                ft.border.all(1, ft.Colors.PRIMARY) if not self.__single_file_export.value 
+                                else ft.border.all(1, ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)) # close enough
+                            ),
+                            animate=100,
                             border_radius=5,
                             padding=ft.padding.only(left=10, top=5, right=10, bottom=10),
                             disabled=self.__single_file_export,
