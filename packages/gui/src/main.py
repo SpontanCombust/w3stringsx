@@ -10,7 +10,8 @@ from w3stringsx_svc import (
     W3StringsEncoderLocator, FromConfigW3stringsEncoderLocatorHandler, AppDirW3StringsEncoderLocatorHandler, PathEnvW3stringsEncoderLocatorHandler,
     W3StringsEncoder,
     W3StringsManagerService,
-    ScratchFolderService
+    ScratchFolderService,
+    StringsDbManagerService
 )
 from w3stringsx_gui.services import (
     W3stringsxGuiConfiguration
@@ -36,6 +37,7 @@ def setup_services(page: ft.Page):
         .singleton_resource(ScratchFolderService)\
         .transitive(W3StringsManagerService)\
         .singleton(StringKeyDiscoveryService)\
+        .singleton(StringsDbManagerService)\
         .build()
     
     di.push_container(container)

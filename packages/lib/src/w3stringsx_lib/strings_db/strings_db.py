@@ -3,19 +3,24 @@ import sqlite3
 from types import TracebackType
 from typing import Self
 
+from w3stringsx_lib.logging import get_logger
 from w3stringsx_lib.strings_db.schema import SCHEMA
 from w3stringsx_lib.strings_db.repositories import LanguagesRepository, StringInfoRepository, StringsRepository
 
 
 class StringsDb(AbstractContextManager):
-    def __init__(self, conn_string: str) -> None:
-        self.conn_string = conn_string
+    def __init__(self, db_path: str | None) -> None:
+        """
+        db_path - path to database file, if None a database will be created in memory
+        """
+        self.db_path: str | None = db_path
         self._conn: sqlite3.Connection | None = None
 
     def __enter__(self) -> Self:
         if self._conn:
             self._conn.close()
-        self._conn = sqlite3.connect(self.conn_string)
+        self._conn = sqlite3.connect(self.db_path or ':memory:')
+        self._conn.set_trace_callback(get_logger().debug)
         return self
 
     def __exit__(self, exc_type: type[BaseException] | None, exc_value: BaseException | None, traceback: TracebackType | None):

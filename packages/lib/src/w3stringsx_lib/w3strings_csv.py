@@ -103,6 +103,9 @@ class W3StringsCsvDocument:
     def extend(self, lines: Iterable[W3StringsCsvDocumentLine]):
         self.lines.extend(lines)
 
+    def pop(self, index: int = -1):
+        self.lines.pop(index)
+
     def swap_lines(self, line1_idx: int, line2_idx: int):
         line_range = range(0, len(self.lines))
         if line1_idx in line_range and line2_idx in line_range:

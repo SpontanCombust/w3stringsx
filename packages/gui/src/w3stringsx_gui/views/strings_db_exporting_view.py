@@ -7,7 +7,8 @@ import flet as ft
 import flet_reactive as ftr
 from w3stringsx_lib.localization import ALL_LANGS, ALL_LANGS_NAME_MAP
 from w3stringsx_lib.logging import get_logger
-from w3stringsx_svc import Configuration
+from w3stringsx_lib.strings_db import StringsDb
+from w3stringsx_svc import Configuration, StringsDbManagerService
 from w3stringsx_gui.views.view_base import ViewBase
 from w3stringsx_gui.routing import Routes
 from w3stringsx_gui.components import StatusPill
@@ -24,8 +25,11 @@ class StringsDbExportingView(ViewBase):
 
     def __init__(self,
         config: Configuration,
+        db_manager: StringsDbManagerService,
         props: StringsDbExportingViewProps = StringsDbExportingViewProps(db_path=None)
     ):
+        self.__db_manager = db_manager
+
         self.__db_file_path: ftr.State[str | None] = self.use_state(None)
         self.__db_file_picker = ft.FilePicker(on_result=self.on_db_file_picked)
         self.__fallback_lang: ftr.State[str | None] = self.use_state(config.default_fallback_language.get_or_default())
@@ -185,6 +189,7 @@ class StringsDbExportingView(ViewBase):
                         ),
                     ]
                 ),
+                #TODO progress spinner
                 self.__export_status_pill
             ]
         )
@@ -244,19 +249,28 @@ class StringsDbExportingView(ViewBase):
 
 
     def on_export_button_click(self, ev: ft.ControlEvent):
-        if self.__db_file_path.value is None or self.__output_dir_path.value is None:
+        logger = get_logger()
+
+        if self.__db_file_path.value is None:
+            logger.error("Database file path not supplied. Export aborted.")
+            return
+        if self.__fallback_lang.value is None:
+            logger.error("Fallback language not supplied. Export aborted.")
+            return
+        if self.__output_dir_path.value is None:
+            logger.error("Output directory not supplied. Export aborted.")
             return
         
         errored = False
         try:
-            if self.__single_file_export.value:
-                #TODO export to redkit CSV
-                raise NotImplementedError()
-            else:
-                #TODO export to trad CSVs
-                raise NotImplementedError()
+            with StringsDb(self.__db_file_path.value) as db:
+                if self.__single_file_export.value:
+                    self.__db_manager.export_redkit_csv(db, self.__output_dir_path.value)
+                else:
+                    for lang, selection in self.__lang_selection.items():
+                        if selection.value:
+                            self.__db_manager.export_single_lang_csv(db, lang, self.__fallback_lang.value, self.__output_dir_path.value)
         except Exception as ex:
-            logger = get_logger()
             logger.error(ex)
             logger.debug(traceback.format_exc())
             errored = True

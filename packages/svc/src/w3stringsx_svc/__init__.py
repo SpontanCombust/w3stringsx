@@ -4,6 +4,7 @@ from w3stringsx_svc.w3strings_encoder_locator import  W3StringsEncoderLocator, W
 from w3stringsx_svc.w3strings_encoder import W3StringsEncoder
 from w3stringsx_svc.w3strings_manager_service import W3StringsManagerService
 from w3stringsx_svc.scratch_folder_service import ScratchFolderService
+from w3stringsx_svc.strings_db_manager_service import StringsDbManagerService
 
 
 __all__ = [
@@ -13,4 +14,5 @@ __all__ = [
     "W3StringsEncoder",
     "W3StringsManagerService",
     "ScratchFolderService",
+    "StringsDbManagerService",
 ]

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import TypeVar, Generic
+from typing import TypeVar, Generic, Any
 import sqlite3
 
 from w3stringsx_lib.strings_db import model, queries
@@ -88,6 +88,17 @@ class LanguagesRepository(_Repository[model.Languages, int]):
 
     def select_one(self, id: int) -> model.Languages | None:
         self._cur.execute("SELECT ID, LANG, FALLBACK FROM LANGUAGES WHERE ID = ?", (id,))
+        row = self._cur.fetchone()
+        if row:
+            return model.Languages(
+                id=row[0],
+                lang=row[1],
+                fallback=row[2],
+            )
+        return None
+
+    def select_by_name(self, name: str) -> model.Languages | None:
+        self._cur.execute("SELECT ID, LANG, FALLBACK FROM LANGUAGES WHERE LANG = ?", (name,))
         row = self._cur.fetchone()
         if row:
             return model.Languages(
@@ -216,26 +227,31 @@ class StringsRepository(_Repository[model.Strings, tuple[int, int, int]]):
         return self._cur.rowcount
     
 
-    def select_all_latest_with_info(self, lang: int | None = None) -> list[queries.LatestStringsWithInfo]:
+    def select_latest_with_info(self, langs: list[int] | None = None, order_by_string_id: bool = False) -> list[queries.LatestStringsWithInfoRow]:
         """
         Select the most recent versions of strings together with string info. 
-        If `lang` is not None, only records for that language are selected.
+        If `langs` is truthy, only records for specified languages are selected.
         Uses the LATEST_STRINGS_WITH_INFO_NEW view.
         """
         sql = (
             "SELECT STRING_ID, LANG, VERSION, TEXT, RESOURCE, PROPERTY_NAME, VOICEOVER_NAME, STRING_KEY "
             "FROM LATEST_STRINGS_WITH_INFO_NEW"
         )
-        params: tuple = ()
-        if lang is not None:
-            sql += " WHERE LANG = ?"
-            params = (lang,)
+
+        params: list[Any] = []
+        if langs is not None and len(langs) > 0:
+            in_content = ','.join('?' * len(langs)) 
+            sql += f" WHERE LANG IN ({in_content})"
+            params.extend(langs)
+            
+        if order_by_string_id:
+            sql += " ORDER BY STRING_ID ASC"
 
         self._cur.execute(sql, params)
         rows = self._cur.fetchall()
 
         return [
-            queries.LatestStringsWithInfo(
+            queries.LatestStringsWithInfoRow(
                 string_id=r[0],
                 lang=r[1],
                 version=r[2],
@@ -248,26 +264,31 @@ class StringsRepository(_Repository[model.Strings, tuple[int, int, int]]):
             for r in rows
         ]
 
-    def select_all_latest_with_info_short(self, lang: int | None = None) -> list[queries.LatestStringsWithInfoShort]:
+    def select_latest_with_info_short(self, langs: list[int] | None = None, order_by_string_id: bool = False) -> list[queries.LatestStringsWithInfoShortRow]:
         """
         Select the most recent versions of strings with a reduced set of info fields.
-        If `lang` is not None, only records for that language are selected.
+        If `langs` is truthy, only records for specified languages are selected.
         Uses the LATEST_STRINGS_WITH_INFO_NEW view.
         """
         sql = (
             "SELECT STRING_ID, LANG, STRING_KEY, TEXT "
             "FROM LATEST_STRINGS_WITH_INFO_NEW"
         )
-        params: tuple = ()
-        if lang is not None:
-            sql += " WHERE LANG = ?"
-            params = (lang,)
+
+        params: list[Any] = []
+        if langs is not None and len(langs) > 0:
+            in_content = ','.join('?' * len(langs)) 
+            sql += f" WHERE LANG IN ({in_content})"
+            params.extend(langs)
+
+        if order_by_string_id:
+            sql += " ORDER BY STRING_ID ASC"
 
         self._cur.execute(sql, params)
         rows = self._cur.fetchall()
 
         return [
-            queries.LatestStringsWithInfoShort(
+            queries.LatestStringsWithInfoShortRow(
                 string_id=r[0],
                 lang=r[1],
                 string_key=r[2],

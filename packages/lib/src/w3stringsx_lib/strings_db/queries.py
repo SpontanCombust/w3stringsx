@@ -2,19 +2,19 @@ from dataclasses import dataclass
 
 
 @dataclass
-class LatestStringsWithInfo:
+class LatestStringsWithInfoRow:
     string_id: int
-    lang: int
-    version: int
-    text: str
+    lang: int | None
+    version: int | None
+    text: str | None
     resource: str
     property_name: str
     voiceover_name: str | None
     string_key: str | None
 
 @dataclass
-class LatestStringsWithInfoShort:
+class LatestStringsWithInfoShortRow:
     string_id: int
-    lang: int
+    lang: int | None
     string_key: str | None
-    text: str
+    text: str | None
