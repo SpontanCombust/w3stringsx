@@ -32,8 +32,8 @@ class Reactive(ft.Control, StateObserver[Any], ListStateObserver[Any], Generic[C
     def is_isolated(self) -> bool:
         return True
 
-    def did_mount(self):
-        super().did_mount()
+    def build(self):
+        super().build()
         self.setup_observed_states()
 
     def will_unmount(self):
@@ -114,8 +114,8 @@ class ReactiveBuilder(ft.Control, StateObserver[Any], Generic[C]):
     def is_isolated(self) -> bool:
         return True
 
-    def did_mount(self):
-        super().did_mount()
+    def build(self):
+        super().build()
         self.setup_observed_states()
         
     def will_unmount(self):

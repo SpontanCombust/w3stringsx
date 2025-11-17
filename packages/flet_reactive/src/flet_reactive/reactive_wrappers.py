@@ -315,8 +315,8 @@ class ReactiveCheckbox(ft.Checkbox, _ReactiveControlWrapper):
         if isinstance(disabled, State):
             self._new_stateful_prop_binding(disabled, self, 'disabled')
 
-    def did_mount(self):
-        super().did_mount()
+    def build(self):
+        super().build()
         self._init_prop_bindings()
 
     def will_unmount(self):
@@ -582,8 +582,8 @@ class ReactiveTextField(ft.TextField, _ReactiveControlWrapper):
                 on_change(ev) if on_change else None
             )
 
-    def did_mount(self):
-        super().did_mount()
+    def build(self):
+        super().build()
         self._init_prop_bindings()
 
     def will_unmount(self):
@@ -692,8 +692,8 @@ class ReactiveFilledButton(ft.FilledButton, _ReactiveControlWrapper):
         if isinstance(disabled, State):
             self._new_stateful_prop_binding(disabled, self, 'disabled')
 
-    def did_mount(self):
-        super().did_mount()
+    def build(self):
+        super().build()
         self._init_prop_bindings()
 
     def will_unmount(self):
@@ -730,8 +730,8 @@ class ReactiveDataColumn(ftdt2.DataColumn2, _ReactiveControlWrapper):
             data
         )
 
-    def did_mount(self):
-        super().did_mount()
+    def build(self):
+        super().build()
         self._init_prop_bindings()
 
     def will_unmount(self):
@@ -781,8 +781,8 @@ class ReactiveDataRow(ftdt2.DataRow2, _ReactiveControlWrapper):
                 on_select_changed(ev) if on_select_changed else None
             )
 
-    def did_mount(self):
-        super().did_mount()
+    def build(self):
+        super().build()
         self._init_prop_bindings()
 
     def will_unmount(self):
@@ -948,8 +948,8 @@ class ReactiveDataTable(ftdt2.DataTable2, _ReactiveControlWrapper, Generic[_T]):
             else:
                 self._new_stateful_ctrl_seq_prop_binding(rows_data, rows_mapper, self, some_rows)
 
-    def did_mount(self):
-        super().did_mount()
+    def build(self):
+        super().build()
         self._init_prop_bindings()
 
     def will_unmount(self):
@@ -1052,8 +1052,8 @@ class ReactiveColumn(ft.Column, _ReactiveControlWrapper, Generic[_T]):
         if isinstance(height, State):
             self._new_stateful_prop_binding(height, self, 'height')
 
-    def did_mount(self):
-        super().did_mount()
+    def build(self):
+        super().build()
         self._init_prop_bindings()
 
     def will_unmount(self):
@@ -1197,8 +1197,8 @@ class ReactiveContainer(ft.Container, _ReactiveControlWrapper):
         if isinstance(disabled, State):
             self._new_stateful_prop_binding(disabled, self, 'disabled')
 
-    def did_mount(self):
-        super().did_mount()
+    def build(self):
+        super().build()
         self._init_prop_bindings()
 
     def will_unmount(self):
@@ -1278,8 +1278,8 @@ class ReactiveStack(ft.Stack, _ReactiveControlWrapper):
         if isinstance(visible, State):
             self._new_stateful_prop_binding(visible, self, 'visible')
 
-    def did_mount(self):
-        super().did_mount()
+    def build(self):
+        super().build()
         self._init_prop_bindings()
 
     def will_unmount(self):
@@ -1493,8 +1493,8 @@ class ReactiveDropdown(ft.Dropdown, _ReactiveControlWrapper):
                 on_change(ev) if on_change else None
             )
 
-    def did_mount(self):
-        super().did_mount()
+    def build(self):
+        super().build()
         self._init_prop_bindings()
 
     def will_unmount(self):
@@ -1596,8 +1596,8 @@ class ReactiveRow(ft.Row, _ReactiveControlWrapper):
         if isinstance(disabled, State):
             self._new_stateful_prop_binding(disabled, self, 'disabled')
 
-    def did_mount(self):
-        super().did_mount()
+    def build(self):
+        super().build()
         self._init_prop_bindings()
 
     def will_unmount(self):
@@ -1719,8 +1719,8 @@ class ReactiveText(ft.Text, _ReactiveControlWrapper):
         if isinstance(color, State):
             self._new_stateful_prop_binding(color, self, 'color')
 
-    def did_mount(self):
-        super().did_mount()
+    def build(self):
+        super().build()
         self._init_prop_bindings()
 
     def will_unmount(self):
@@ -1806,8 +1806,8 @@ class ReactiveIcon(ft.Icon, _ReactiveControlWrapper):
         if isinstance(color, State):
             self._new_stateful_prop_binding(color, self, 'color')
 
-    def did_mount(self):
-        super().did_mount()
+    def build(self):
+        super().build()
         self._init_prop_bindings()
 
     def will_unmount(self):
@@ -1911,8 +1911,8 @@ class ReactiveImage(ft.Image, _ReactiveControlWrapper):
         if isinstance(color, State):
             self._new_stateful_prop_binding(color, self, 'color')
 
-    def did_mount(self):
-        super().did_mount()
+    def build(self):
+        super().build()
         self._init_prop_bindings()
 
     def will_unmount(self):
@@ -2036,8 +2036,8 @@ class ReactiveSwitch(ft.Switch, _ReactiveControlWrapper):
                 on_change(ev) if on_change else None
             )
 
-    def did_mount(self):
-        super().did_mount()
+    def build(self):
+        super().build()
         self._init_prop_bindings()
 
     def will_unmount(self):
