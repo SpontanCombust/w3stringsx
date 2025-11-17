@@ -33,6 +33,16 @@ class Router:
     def with_routes(self, route_map: dict[str, Type[ViewBase]]) -> Self:
         self.__view_routes = [ViewRoute(route, view_cls) for route, view_cls in route_map.items()]
         return self
+    
+    def provide_services(self):
+        cb = di.container_builder()\
+            .singleton(Router, self)
+
+        for vr in self.__view_routes:
+            cb = cb.transient(vr.view_cls)
+
+        router_container = cb.build()
+        di.push_container(router_container)
 
     def goto(self, route: str, props: object | None = None):
         self.__current_route_props = props
@@ -50,14 +60,13 @@ class Router:
                 if ev.route == vr.route:
                     vr_found = True
                     props = self.__current_route_props
-                    cb = di.container_builder()\
-                        .transitive(vr.view_cls)\
-                        .singleton(Router, self)
+                    
                     if props is not None:
-                        cb = cb.singleton(props.__class__, props)
-                    route_container = cb.build()
-            
-                    di.push_container(route_container)
+                        route_container = di.container_builder()\
+                            .singleton(props.__class__, props)\
+                            .build()
+                        di.push_container(route_container)
+
                     try:
                         view = vr.create_view()
                         self.__page.views.append(view)    
@@ -71,7 +80,9 @@ class Router:
                         logger = get_logger()
                         logger.error(ex)
                         logger.error(traceback.format_exc())
-                    di.pop_container()
+
+                    if props is not None:
+                        di.pop_container()
                     break
             if not vr_found:
                 logger = get_logger()

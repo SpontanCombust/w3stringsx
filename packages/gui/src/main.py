@@ -137,7 +137,7 @@ def main(page: ft.Page):
         Routes.ENCODE_DB: StringsDbEncodingView,
         Routes.EXPORT_DB: StringsDbExportingView,
     })
-
+    router.provide_services()
     router.goto(Routes.HOME)
 
 
