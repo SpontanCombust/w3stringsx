@@ -9,8 +9,6 @@ import flet_reactive as ftr
 from w3stringsx_lib.logging import subscribe_to_logger, unsubscribe_from_logger, get_log_file_path
 
 
-MAX_LOG_LINES = 200
-
 @dataclass
 class FormattedLogRecord:
     msg: str
@@ -25,9 +23,10 @@ class FormattedLogRecord:
             return None
 
 class _StringLogHandler(logging.Handler):
-    def __init__(self) -> None:
+    def __init__(self, scrollback: int) -> None:
         super().__init__()
         self.logs = ftr.ListState[FormattedLogRecord]([])
+        self.scrollback = scrollback
 
     def emit(self, record: logging.LogRecord) -> None:
         self.logs.append(FormattedLogRecord(
@@ -36,12 +35,13 @@ class _StringLogHandler(logging.Handler):
         ))
 
         # trim to half the expected max size when exceeded
-        if len(self.logs) > MAX_LOG_LINES:
-            del self.logs[:MAX_LOG_LINES // 2]
+        if len(self.logs) > self.scrollback:
+            del self.logs[:self.scrollback // 2]
 
 class LogsPanel(ftr.ReactiveContainer, ftr.ReactiveHooks):
     def __init__(
             self,
+            scrollback: int,
             width: ft.OptionalNumber = None,
             height: ft.OptionalNumber = None,
             top: int | float | None = None,
@@ -57,7 +57,7 @@ class LogsPanel(ftr.ReactiveContainer, ftr.ReactiveHooks):
         )
 
         self.__vlist_view_ref = ft.Ref[ft.ListView]()
-        self.__logs_handler = _StringLogHandler()
+        self.__logs_handler = _StringLogHandler(scrollback)
         self.use_effect([self.__logs_handler.logs], lambda: 
             self.__vlist_view_ref.current.scroll_to(offset=-1)
         )
@@ -156,6 +156,18 @@ class LogsPanel(ftr.ReactiveContainer, ftr.ReactiveHooks):
     def is_isolated(self) -> bool:
         return True
     
+
+    @staticmethod
+    def find_in_page_overlay(page: ft.Page):
+        for control in page.overlay:
+            if isinstance(control, LogsPanel):
+                return control
+        return None
+
+    def update_scrollback(self, scrollback: int):
+        self.__logs_handler.scrollback = scrollback
+        
+
     def on_open_logs_file_button_click(self, ev: ft.ControlEvent):
         if 'win32' in sys.platform:
             os.startfile(get_log_file_path())

@@ -18,13 +18,11 @@ from w3stringsx_gui.services import (
 )
 
 
-def setup_services(page: ft.Page):
+def setup_services(page: ft.Page) -> W3stringsxGuiConfiguration:
     config = W3stringsxGuiConfiguration(page)
 
     init_logger(config.app_dir.get_or_default())
     set_log_level(config.log_level.get_or_default())
-
-    page.theme_mode = ft.ThemeMode(config.theme_mode.get_or_default())
 
     container = di.container_builder()\
         .abstract_singleton(Configuration, W3stringsxGuiConfiguration, config)\
@@ -42,8 +40,10 @@ def setup_services(page: ft.Page):
     
     di.push_container(container)
 
+    return config
+
 def main(page: ft.Page):
-    setup_services(page)
+    config = setup_services(page)
 
     page.title = "w3stringsx GUI"
     page.window.maximized = True
@@ -95,10 +95,13 @@ def main(page: ft.Page):
         )
     )
 
+    page.theme_mode = ft.ThemeMode(config.theme_mode.get_or_default())
+
 
     from w3stringsx_gui.components import LogsPanel
 
     page.overlay.append(LogsPanel(
+        scrollback=config.logs_panel_scrollback.get_or_default(),
         height=350,
         bottom=5,
         left=5,

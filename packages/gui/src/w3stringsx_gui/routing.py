@@ -17,7 +17,8 @@ class ViewRoute:
     def create_view(self) -> ft.View:
         view = di.resolve(self.view_cls)
         view.appbar = CommonAppBar(view.TITLE)
-        view.padding = ft.padding.only(50, 20, 50, 60)
+        if view.padding is None:
+            view.padding = ft.padding.only(50, 20, 50, 60)
         return view
     
 class Router:

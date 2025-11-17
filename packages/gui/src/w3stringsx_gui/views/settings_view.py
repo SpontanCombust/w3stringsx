@@ -4,9 +4,10 @@ from typing import cast, TypeVar
 import flet as ft
 
 import flet_reactive as ftr
-from w3stringsx_lib.logging import set_log_level
+from w3stringsx_lib.logging import set_log_level, get_logger
 from w3stringsx_lib.localization import ALL_LANGS_NAME_MAP
 from w3stringsx_svc import Configuration
+from w3stringsx_gui.components import LogsPanel
 from w3stringsx_gui.views.view_base import ViewBase
 from w3stringsx_gui.services import W3stringsxGuiConfiguration
 from w3stringsx_gui.routing import Routes
@@ -30,6 +31,8 @@ class SettingsView(ViewBase):
         self.use_effect([self.__theme_mode], self.on_theme_mode_changed)
         self.__log_level: ftr.State[str | None] = self.use_state(str(self.__config.log_level.get_or_default()))
         self.use_effect([self.__log_level], self.on_log_level_changed)
+        self.__logs_panel_scrollback_str: ftr.State[str | None] = self.use_state(str(self.__config.logs_panel_scrollback.get_or_default()))
+        self.use_effect([self.__logs_panel_scrollback_str], self.on_logs_panel_scrollback_changed_str)
         self.__default_fallback_lang: ftr.State[str | None] = self.use_state(self.__config.default_fallback_language.get_or_default())
         self.use_effect([self.__default_fallback_lang], self.on_default_fallback_lang_changed)
 
@@ -48,6 +51,7 @@ class SettingsView(ViewBase):
         super().__init__(
             route=Routes.SETTINGS,
             spacing=5,
+            padding = ft.padding.only(300, 60, 300, 60),
             controls=[
                 ft.Row(
                     controls=[
@@ -95,6 +99,7 @@ class SettingsView(ViewBase):
                                     value=self.__theme_mode,
                                     border_color=ft.Colors.PRIMARY,
                                     menu_width=300,
+                                    expand=True,
                                     options=[
                                         ft.DropdownOption(
                                             key=member.value,
@@ -155,6 +160,28 @@ class SettingsView(ViewBase):
                 ),
 
                 ft.Row(
+                    controls=[
+                        ftr.ReactiveTextField(
+                            label="Logs panel scrollback",
+                            icon=ft.Icons.EVENT_NOTE,
+                            value=self.__logs_panel_scrollback_str,
+                            input_filter=ft.InputFilter(regex_string=r"^[\d]+$", allow=True),
+                            border_color=ft.Colors.PRIMARY,
+                            expand=True
+                        ),
+                    ]
+                ),
+                ft.Container(
+                    padding=ft.padding.only(left=40),
+                    margin=ft.margin.only(bottom=15),
+                    content=ft.Text(
+                        value="The maximum number of lines the logs panel keeps in its buffer",
+                        size=14,
+                        color=ft.Colors.ON_SURFACE_VARIANT
+                    ),
+                ),
+
+                ft.Row(
                     spacing=15,
                     controls=[
                         ft.Icon(
@@ -166,7 +193,6 @@ class SettingsView(ViewBase):
                             value=self.__default_fallback_lang,
                             expand=True,
                             border_color=ft.Colors.PRIMARY,
-                            menu_width=300,
                             menu_height=400,
                             options=[
                                 ft.DropdownOption(
@@ -251,36 +277,52 @@ class SettingsView(ViewBase):
 
     def on_default_fallback_lang_changed(self):
         self.__update_should_save(self.__default_fallback_lang, self.__config.default_fallback_language.get())
+
+    def on_logs_panel_scrollback_changed_str(self):
+        config_value = self.__config.logs_panel_scrollback.get()
+        config_value_str = str(config_value) if config_value is not None else None
+        self.__update_should_save(self.__logs_panel_scrollback_str, config_value_str)
         
     def on_save_button_click(self, ev: ft.ControlEvent):
         if self.page is None:
             return
         
-        should_update_page = False
-        if self.__w3strings_encoder_path in self.__settings_to_save:
-            self.__config.w3strings_encoder_path = self.__w3strings_encoder_path.value
-        if self.__theme_mode in self.__settings_to_save:
-            if self.__theme_mode.value is not None:
-                theme_mode = ft.ThemeMode(self.__theme_mode.value)
-                self.page.theme_mode = theme_mode
-                self.__config.theme_mode = theme_mode.value
-            else:
-                self.__config.theme_mode = None
+        logger = get_logger()
 
-            should_update_page = True
-        if self.__log_level in self.__settings_to_save:
-            self.__config.log_level = int(self.__log_level.value) if self.__log_level.value else None
-            set_log_level(self.__config.log_level.get_or_default())
-        if self.__default_fallback_lang in self.__settings_to_save:
-            self.__config.default_fallback_language = self.__default_fallback_lang.value
+        try:
+            should_update_page = False
+            if self.__w3strings_encoder_path in self.__settings_to_save:
+                self.__config.w3strings_encoder_path = self.__w3strings_encoder_path.value
+            if self.__theme_mode in self.__settings_to_save:
+                if self.__theme_mode.value is not None:
+                    theme_mode = ft.ThemeMode(self.__theme_mode.value)
+                    self.page.theme_mode = theme_mode
+                    self.__config.theme_mode = theme_mode.value
+                else:
+                    self.__config.theme_mode = None
 
-        self.__settings_to_save.clear()
-        self.__should_save.value = False
+                should_update_page = True
+            if self.__log_level in self.__settings_to_save:
+                self.__config.log_level = int(self.__log_level.value) if self.__log_level.value else None
+                set_log_level(self.__config.log_level.get_or_default())
+            if self.__logs_panel_scrollback_str in self.__settings_to_save:
+                self.__config.logs_panel_scrollback = int(self.__logs_panel_scrollback_str.value) if self.__logs_panel_scrollback_str.value else None
+                logs_panel = LogsPanel.find_in_page_overlay(self.page)
+                if logs_panel:
+                    logs_panel.update_scrollback(self.__config.logs_panel_scrollback.get_or_default())
+            if self.__default_fallback_lang in self.__settings_to_save:
+                self.__config.default_fallback_language = self.__default_fallback_lang.value
 
-        self.page.open(ft.SnackBar(ft.Text("Settings saved!"), bgcolor=ft.Colors.GREEN))
+            self.__settings_to_save.clear()
+            self.__should_save.value = False
 
-        if should_update_page:
-            self.page.update()
+            if should_update_page:
+                self.page.update()
+
+            logger.info("Configuration updated")
+            self.page.open(ft.SnackBar(ft.Text("Settings saved!"), bgcolor=ft.Colors.GREEN))
+        except Exception as ex:
+            logger.error("Configuration update error: %s", ex)
 
     def on_reset_button_click(self, ev: ft.ControlEvent):
         if self.page is None:
@@ -291,21 +333,30 @@ class SettingsView(ViewBase):
     def on_reset_confirm_dialog_yes(self, ev: ft.ControlEvent):
         if self.page is None:
             return
-        
+
+        logger = get_logger()
+
         self.page.close(self.__reset_confirm_dialog)
 
         self.__config.reset_to_default()
         self.__w3strings_encoder_path.value = self.__config.w3strings_encoder_path.get()
         self.__theme_mode.value = self.__config.theme_mode.get_or_default()
         self.__log_level.value = str(self.__config.log_level.get_or_default())
+        self.__logs_panel_scrollback_str.value = str(self.__config.logs_panel_scrollback.get_or_default())
         self.__default_fallback_lang.value = self.__config.default_fallback_language.get_or_default()
         self.__should_save.value = False
         self.__settings_to_save.clear()
+
+        logs_panel = LogsPanel.find_in_page_overlay(self.page)
+        if logs_panel:
+            logs_panel.update_scrollback(self.__config.logs_panel_scrollback.get_or_default())
 
         self.page.theme_mode = ft.ThemeMode(self.__config.theme_mode.get_or_default())
         set_log_level(self.__config.log_level.get_or_default())
 
         self.page.update()
+        
+        logger.info("Configuration reset to default")
         self.page.open(ft.SnackBar(ft.Text("Settings have been reset to default."), bgcolor=ft.Colors.AMBER))
 
     def on_reset_confirm_dialog_no(self, ev: ft.ControlEvent):

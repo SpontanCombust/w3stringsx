@@ -48,7 +48,16 @@ class W3stringsxGuiConfiguration(Configuration):
     @w3strings_encoder_path.setter
     def w3strings_encoder_path(self, val: str | None):
         self.__set('w3stringsx_gui.w3strings_encoder_path', val)
+
+    @property
+    def default_fallback_language(self) -> ConfigurationValue[str]:
+        return self.__get('w3stringsx_gui.default_fallback_language', 'en')
     
+    @default_fallback_language.setter
+    def default_fallback_language(self, val: str | None):
+        self.__set('w3stringsx_gui.default_fallback_language', val)
+    
+
     @property
     def theme_mode(self) -> ConfigurationValue[str]:
         return self.__get('w3stringsx_gui.theme_mode', ft.ThemeMode.SYSTEM.value)
@@ -58,12 +67,12 @@ class W3stringsxGuiConfiguration(Configuration):
         self.__set('w3stringsx_gui.theme_mode', val)
 
     @property
-    def default_fallback_language(self) -> ConfigurationValue[str]:
-        return self.__get('w3stringsx_gui.default_fallback_language', 'en')
+    def logs_panel_scrollback(self) -> ConfigurationValue[int]:
+        return self.__get('w3stringsx_gui.logs_panel_scrollback', 1000)
     
-    @default_fallback_language.setter
-    def default_fallback_language(self, val: str | None):
-        self.__set('w3stringsx_gui.default_fallback_language', val)
+    @logs_panel_scrollback.setter
+    def logs_panel_scrollback(self, val: int | None):
+        self.__set('w3stringsx_gui.logs_panel_scrollback', val)
 
 
     def reset_to_default(self):
