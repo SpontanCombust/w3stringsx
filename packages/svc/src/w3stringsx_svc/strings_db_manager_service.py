@@ -1,4 +1,5 @@
 import os
+import shutil
 
 from w3stringsx_lib.logging import get_logger
 from w3stringsx_lib.strings_db import StringsDb
@@ -6,18 +7,28 @@ from w3stringsx_lib.w3strings_csv import W3StringsCsvDocument, W3StringsCsvCompl
 from w3stringsx_lib.w3strings_csv_encoding_preprocessor import W3StringsCsvDocumentEncodingPreprocessor
 from w3stringsx_lib.localization import ALL_LANGS_NAME_MAP
 from w3stringsx_lib.strings_db.export_csv import StringsDbExportCsvDocument, StringsDbExportCsvLine
-from w3stringsx_lib.utils import replace_path_dirname
+from w3stringsx_lib.utils import replace_path_dirname, replace_path_basename
+from w3stringsx_svc.scratch_folder_service import ScratchFolderService
+from w3stringsx_svc.w3strings_encoder import W3StringsEncoder
 from w3stringsx_svc.validators import validate_output_dir, validate_lang
 
 
 logger = get_logger()
 
 class StringsDbManagerService:
-    def __init__(self) -> None:
-        pass
+    def __init__(self,
+        scratch: ScratchFolderService,
+        encoder: W3StringsEncoder
+    ):
+        self.__scratch = scratch
+        self.__encoder = encoder
 
 
-    def export_single_lang_csv(self, db: StringsDb, lang: str, fallback_lang: str, output_dir: str):
+    def export_single_lang_csv(self, db: StringsDb, lang: str, fallback_lang: str, output_dir: str) -> str:
+        """
+        Returns path to the newly exported CSV file.
+        """
+
         lang = validate_lang(lang)
         fallback_lang = validate_lang(fallback_lang)
         output_dir = validate_output_dir(output_dir)
@@ -64,6 +75,7 @@ class StringsDbManagerService:
         doc.save_to_file()
 
         logger.info('%s database strings have been successfully exported to %s', ALL_LANGS_NAME_MAP[lang], doc_path)
+        return doc_path
 
 
     def export_redkit_csv(self, db: StringsDb, output_dir: str):
@@ -105,3 +117,18 @@ class StringsDbManagerService:
         doc.save_to_file()
 
         logger.info('Database strings have been successfully exported to %s', doc_path)
+
+
+    def encode_single_lang_w3strings(self, db: StringsDb, lang: str, fallback_lang: str, output_dir: str):
+        lang = validate_lang(lang)
+        fallback_lang = validate_lang(fallback_lang)
+        output_dir = validate_output_dir(output_dir)
+
+        csv_path = self.export_single_lang_csv(db, lang, fallback_lang, self.__scratch.get().folder_path)
+
+        w3strings_path = self.__encoder.encode(csv_path, None)
+        output_w3strings_path = replace_path_dirname(replace_path_basename(w3strings_path, f'{lang}.w3strings'), output_dir)
+        logger.info('Copying %s to output directory as %s...', w3strings_path, f'{lang}.w3strings')
+        shutil.copy(w3strings_path, output_w3strings_path)
+
+        logger.info('%s database strings have been successfully encoded to %s', ALL_LANGS_NAME_MAP[lang], w3strings_path)

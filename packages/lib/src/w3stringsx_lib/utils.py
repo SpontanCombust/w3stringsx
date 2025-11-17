@@ -15,6 +15,7 @@ from w3stringsx_lib.logging import get_logger
 __all__ = [
     "replace_path_ext",
     "replace_path_dirname",
+    "replace_path_basename",
     "ScratchFolder",
     "lf_to_crlf",
     "guess_file_encoding",
@@ -28,21 +29,29 @@ logger = get_logger()
 
 
 
-"""
-Replaces the extension part in a file path
-"""
 def replace_path_ext(path: str, new_ext: str) -> str:
+    """
+    Replaces the extension part in a file path
+    """
     if new_ext[0] != '.':
         new_ext = '.' + new_ext
     stem, _ = os.path.splitext(path)
     return stem + new_ext
 
-"""
-Returns a new path with the parent directory part replaced
-"""
 def replace_path_dirname(path: str, new_dirname: str) -> str:
+    """
+    Returns a new path with the parent directory part replaced
+    """
     basename = os.path.basename(path)
     return os.path.join(new_dirname, basename)
+
+def replace_path_basename(path: str, new_basename: str) -> str:
+    """
+    Returns a new path with the last path component replaced
+    """
+    dirname = os.path.dirname(path)
+    return os.path.join(dirname, new_basename)
+
 
 # Because encoder ALWAYS puts output in the same directory as input before we are able to move it 
 # we first need to create a temporary folder in which we'll execute the commands.
@@ -74,10 +83,10 @@ class ScratchFolder(contextlib.AbstractContextManager):
         
         return copy_path
     
-"""
-Converts new line endings in the file from Unix style to Windows style 
-"""
 def lf_to_crlf(file_path: str):
+    """
+    Converts new line endings in the file from Unix style to Windows style 
+    """
     encoding = guess_file_encoding(file_path)
     with io.open(file_path, mode="r+", encoding=encoding) as f:
         data = f.read()
@@ -98,17 +107,17 @@ def guess_file_encoding(path: str) -> str:
 
     return "UTF-8"
 
-"""
-Set operation, but done to preserve the order of lhs
-"""
 def str_key_list_difference(lhs: list[str], rhs: list[str]) -> list[str]:
+    """
+    Set operation, but done to preserve the order of lhs
+    """
     rhs_set = set(rhs)
     return [k for k in lhs if k not in rhs_set]
 
-"""
-Remove empty and duplicated keys while preserving the order of first appearance
-"""
 def sanitize_str_keys(keys: list[str]) -> list[str]:
+    """
+    Remove empty and duplicated keys while preserving the order of first appearance
+    """
     key_set = set[str]()  # using set for fast lookup
     result = list[str]()
 

@@ -7,7 +7,8 @@ import flet as ft
 import flet_reactive as ftr
 from w3stringsx_lib.localization import ALL_LANGS, ALL_LANGS_NAME_MAP
 from w3stringsx_lib.logging import get_logger
-from w3stringsx_svc import Configuration
+from w3stringsx_lib.strings_db import StringsDb
+from w3stringsx_svc import Configuration, StringsDbManagerService
 from w3stringsx_gui.views.view_base import ViewBase
 from w3stringsx_gui.routing import Routes
 from w3stringsx_gui.components import StatusPill
@@ -24,8 +25,11 @@ class StringsDbEncodingView(ViewBase):
 
     def __init__(self,
         config: Configuration,
+        db_manager: StringsDbManagerService,
         props: StringsDbEncodingViewProps = StringsDbEncodingViewProps(db_path=None)
     ):
+        self.__db_manager = db_manager
+
         self.__db_file_path: ftr.State[str | None] = self.use_state(None)
         self.__db_file_picker = ft.FilePicker(on_result=self.on_db_file_picked)
         self.__fallback_lang: ftr.State[str | None] = self.use_state(config.default_fallback_language.get_or_default())
@@ -231,8 +235,10 @@ class StringsDbEncodingView(ViewBase):
         
         errored = False
         try:
-            #TODO encoding DB
-            raise NotImplementedError()
+            with StringsDb(self.__db_file_path.value) as db:
+                for lang, selection in self.__lang_selection.items():
+                    if selection.value:
+                        self.__db_manager.encode_single_lang_w3strings(db, lang, self.__fallback_lang.value, self.__output_dir_path.value)
         except Exception as ex:
             logger.error(ex)
             logger.debug(traceback.format_exc())
