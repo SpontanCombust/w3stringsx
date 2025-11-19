@@ -131,4 +131,4 @@ class StringsDbManagerService:
         logger.info('Copying %s to output directory as %s...', w3strings_path, f'{lang}.w3strings')
         shutil.copy(w3strings_path, output_w3strings_path)
 
-        logger.info('%s database strings have been successfully encoded to %s', ALL_LANGS_NAME_MAP[lang], w3strings_path)
+        logger.info('%s database strings have been successfully encoded to %s', ALL_LANGS_NAME_MAP[lang], output_w3strings_path)
