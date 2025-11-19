@@ -78,6 +78,8 @@ class EncodeStringsView(ViewBase):
         self.__csv_file_entries.extend([_CsvFileEntry(path, self.use_state(False)) for path in props.csv_paths])
         VISIBLE_CSV_ENTRY_ROWS = 5
 
+        self.__encoding_in_progress: ftr.State[bool | None] = self.use_state(False)
+        self.__encoding_progress_text: ftr.State[str | None] = self.use_state(None)
         self.__encode_status_pill = StatusPill()
 
         super().__init__(
@@ -243,6 +245,14 @@ class EncodeStringsView(ViewBase):
                         )
                     ],
                 ),
+                ftr.ReactiveRow(
+                    visible=self.__encoding_in_progress,
+                    alignment=ft.MainAxisAlignment.CENTER,
+                    controls=[
+                        ft.ProgressRing(),
+                        ftr.ReactiveText(value=self.__encoding_progress_text)
+                    ]
+                ),
                 self.__encode_status_pill,
             ]
         )
@@ -378,8 +388,10 @@ class EncodeStringsView(ViewBase):
             return
 
         errored = False
-        for entry in self.__csv_file_entries:
+        self.__encoding_in_progress.value = True
+        for i, entry in enumerate(self.__csv_file_entries):
             try:
+                self.__encoding_progress_text.value = f"Encoding in progress... ({i+1}/{len(self.__csv_file_entries)})"
                 self.__w3strings_manager.encode_w3strings_from_csv(
                     entry.csv_path, 
                     self.__output_dir_path.value,
@@ -390,9 +402,11 @@ class EncodeStringsView(ViewBase):
                 logger.error(ex)
                 logger.debug(traceback.format_exc())
                 errored = True
+        self.__encoding_in_progress.value = False
+        self.__encoding_progress_text.value = None
 
         if not errored:
-            self.__encode_status_pill.show("File encoded successfully!")
+            self.__encode_status_pill.show("Files encoded successfully!")
         else:
             self.__encode_status_pill.show("Errors occured during encoding! Check the logs.", True)
                 

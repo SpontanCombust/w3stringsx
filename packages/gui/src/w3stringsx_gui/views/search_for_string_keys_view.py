@@ -34,6 +34,7 @@ class SearchForStringKeysView(ViewBase):
         self.__search_dir_picker = ft.FilePicker(on_result=self.on_search_dir_picked)
         self.__output_dir_picker = ft.FilePicker(on_result=self.on_output_dir_picked)
 
+        self.__search_in_progress: ftr.State[bool | None] = self.use_state(False)
         self.__search_paths.extend(props.search_paths)
         VISIBLE_SEARCH_PATHS_ROWS = 5
 
@@ -139,6 +140,14 @@ class SearchForStringKeysView(ViewBase):
                         )
                     ],
                 ),
+                ftr.ReactiveRow(
+                    visible=self.__search_in_progress,
+                    alignment=ft.MainAxisAlignment.CENTER,
+                    controls=[
+                        ft.ProgressRing(),
+                        ft.Text(value="Searching...")
+                    ]
+                ),
                 self.__search_status_pill,
             ]
         )
@@ -219,6 +228,7 @@ class SearchForStringKeysView(ViewBase):
             return
 
         errored = False
+        self.__search_in_progress.value = True
         for input_path in self.__search_paths:
             try:
                 if os.path.isdir(input_path):
@@ -231,6 +241,7 @@ class SearchForStringKeysView(ViewBase):
                 logger.error(ex)
                 logger.debug(traceback.format_exc())
                 errored = True
+        self.__search_in_progress.value = False
 
         if not errored:
             self.__search_status_pill.show("Files and/or directories searched successfully!")

@@ -39,6 +39,8 @@ class StringsDbEncodingView(ViewBase):
 
         self.__db_file_path.value = props.db_path
 
+        self.__encoding_in_progress: ftr.State[bool | None] = self.use_state(False)
+        self.__encoding_progress_text: ftr.State[str | None] = self.use_state(None)
         self.__encode_status_pill = StatusPill()
 
         super().__init__(
@@ -156,6 +158,14 @@ class StringsDbEncodingView(ViewBase):
                         )
                     ],
                 ),
+                ftr.ReactiveRow(
+                    visible=self.__encoding_in_progress,
+                    alignment=ft.MainAxisAlignment.CENTER,
+                    controls=[
+                        ft.ProgressRing(),
+                        ftr.ReactiveText(value=self.__encoding_progress_text)
+                    ]
+                ),
                 self.__encode_status_pill
             ]
         )
@@ -234,16 +244,20 @@ class StringsDbEncodingView(ViewBase):
             return
         
         errored = False
-        try:
-            with StringsDb(self.__db_file_path.value) as db:
-                for lang, selection in self.__lang_selection.items():
-                    if selection.value:
-                        self.__db_manager.encode_single_lang_w3strings(db, lang, self.__fallback_lang.value, self.__output_dir_path.value)
-        except Exception as ex:
-            logger.error(ex)
-            logger.debug(traceback.format_exc())
-            errored = True
-            
+        self.__encoding_in_progress.value = True
+        with StringsDb(self.__db_file_path.value) as db:
+            try:
+                selected_langs = [lang for lang, selection in self.__lang_selection.items() if selection.value]
+                for i, lang in enumerate(selected_langs):
+                    self.__encoding_progress_text.value = f"Encoding in progress... ({i+1}/{len(selected_langs)})"
+                    self.__db_manager.encode_single_lang_w3strings(db, lang, self.__fallback_lang.value, self.__output_dir_path.value)
+            except Exception as ex:
+                logger.error(ex)
+                logger.debug(traceback.format_exc())
+                errored = True
+        self.__encoding_in_progress.value = False
+        self.__encoding_progress_text.value = None
+
         if not errored:
             self.__encode_status_pill.show("Database encoded successfully!")
         else:

@@ -2043,3 +2043,104 @@ class ReactiveSwitch(ft.Switch, _ReactiveControlWrapper):
     def will_unmount(self):
         super().will_unmount()
         self._drop_prop_bindings()
+
+
+
+class ReactiveProgressRing(ft.ProgressRing, _ReactiveControlWrapper):
+    def __init__(self, 
+        value: int | float | None | State[int | float | None] = None, 
+        stroke_width: int | float | None = None, 
+        color: str | ft.Colors | ft.CupertinoColors | None = None, 
+        bgcolor: str | ft.Colors | ft.CupertinoColors | None = None, 
+        stroke_align: int | float | None = None, 
+        stroke_cap: ft.StrokeCap | None = None, 
+        semantics_label: str | None = None, 
+        semantics_value: int | float | None = None, 
+        track_gap: int | float | None = None, 
+        size_constraints: ft.BoxConstraints | None = None, 
+        padding: int | float | ft.Padding | None = None, 
+        year_2023: bool | None = None, 
+        ref: ft.Ref | None = None, 
+        key: str | None = None, 
+        width: int | float | None = None, 
+        height: int | float | None = None, 
+        left: int | float | None = None, 
+        top: int | float | None = None, 
+        right: int | float | None = None, 
+        bottom: int | float | None = None, 
+        expand: None | bool | int = None, 
+        expand_loose: bool | None = None, 
+        col: Dict[str, int | float] | int | float | None = None, 
+        opacity: int | float | None = None, 
+        rotate: int | float | ft.Rotate | None = None, 
+        scale: int | float | ft.Scale | None = None, 
+        offset: ft.Offset | None = None, 
+        aspect_ratio: int | float | None = None, 
+        animate_opacity: bool | int | ft.Animation | None = None, 
+        animate_size: bool | int | ft.Animation | None = None, 
+        animate_position: bool | int | ft.Animation | None = None, 
+        animate_rotation: bool | int | ft.Animation | None = None, 
+        animate_scale: bool | int | ft.Animation | None = None, 
+        animate_offset: bool | int | ft.Animation | None = None, 
+        on_animation_end: Callable[[ft.ControlEvent], Any] | None = None, 
+        tooltip: str | ft.Tooltip | None = None, 
+        badge: str | ft.Badge | None = None, 
+        visible: bool | None | State[bool | None] = None, 
+        disabled: bool | None = None, 
+        data: Any = None
+    ):
+        super().__init__(
+            _unwrap_value(value),
+            stroke_width,
+            color,
+            bgcolor,
+            stroke_align,
+            stroke_cap,
+            semantics_label,
+            semantics_value,
+            track_gap,
+            size_constraints,
+            padding,
+            year_2023,
+            ref,
+            key,
+            width,
+            height,
+            left,
+            top,
+            right,
+            bottom,
+            expand,
+            expand_loose,
+            col,
+            opacity,
+            rotate,
+            scale,
+            offset,
+            aspect_ratio,
+            animate_opacity,
+            animate_size,
+            animate_position,
+            animate_rotation,
+            animate_scale,
+            animate_offset,
+            on_animation_end,
+            tooltip,
+            badge,
+            _unwrap_value(visible),
+            disabled,
+            data
+        )
+
+        if isinstance(value, State):
+            self._new_stateful_prop_binding(value, self, 'value')
+        if isinstance(visible, State):
+            self._new_stateful_prop_binding(visible, self, 'visible')
+
+    def build(self):
+        super().build()
+        self._init_prop_bindings()
+
+    def will_unmount(self):
+        super().will_unmount()
+        self._drop_prop_bindings()

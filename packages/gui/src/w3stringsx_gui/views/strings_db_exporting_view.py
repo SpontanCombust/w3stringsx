@@ -48,6 +48,8 @@ class StringsDbExportingView(ViewBase):
                     and bool(self.__output_dir_path.value)
         )
     
+        self.__export_in_progress: ftr.State[bool | None] = self.use_state(False)
+        self.__export_progress_text: ftr.State[str | None] = self.use_state(None)
         self.__export_status_pill = StatusPill()
 
         super().__init__(
@@ -189,7 +191,14 @@ class StringsDbExportingView(ViewBase):
                         ),
                     ]
                 ),
-                #TODO progress spinner
+                ftr.ReactiveRow(
+                    visible=self.__export_in_progress,
+                    alignment=ft.MainAxisAlignment.CENTER,
+                    controls=[
+                        ft.ProgressRing(),
+                        ftr.ReactiveText(value=self.__export_progress_text)
+                    ]
+                ),
                 self.__export_status_pill
             ]
         )
@@ -268,18 +277,23 @@ class StringsDbExportingView(ViewBase):
             return
         
         errored = False
-        try:
-            with StringsDb(self.__db_file_path.value) as db:
+        self.__export_in_progress.value = True
+        with StringsDb(self.__db_file_path.value) as db:
+            try:
                 if self.__single_file_export.value:
+                    self.__export_progress_text.value = "Export in progress..."
                     self.__db_manager.export_redkit_csv(db, self.__output_dir_path.value)
                 else:
-                    for lang, selection in self.__lang_selection.items():
-                        if selection.value:
-                            self.__db_manager.export_single_lang_csv(db, lang, self.__fallback_lang.value, self.__output_dir_path.value)
-        except Exception as ex:
-            logger.error(ex)
-            logger.debug(traceback.format_exc())
-            errored = True
+                    selected_langs = [lang for lang, selection in self.__lang_selection.items() if selection.value]
+                    for i, lang in enumerate(selected_langs):
+                        self.__export_progress_text.value = f"Export in progress... ({i+1}/{len(selected_langs)})"
+                        self.__db_manager.export_single_lang_csv(db, lang, self.__fallback_lang.value, self.__output_dir_path.value)
+            except Exception as ex:
+                logger.error(ex)
+                logger.debug(traceback.format_exc())
+                errored = True
+        self.__export_in_progress.value = False
+        self.__export_progress_text.value = None
             
         if not errored:
             self.__export_status_pill.show("Database exported successfully!")

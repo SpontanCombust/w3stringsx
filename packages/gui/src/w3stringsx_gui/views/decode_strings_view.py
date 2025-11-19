@@ -35,6 +35,8 @@ class DecodeStringsView(ViewBase, ftr.ReactiveHooks):
         self.__w3strings_file_paths.extend(props.w3strings_paths)
         VISIBLE_W3STRINGS_PATHS_ROWS = 5
 
+        self.__decoding_in_progress: ftr.State[bool | None] = self.use_state(False)
+        self.__decoding_progress_text: ftr.State[str | None] = self.use_state(None)
         self.__decode_status_pill = StatusPill()
         
         super().__init__(
@@ -116,6 +118,14 @@ class DecodeStringsView(ViewBase, ftr.ReactiveHooks):
                         )
                     ],
                 ),
+                ftr.ReactiveRow(
+                    visible=self.__decoding_in_progress,
+                    alignment=ft.MainAxisAlignment.CENTER,
+                    controls=[
+                        ft.ProgressRing(),
+                        ftr.ReactiveText(value=self.__decoding_progress_text)
+                    ]
+                ),
                 self.__decode_status_pill,
             ]
         )
@@ -182,8 +192,10 @@ class DecodeStringsView(ViewBase, ftr.ReactiveHooks):
             return
 
         errored = False
-        for input_path in self.__w3strings_file_paths:
+        self.__decoding_in_progress.value = True
+        for i, input_path in enumerate(self.__w3strings_file_paths):
             try:
+                self.__decoding_progress_text.value = f"Decoding in progress... ({i+1}/{len(self.__w3strings_file_paths)})"
                 self.__w3strings_manager.decode_w3strings_to_csv(
                     input_path, 
                     self.__output_dir_path.value
@@ -192,6 +204,8 @@ class DecodeStringsView(ViewBase, ftr.ReactiveHooks):
                 logger.error(ex)
                 logger.debug(traceback.format_exc())
                 errored = True
+        self.__decoding_in_progress.value = False
+        self.__decoding_progress_text.value = None
         
         if not errored:
             self.__decode_status_pill.show("Files decoded successfully!")
