@@ -67,7 +67,7 @@ class HomeView(ViewBase):
                                             color=ft.Colors.ON_PRIMARY,
                                             on_click=lambda e: router.goto(Routes.DECODE_STRINGS)),
                                         FeatureButton(
-                                            'icons/file-find.svg', 
+                                            'icons/file-search.svg', 
                                             'Search \n for string keys', 
                                             bgcolor=ft.Colors.PRIMARY,
                                             color=ft.Colors.ON_PRIMARY,
