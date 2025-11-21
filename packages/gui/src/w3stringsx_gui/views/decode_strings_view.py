@@ -58,7 +58,7 @@ class DecodeStringsView(ViewBase, ftr.ReactiveHooks):
                         ),
                     ],
                     rows_data=self.__w3strings_file_paths,
-                    rows_mapper=lambda path, _: ftr.ReactiveDataRow(
+                    rows_mapper=lambda path: ftr.ReactiveDataRow(
                         cells=[
                             ft.DataCell(
                                 content=ft.Text(

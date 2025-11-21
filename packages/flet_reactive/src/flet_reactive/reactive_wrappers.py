@@ -44,7 +44,14 @@ class _StatefulPropertyBinding(StateObserver[_T]):
 class _StatefulCtrlSequencePropertyBinding(Generic[_T, _C], ListStateObserver[_T]):
     def __init__(self, 
         state: ListState[_T], 
-        state_ctrl_mapper: Callable[[_T, int], _C], 
+        # Mapper should take only data that stays unchanged over the course of entry's lifetime.
+        # If some part of entry's identity changes, that entry should be recreated.
+        # This means that, for example, index of an entry in the moment of its creation shouldn't be passed
+        # as when some entry before that were to be removed (popped) index of this entry would change as well.
+        # We could just rebuild all entries after the removed one, but that would nullify optimizations offered by ListState,
+        # thanks to which we can make atomic changes on the sequence of controls instead of recreating it from the scratch
+        # and risking substantial loss of performance if the list is big and requires frequent changes (e.g. logs view).
+        state_ctrl_mapper: Callable[[_T], _C], 
         target_ctrl: ft.Control, 
         target_ctrl_seq: MutableSequence[_C]
     ) -> None:
@@ -54,7 +61,7 @@ class _StatefulCtrlSequencePropertyBinding(Generic[_T, _C], ListStateObserver[_T
         self.target_ctrl_seq = target_ctrl_seq
 
         for i in range(len(state)):
-            target_ctrl_seq.insert(i, state_ctrl_mapper(state[i], i))
+            target_ctrl_seq.insert(i, state_ctrl_mapper(state[i]))
 
     def setup_observed_states(self):
         self.state.add_observer(self)
@@ -63,11 +70,11 @@ class _StatefulCtrlSequencePropertyBinding(Generic[_T, _C], ListStateObserver[_T
         self.state.remove_observer(self)
 
     def on_set_state_item(self, key: SupportsIndex, value: _T) -> None:
-        self.target_ctrl_seq.__setitem__(int(key), self.state_ctrl_mapper(value, int(key)))
+        self.target_ctrl_seq.__setitem__(int(key), self.state_ctrl_mapper(value))
         self.target_ctrl.update()
 
     def on_set_state_item_slice(self, key: slice, value: Iterable[_T]) -> None:
-        self.target_ctrl_seq.__setitem__(key, [self.state_ctrl_mapper(value, i) for value, i in zip(value, range(key.start, key.stop))])
+        self.target_ctrl_seq.__setitem__(key, [self.state_ctrl_mapper(value) for value, i in zip(value, range(key.start, key.stop))])
         self.target_ctrl.update()
 
     def on_del_state_item(self, key: SupportsIndex) -> None:
@@ -79,13 +86,13 @@ class _StatefulCtrlSequencePropertyBinding(Generic[_T, _C], ListStateObserver[_T
         self.target_ctrl.update()
 
     def on_insert_state_item(self, key: SupportsIndex, value: _T) -> None:
-        self.target_ctrl_seq.insert(int(key), self.state_ctrl_mapper(value, int(key)))
+        self.target_ctrl_seq.insert(int(key), self.state_ctrl_mapper(value))
         self.target_ctrl.update()
 
 class _StatefulDataRowsPropertyBinding(_StatefulCtrlSequencePropertyBinding[_T, ftdt2.DataRow2]):
     def __init__(self, 
         state: ListState[_T], 
-        state_ctrl_mapper: Callable[[_T, int], ftdt2.DataRow2], 
+        state_ctrl_mapper: Callable[[_T], ftdt2.DataRow2], 
         target_ctrl: ft.Control, 
         target_ctrl_seq: MutableSequence[ftdt2.DataRow2],
         column_count: int,
@@ -142,7 +149,7 @@ class _StatefulDataRowsPropertyBinding(_StatefulCtrlSequencePropertyBinding[_T, 
     def on_insert_state_item(self, key: SupportsIndex, value: _T) -> None:
         seq_idx = int(key)
         seq_idx = seq_idx if seq_idx >= 0 else len(self.state) + seq_idx
-        mapped = self.state_ctrl_mapper(value, seq_idx)
+        mapped = self.state_ctrl_mapper(value)
         if seq_idx < self.placeholder_count and self.target_ctrl_seq[seq_idx].data == 'placeholder':
             self.target_ctrl_seq.__setitem__(seq_idx, mapped)
         else:
@@ -165,7 +172,7 @@ class _ReactiveControlWrapper:
     
     def _new_stateful_ctrl_seq_prop_binding(self, 
         state: ListState[_T], 
-        state_ctrl_mapper: Callable[[_T, int], _C], 
+        state_ctrl_mapper: Callable[[_T], _C], 
         target_ctrl: ft.Control, 
         target_ctrl_seq: MutableSequence[_C]
     ) -> _StatefulCtrlSequencePropertyBinding:
@@ -175,7 +182,7 @@ class _ReactiveControlWrapper:
     
     def _new_stateful_data_rows_prop_binding(self, 
         state: ListState[_T], 
-        state_ctrl_mapper: Callable[[_T, int], ftdt2.DataRow2], 
+        state_ctrl_mapper: Callable[[_T], ftdt2.DataRow2], 
         target_ctrl: ft.Control, 
         target_ctrl_seq: MutableSequence[ftdt2.DataRow2],
         column_count: int,
@@ -793,7 +800,7 @@ class ReactiveDataTable(ftdt2.DataTable2, _ReactiveControlWrapper, Generic[_T]):
     def __init__(self, 
         columns: Sequence[ReactiveDataColumn], 
         rows_data: ListState[_T] | None = None,
-        rows_mapper: Callable[[_T, int], ReactiveDataRow] | None = None,
+        rows_mapper: Callable[[_T], ReactiveDataRow] | None = None,
         placeholder_rows_count: int | None = None,
         rows: Sequence[ReactiveDataRow] | None = None, 
         empty: ft.Control | None = None, 
@@ -962,7 +969,7 @@ class ReactiveColumn(ft.Column, _ReactiveControlWrapper, Generic[_T]):
     def __init__(self,
         controls: Sequence[ft.Control] | None = None,
         controls_data: ListState[_T] | None = None,
-        controls_mapper: Callable[[_T, int], ft.Control] | None = None,
+        controls_mapper: Callable[[_T], ft.Control] | None = None,
         alignment: ft.MainAxisAlignment | None = None,
         horizontal_alignment: ft.CrossAxisAlignment | None = None,
         spacing: int | float | None = None,

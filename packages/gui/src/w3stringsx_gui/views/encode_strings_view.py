@@ -107,7 +107,7 @@ class EncodeStringsView(ViewBase):
                         ),
                     ],
                     rows_data=self.__csv_file_entries,
-                    rows_mapper=lambda entry, idx: ftr.ReactiveDataRow(
+                    rows_mapper=lambda entry: ftr.ReactiveDataRow(
                         cells=[
                             ft.DataCell(
                                 content=ft.Text(
@@ -128,7 +128,7 @@ class EncodeStringsView(ViewBase):
                             ),
                         ],
                         selected=entry.selected,
-                        on_select_changed=lambda ev, idx=idx: self.on_csv_file_entries_datarow_select_changed(ev, idx)
+                        on_select_changed=lambda ev: self.on_csv_file_entries_datarow_select_changed(ev, entry)
                     ),
                     placeholder_rows_count=VISIBLE_CSV_ENTRY_ROWS
                 ),
@@ -277,13 +277,19 @@ class EncodeStringsView(ViewBase):
             self.page.overlay.remove(self.__output_dir_picker)
 
 
-    def on_csv_file_entries_datarow_select_changed(self, ev: ft.ControlEvent, row_idx: int):
-        if 0 <= row_idx < len(self.__csv_file_entries):
-            changed_value = not self.__csv_file_entries[row_idx].selected.value
+    def on_csv_file_entries_datarow_select_changed(self, ev: ft.ControlEvent, entry: _CsvFileEntry):
+        row_idx = -1
+        for i, e in enumerate(self.__csv_file_entries):
+            if e.csv_path == entry.csv_path:
+                row_idx = i
+                break
+
+        if row_idx != -1:
+            changed_value = not entry.selected.value
             # allow only a single row to be selected
             for entry in self.__csv_file_entries:
                 entry.selected.value = False
-            self.__csv_file_entries[row_idx].selected.value = changed_value
+            entry.selected.value = changed_value
             self.__selected_csv_file_entry_idx.value = row_idx if changed_value is True else None
             self.__update_langugage_selections()
 
