@@ -5,6 +5,7 @@ from typing import Any, TypeVar
 
 import flet as ft
 
+from w3stringsx_lib.logging import get_logger
 from w3stringsx_svc.configuration import Configuration, ConfigurationValue
 
 
@@ -88,9 +89,11 @@ class W3stringsxGuiConfiguration(Configuration):
         return self.some(val)
     
     def __set(self, key: str, val: Any):
+        logger = get_logger()
         client_storage = self.__page.client_storage
-        if bool(val):
-            client_storage.set(key, val)
-        else:
-            # remove falsy values
+        if val is None:
             client_storage.remove(key)
+            logger.debug("Setting '%s' removed", key)
+        else:
+            client_storage.set(key, val)
+            logger.debug("Setting '%s' updated to %s", key, val)
