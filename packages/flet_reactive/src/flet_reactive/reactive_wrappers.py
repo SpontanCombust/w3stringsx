@@ -22,10 +22,11 @@ def _unwrap_value(v: _T | State[_T]) -> _T:
 
 @final
 class _StatefulPropertyBinding(StateObserver[_T]):
-    def __init__(self, state: State[_T], target_ctrl: ft.Control, target_prop_name: str) -> None:
+    def __init__(self, state: State[_T], target_ctrl: ft.Control, target_prop_name: str, auto_update: bool) -> None:
         self.state = state
         self.target_ctrl = target_ctrl
         self.target_prop = target_prop_name
+        self.auto_update = auto_update
 
     def setup_observed_states(self):
         self.state.add_observer(self)
@@ -35,7 +36,8 @@ class _StatefulPropertyBinding(StateObserver[_T]):
 
     def on_state_changed(self, old_state: _T, new_state: _T) -> None:
         setattr(self.target_ctrl, self.target_prop, new_state)
-        self.target_ctrl.update()
+        if self.auto_update:
+            self.target_ctrl.update()
 
     def sync_state(self) -> None:
         self.state.value = getattr(self.target_ctrl, self.target_prop)
@@ -74,7 +76,7 @@ class _StatefulCtrlSequencePropertyBinding(Generic[_T, _C], ListStateObserver[_T
         self.target_ctrl.update()
 
     def on_set_state_item_slice(self, key: slice, value: Iterable[_T]) -> None:
-        self.target_ctrl_seq.__setitem__(key, [self.state_ctrl_mapper(value) for value, i in zip(value, range(key.start, key.stop))])
+        self.target_ctrl_seq.__setitem__(key, [self.state_ctrl_mapper(value) for value in value])
         self.target_ctrl.update()
 
     def on_del_state_item(self, key: SupportsIndex) -> None:
@@ -95,31 +97,19 @@ class _StatefulDataRowsPropertyBinding(_StatefulCtrlSequencePropertyBinding[_T, 
         state_ctrl_mapper: Callable[[_T], ftdt2.DataRow2], 
         target_ctrl: ft.Control, 
         target_ctrl_seq: MutableSequence[ftdt2.DataRow2],
-        column_count: int,
         placeholder_count: int
     ) -> None:
         super().__init__(state, state_ctrl_mapper, target_ctrl, target_ctrl_seq)
-        self.column_count = column_count
         self.placeholder_count = placeholder_count
-        self.placeholder_ctrl_factory = lambda: ftdt2.DataRow2(
-            cells=[
-                ft.DataCell(ft.Text(), placeholder=True)
-                for i in range(column_count)
-            ],
-            data='placeholder'
-        )
-
-        # fill placeholders
-        if placeholder_count > len(state):
-            for i in range(placeholder_count - len(state)):
-                target_ctrl_seq.append(self.placeholder_ctrl_factory())
-
+        self.__pad_with_placeholders()
 
     def on_set_state_item(self, key: SupportsIndex, value: _T) -> None:
         return super().on_set_state_item(key, value)
 
     def on_set_state_item_slice(self, key: slice, value: Iterable[_T]) -> None:
-        return super().on_set_state_item_slice(key, value)
+        self.target_ctrl_seq.__setitem__(key, [self.state_ctrl_mapper(value) for value in value])
+        self.__pad_with_placeholders()
+        self.target_ctrl.update()
 
     def on_del_state_item(self, key: SupportsIndex) -> None:
         seq_idx = int(key)
@@ -130,7 +120,7 @@ class _StatefulDataRowsPropertyBinding(_StatefulCtrlSequencePropertyBinding[_T, 
         # corresponding control has tp be replaced with a placeholder instead of being outright removed
         # if it goes beyond the threshold, it can be simply removed 
         if seq_idx < self.placeholder_count:
-            self.target_ctrl_seq.__setitem__(seq_idx, self.placeholder_ctrl_factory())
+            self.target_ctrl_seq.__setitem__(seq_idx, self.__placeholder_ctrl_factory(self.__get_visible_column_count()))
         else:
             self.target_ctrl_seq.__delitem__(seq_idx)
         self.target_ctrl.update()
@@ -157,6 +147,27 @@ class _StatefulDataRowsPropertyBinding(_StatefulCtrlSequencePropertyBinding[_T, 
         self.target_ctrl.update()
 
 
+    def __get_visible_column_count(self) -> int:
+        table = cast(ftdt2.DataTable2, self.target_ctrl)
+        return len([c for c in table.columns if c.visible])
+    
+    def __placeholder_ctrl_factory(self, column_count: int) -> ftdt2.DataRow2:
+        return ftdt2.DataRow2(
+            cells=[
+                ft.DataCell(ft.Text(), placeholder=True)
+                for i in range(column_count)
+            ],
+            data='placeholder'
+        )
+    
+    def __pad_with_placeholders(self):
+        if self.placeholder_count > len(self.state):
+            column_count = self.__get_visible_column_count()
+            for i in range(self.placeholder_count - len(self.state)):
+                self.target_ctrl_seq.append(self.__placeholder_ctrl_factory(column_count))
+
+                
+
 class _ReactiveControlWrapper:
     def __init__(self) -> None:
         self.__prop_bindings = list[_StatefulPropertyBinding | _StatefulCtrlSequencePropertyBinding | _StatefulDataRowsPropertyBinding]()
@@ -164,9 +175,10 @@ class _ReactiveControlWrapper:
     def _new_stateful_prop_binding(self, 
         state: State[_T], 
         target_ctrl: ft.Control, 
-        target_prop_name: str
+        target_prop_name: str,
+        auto_update: bool = True,
     ) -> _StatefulPropertyBinding:
-        binding = _StatefulPropertyBinding(state, target_ctrl, target_prop_name)
+        binding = _StatefulPropertyBinding(state, target_ctrl, target_prop_name, auto_update)
         self.__prop_bindings.append(binding)
         return binding
     
@@ -185,10 +197,9 @@ class _ReactiveControlWrapper:
         state_ctrl_mapper: Callable[[_T], ftdt2.DataRow2], 
         target_ctrl: ft.Control, 
         target_ctrl_seq: MutableSequence[ftdt2.DataRow2],
-        column_count: int,
         placeholder_count: int
     ) -> _StatefulDataRowsPropertyBinding:
-        binding = _StatefulDataRowsPropertyBinding(state, state_ctrl_mapper, target_ctrl, target_ctrl_seq, column_count, placeholder_count)
+        binding = _StatefulDataRowsPropertyBinding(state, state_ctrl_mapper, target_ctrl, target_ctrl_seq, placeholder_count)
         self.__prop_bindings.append(binding)
         return binding
 
@@ -203,7 +214,7 @@ class _ReactiveControlWrapper:
 
 """
 Standard Flet controls supplied with reactive properties.
-These get added as they're demanded.
+These get added as they're demanded and are not ordered in any particular way.
 """
 
 class ReactiveCheckbox(ft.Checkbox, _ReactiveControlWrapper):
@@ -641,7 +652,7 @@ class ReactiveFilledButton(ft.FilledButton, _ReactiveControlWrapper):
         animate_offset: bool | int | ft.Animation | None = None, 
         on_animation_end: Callable[[ft.ControlEvent], Any] | None = None, 
         tooltip: str | ft.Tooltip | None = None, 
-        badge: str | ft.Badge | None = None, 
+        badge: str | ft.Badge | None | State[str | ft.Badge | None] = None, 
         visible: bool | None = None, 
         disabled: bool | None | State[bool | None] = None, 
         data: Any = None, 
@@ -689,13 +700,15 @@ class ReactiveFilledButton(ft.FilledButton, _ReactiveControlWrapper):
             animate_offset, 
             on_animation_end, 
             tooltip, 
-            badge, 
+            _unwrap_value(badge), 
             visible, 
             _unwrap_value(disabled), 
             data, 
             adaptive
         )
 
+        if isinstance(badge, State):
+            self._new_stateful_prop_binding(badge, self, 'badge')
         if isinstance(disabled, State):
             self._new_stateful_prop_binding(disabled, self, 'disabled')
 
@@ -719,9 +732,10 @@ class ReactiveDataColumn(ftdt2.DataColumn2, _ReactiveControlWrapper):
         heading_row_alignment: ft.MainAxisAlignment | None = None, 
         on_sort: ft.OptionalEventCallable[DataColumnSortEvent] = None, 
         ref=None, 
-        visible: bool | None = None, 
+        visible: bool | None | State[bool | None] = None, 
         disabled: bool | None = None, 
-        data: Any = None
+        data: Any = None,
+        visible_auto_update: bool = True, # flet makes assertions on visible column counts and these may not get synced in the right order or time
     ):
         super().__init__(
             label, 
@@ -732,10 +746,13 @@ class ReactiveDataColumn(ftdt2.DataColumn2, _ReactiveControlWrapper):
             heading_row_alignment, 
             on_sort, 
             ref, 
-            visible, 
+            _unwrap_value(visible), 
             disabled, 
             data
         )
+
+        if isinstance(visible, State):
+            self._new_stateful_prop_binding(visible, self, 'visible', visible_auto_update)
 
     def build(self):
         super().build()
@@ -759,9 +776,10 @@ class ReactiveDataRow(ftdt2.DataRow2, _ReactiveControlWrapper):
         on_secondary_tap_down: Callable[[ft.ControlEvent], Any] | None = None,
         on_tap: Callable[[ft.ControlEvent], Any] | None = None,
         ref=None,
-        visible: bool | None = None,
+        visible: bool | None | State[bool | None] = None,
         disabled: bool | None = None, 
-        data: Any = None
+        data: Any = None,
+        visible_auto_update: bool = True, # flet makes assertions on visible column counts and these may not get synced in the right order or time
     ):
         super().__init__(
             cells,
@@ -776,17 +794,61 @@ class ReactiveDataRow(ftdt2.DataRow2, _ReactiveControlWrapper):
             on_secondary_tap_down,
             on_tap,
             ref,
-            visible,
+            _unwrap_value(visible),
             disabled,
             data
         )
 
         if isinstance(selected, State):
-            binding = self._new_stateful_prop_binding(selected, self, 'selected')
+            binding = self._new_stateful_prop_binding(selected, self, 'selected', visible_auto_update)
             self.on_select_changed = lambda ev: (
                 binding.sync_state(),
                 on_select_changed(ev) if on_select_changed else None
             )
+        if isinstance(visible, State):
+            self._new_stateful_prop_binding(visible, self, 'visible')
+
+    def build(self):
+        super().build()
+        self._init_prop_bindings()
+
+    def will_unmount(self):
+        super().will_unmount()
+        self._drop_prop_bindings()
+
+class ReactiveDataCell(ft.DataCell, _ReactiveControlWrapper):
+    def __init__(self, 
+        content: ft.Control, 
+        placeholder: bool | None = None, 
+        show_edit_icon: bool | None = None, 
+        on_tap: Callable[[ft.ControlEvent], Any] | None = None, 
+        on_double_tap: Callable[[ft.ControlEvent], Any] | None = None, 
+        on_long_press: Callable[[ft.ControlEvent], Any] | None = None, 
+        on_tap_cancel: Callable[[ft.ControlEvent], Any] | None = None, 
+        on_tap_down: Callable[[ft.TapEvent], Any] | None = None, 
+        ref=None, 
+        visible: bool | None | State[bool | None] = None, 
+        disabled: bool | None = None, 
+        data: Any = None,
+        visible_auto_update: bool = True, # flet makes assertions on visible column counts and these may not get synced in the right order or time
+    ):
+        super().__init__(
+            content, 
+            placeholder, 
+            show_edit_icon, 
+            on_tap, 
+            on_double_tap, 
+            on_long_press, 
+            on_tap_cancel, 
+            on_tap_down, 
+            ref, 
+            _unwrap_value(visible), 
+            disabled, 
+            data
+        )
+
+        if isinstance(visible, State):
+            self._new_stateful_prop_binding(visible, self, 'visible', visible_auto_update)
 
     def build(self):
         super().build()
@@ -945,15 +1007,15 @@ class ReactiveDataTable(ftdt2.DataTable2, _ReactiveControlWrapper, Generic[_T]):
             data
         )
 
+        self.lm_ratio = lm_ratio # flet-datatable2==0.1.0 has a typo, which doesn't assign this correctly
+
         if rows_data is not None and rows_mapper is not None:
             self.rows = []
-            some_rows = cast(list[ftdt2.DataRow2], self.rows) # promise type-cheker it won't be None
 
             if placeholder_rows_count is not None and placeholder_rows_count > 0:
-                column_count = len(columns)
-                self._new_stateful_data_rows_prop_binding(rows_data, rows_mapper, self, some_rows, column_count, placeholder_rows_count)
+                self._new_stateful_data_rows_prop_binding(rows_data, rows_mapper, self, self.rows, placeholder_rows_count)
             else:
-                self._new_stateful_ctrl_seq_prop_binding(rows_data, rows_mapper, self, some_rows)
+                self._new_stateful_ctrl_seq_prop_binding(rows_data, rows_mapper, self, self.rows)
 
     def build(self):
         super().build()
@@ -1125,7 +1187,7 @@ class ReactiveContainer(ft.Container, _ReactiveControlWrapper):
         on_animation_end: Callable[[ft.ControlEvent], Any] | None = None,
         tooltip: str | ft.Tooltip | None = None,
         badge: str | ft.Badge | None = None,
-        visible: bool | None = None,
+        visible: bool | None | State[bool | None] = None,
         disabled: bool | None | State[bool | None] = None,
         data: Any = None,
         rtl: bool | None = None,
@@ -1186,7 +1248,7 @@ class ReactiveContainer(ft.Container, _ReactiveControlWrapper):
             on_animation_end,
             tooltip,
             badge,
-            visible,
+            _unwrap_value(visible),
             _unwrap_value(disabled),
             data,
             rtl,
@@ -1201,6 +1263,8 @@ class ReactiveContainer(ft.Container, _ReactiveControlWrapper):
             self._new_stateful_prop_binding(height, self, 'height')
         if isinstance(opacity, State):
             self._new_stateful_prop_binding(opacity, self, 'opacity')
+        if isinstance(visible, State):
+            self._new_stateful_prop_binding(visible, self, 'visible')
         if isinstance(disabled, State):
             self._new_stateful_prop_binding(disabled, self, 'disabled')
 
@@ -2143,6 +2207,113 @@ class ReactiveProgressRing(ft.ProgressRing, _ReactiveControlWrapper):
             self._new_stateful_prop_binding(value, self, 'value')
         if isinstance(visible, State):
             self._new_stateful_prop_binding(visible, self, 'visible')
+
+    def build(self):
+        super().build()
+        self._init_prop_bindings()
+
+    def will_unmount(self):
+        super().will_unmount()
+        self._drop_prop_bindings()
+
+
+
+class ReactiveListView(ft.ListView, _ReactiveControlWrapper):
+    def __init__(
+        self,
+        controls: Sequence[ft.Control] | None = None,
+        controls_data: ListState[_T] | None = None,
+        controls_mapper: Callable[[_T], ft.Control] | None = None,
+        horizontal: bool | None = None,
+        spacing: int | float | None = None,
+        item_extent: int | float | None = None,
+        first_item_prototype: bool | None = None,
+        divider_thickness: int | float | None = None,
+        padding: int | float | ft.Padding | None = None,
+        clip_behavior: ft.ClipBehavior | None = None,
+        semantic_child_count: int | None = None,
+        cache_extent: int | float | None = None,
+        build_controls_on_demand: bool | None = None,
+        auto_scroll: bool | None = None,
+        reverse: bool | None = None,
+        on_scroll_interval: int | float | None = None,
+        on_scroll: Callable[[ft.OnScrollEvent], Any] | None = None,
+        ref: ft.Ref | None = None,
+        key: str | None = None,
+        width: int | float | None = None,
+        height: int | float | None = None,
+        left: int | float | None = None,
+        top: int | float | None = None,
+        right: int | float | None = None,
+        bottom: int | float | None = None,
+        expand: None | bool | int = None,
+        expand_loose: bool | None = None,
+        col: Dict[str, int | float] | int | float | None = None,
+        opacity: int | float | None = None,
+        rotate: int | float | ft.Rotate | None = None,
+        scale: int | float | ft.Scale | None = None,
+        offset: ft.Offset | None = None,
+        aspect_ratio: int | float | None = None,
+        animate_opacity: bool | int | ft.Animation | None = None,
+        animate_size: bool | int | ft.Animation | None = None,
+        animate_position: bool | int | ft.Animation | None = None,
+        animate_rotation: bool | int | ft.Animation | None = None,
+        animate_scale: bool | int | ft.Animation | None = None,
+        animate_offset: bool | int | ft.Animation | None = None,
+        on_animation_end: Callable[[ft.ControlEvent], Any] | None = None,
+        visible: bool | None = None,
+        disabled: bool | None = None,
+        data: Any = None,
+        adaptive: bool | None = None
+    ):
+        super().__init__(
+            controls,
+            horizontal,
+            spacing,
+            item_extent,
+            first_item_prototype,
+            divider_thickness,
+            padding,
+            clip_behavior,
+            semantic_child_count,
+            cache_extent,
+            build_controls_on_demand,
+            auto_scroll,
+            reverse,
+            on_scroll_interval,
+            on_scroll,
+            ref,
+            key,
+            width,
+            height,
+            left,
+            top,
+            right,
+            bottom,
+            expand,
+            expand_loose,
+            col,
+            opacity,
+            rotate,
+            scale,
+            offset,
+            aspect_ratio,
+            animate_opacity,
+            animate_size,
+            animate_position,
+            animate_rotation,
+            animate_scale,
+            animate_offset,
+            on_animation_end,
+            visible,
+            disabled,
+            data,
+            adaptive
+        )
+
+        if controls_data is not None and controls_mapper is not None:
+            self.controls = []
+            self._new_stateful_ctrl_seq_prop_binding(controls_data, controls_mapper, self, self.controls)
 
     def build(self):
         super().build()

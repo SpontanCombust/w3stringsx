@@ -1,3 +1,5 @@
+from flet_datatable2 import Size
+
 from flet_reactive.state import State, ListState
 from flet_reactive.state_observer import StateObserver, ListStateObserver
 from flet_reactive.effect import Effect
@@ -12,6 +14,7 @@ from flet_reactive.reactive_wrappers import (
     ReactiveDataTable, 
     ReactiveDataRow, 
     ReactiveDataColumn, 
+    ReactiveDataCell,
     ReactiveColumn, 
     ReactiveContainer, 
     ReactiveStack, 
@@ -21,7 +24,8 @@ from flet_reactive.reactive_wrappers import (
     ReactiveIcon,
     ReactiveImage,
     ReactiveSwitch,
-    ReactiveProgressRing
+    ReactiveProgressRing,
+    ReactiveListView
 )
 from flet_reactive.reactive_hooks import ReactiveHooks
 
@@ -39,6 +43,7 @@ __all__ = [
     "ReactiveDataTable", 
     "ReactiveDataRow", 
     "ReactiveDataColumn", 
+    "ReactiveDataCell",
     "ReactiveColumn", 
     "ReactiveContainer", 
     "ReactiveStack", 
@@ -49,5 +54,6 @@ __all__ = [
     "ReactiveImage",
     "ReactiveSwitch",
     "ReactiveProgressRing",
+    "ReactiveListView",
     "ReactiveHooks"
 ]

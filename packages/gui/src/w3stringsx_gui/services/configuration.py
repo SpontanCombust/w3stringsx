@@ -75,6 +75,31 @@ class W3stringsxGuiConfiguration(Configuration):
     def logs_panel_scrollback(self, val: int | None):
         self.__set('w3stringsx_gui.logs_panel_scrollback', val)
 
+    @property
+    def csv_editor_show_id_column(self) -> ConfigurationValue[bool]:
+        return self.__get('w3stringsx_gui.csv_editor.show_id_column', True)
+    
+    @csv_editor_show_id_column.setter
+    def csv_editor_show_id_column(self, val: bool | None):
+        self.__set('w3stringsx_gui.csv_editor.show_id_column', val)
+        
+    @property
+    def csv_editor_show_key_hash_column(self) -> ConfigurationValue[bool]:
+        return self.__get('w3stringsx_gui.csv_editor.show_key_hash_column', False)
+    
+    @csv_editor_show_key_hash_column.setter
+    def csv_editor_show_key_hash_column(self, val: bool | None):
+        self.__set('w3stringsx_gui.csv_editor.show_key_hash_column', val)
+
+    @property
+    def csv_editor_show_comments(self) -> ConfigurationValue[bool]:
+        return self.__get('w3stringsx_gui.csv_editor.show_comments', True)
+    
+    @csv_editor_show_comments.setter
+    def csv_editor_show_comments(self, val: bool | None):
+        self.__set('w3stringsx_gui.csv_editor.show_comments', val)
+    
+
 
     def reset_to_default(self):
         client_storage = self.__page.client_storage

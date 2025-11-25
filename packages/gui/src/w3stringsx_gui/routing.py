@@ -55,6 +55,10 @@ class Router:
 
 
     def __on_route_change(self, ev: ft.RouteChangeEvent):
+        logger = get_logger()
+        # logger.debug("Route change for route: '%s'. Popping: %s. Current stack: %s", 
+        #     ev.route, self.__is_popping, [v.route for v in self.__page.views]
+        # )
         if not self.__is_popping:
             vr_found = False
             for vr in self.__view_routes:
@@ -70,7 +74,10 @@ class Router:
 
                     try:
                         view = vr.create_view()
-                        self.__page.views.append(view)    
+                        self.__page.views.append(view)
+                        logger.debug("Pushed view '%s'. Current stack: %s", 
+                            view.route, [v.route for v in self.__page.views]
+                        )
                     except Exception as ex:
                         self.__page.open(ft.SnackBar(
                             content=ft.Text(str(ex), color=ft.Colors.ON_ERROR),
@@ -78,7 +85,6 @@ class Router:
                             show_close_icon=True,
                             bgcolor=ft.Colors.ERROR, 
                         ))
-                        logger = get_logger()
                         logger.error(ex)
                         logger.error(traceback.format_exc())
 
@@ -86,18 +92,26 @@ class Router:
                         di.pop_container()
                     break
             if not vr_found:
-                logger = get_logger()
-                logger.critical("Route %s not found", ev.route)
+                logger.critical("Route '%s' not found", ev.route)
         self.__current_route_props = None
         self.__is_popping = False
         self.__page.update()
 
     def __on_view_pop(self, ev: ft.ViewPopEvent):
+        logger = get_logger()
+        # logger.debug("Popping view: '%s'. Current stack: %s", ev.view.route, [v.route for v in self.__page.views])
+
         if len(self.__page.views) > 1:
             self.__is_popping = True
-            self.__page.views.pop()
+            popped = self.__page.views.pop()
+            logger.debug("Popped view '%s'. Current stack: %s", popped.route, [v.route for v in self.__page.views])
             top_view = self.__page.views[-1]
             self.__page.go(str(top_view.route))
+        else:
+            logger.debug("Tried to empty up view stack")
+            self.__page.go(str(ev.view.route), skip_route_change_event=True)
+
+
 
 
 class Routes:
@@ -108,3 +122,4 @@ class Routes:
     SEARCH_FOR_STRING_KEYS = '/find-keys'
     ENCODE_DB = '/encode-db'
     EXPORT_DB = '/export-db'
+    EDIT_CSV = '/edit-csv'

@@ -106,6 +106,12 @@ class W3StringsCsvDocument:
     def pop(self, index: int = -1):
         self.lines.pop(index)
 
+    def insert(self, index: int, line: W3StringsCsvDocumentLine):
+        self.lines.insert(index, line)
+
+    def clear(self):
+        self.lines.clear()
+
     def swap_lines(self, line1_idx: int, line2_idx: int):
         line_range = range(0, len(self.lines))
         if line1_idx in line_range and line2_idx in line_range:
@@ -140,6 +146,7 @@ class W3StringsCsvDocument:
         with io.open(self.file_path, mode='w', encoding='UTF-8') as file:
             lines_as_strs = [str(line) + '\n' for line in self.lines]
             file.writelines(lines_as_strs)
+            logger.info("Saved CSV document to %s", self.file_path)
     
     @staticmethod
     def _read_line(line: str) -> W3StringsCsvDocumentLine:

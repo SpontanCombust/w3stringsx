@@ -55,6 +55,12 @@ class HomeView(ViewBase):
                                             color=ft.Colors.ON_PRIMARY,
                                             on_click=lambda e: router.goto(Routes.EXPORT_DB)),
                                         FeatureButton(
+                                            'icons/file-edit.svg', 
+                                            'Edit \n CSV',
+                                            bgcolor=ft.Colors.PRIMARY,
+                                            color=ft.Colors.ON_PRIMARY,
+                                            on_click=lambda e: router.goto(Routes.EDIT_CSV)),
+                                        FeatureButton(
                                             'icons/file-lock.svg', 
                                             'Encode \n CSV to w3strings',
                                             bgcolor=ft.Colors.PRIMARY,
@@ -175,6 +181,8 @@ class HomeView(ViewBase):
             str_search_props.search_paths.append(path)
             target_route = Routes.SEARCH_FOR_STRING_KEYS
             target_route_props = str_search_props
+
+        #TODO handle .db files!
 
         relay = FileTypeRelay()\
             .register_file_handler(EncodeStringsView.ALLOWED_EXTS, handle_encoding_files)\
